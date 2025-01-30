@@ -72,9 +72,16 @@ const getPrivateKeyCborHex = (privateKey: string): string => {
 
 const waitWritable = (writable: Writable): Promise<void> => {
   return new Promise((resolve) => {
-    setInterval(() => {
-      if (writable.writable) resolve();
-    }, 10);
+    if (writable.writable) {
+      resolve();
+    } else {
+      const interval = setInterval(() => {
+        if (writable.writable) {
+          resolve();
+          clearInterval(interval);
+        }
+      }, 10);
+    }
   });
 };
 
