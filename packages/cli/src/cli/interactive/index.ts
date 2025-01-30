@@ -25,7 +25,7 @@ BigInt.prototype.toJSON = function() {
   return this.toString()
 }
 
-export const manualCommand = Command.make("manual", {}, () => {
+export const interactiveCommand = Command.make("interactive", {}, () => {
   return pipe(
     Effect.tryPromise(async () => {
       const manualCommandImpl = new ManualCommandImpl()
