@@ -11,7 +11,6 @@ import {
   UTxO,
 } from "@lucid-evolution/lucid";
 import _ from "lodash";
-import pLimit from "p-limit";
 
 import { HydraTransaction } from "../types.js";
 import {
@@ -110,8 +109,9 @@ const generateLargeUTxOs = async (config: GenerateLargeUTxOsConfig) => {
     },
   });
 
+  const pLimit : any = await import("p-limit");
   // generator accounts
-  const limit = pLimit(10);
+  const limit = pLimit.default(10);
   const accounts = await Promise.all(
     Array.from({ length: TOTAL_ACCOUNT_COUNT }, () =>
       limit(() => generateEmulatorAccountFromPrivateKey({}))
@@ -199,6 +199,8 @@ const generateLargeUTxOs = async (config: GenerateLargeUTxOsConfig) => {
     0n
   );
 
+  const currentMainWalletUTxOs = await lucid.wallet().getUtxos();
+
   // Create dummy transactions
   if (config.transactionCount && rollBackers.length > 0) {
     for (let i = 0; i < config.transactionCount; i++) {
@@ -261,6 +263,9 @@ const generateLargeUTxOs = async (config: GenerateLargeUTxOsConfig) => {
   //   currentStepMainAccountLovelace,
   // });
   // now spend all those large utxos
+
+  lucid.selectWallet.fromAddress(mainAccount.address, currentMainWalletUTxOs);
+
   while (rollBackers.length > 0) {
     const rollBacker = rollBackers.shift();
     if (!rollBacker) continue;

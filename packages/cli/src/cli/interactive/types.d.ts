@@ -1,4 +1,4 @@
-import type { HydraHead } from "@template/cli/hydra/head"
+import type { HydraHead } from "@hydra-manager/cli/hydra/head"
 
 export type Choice<Value> = {
   value: Value

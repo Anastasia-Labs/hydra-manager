@@ -1,13 +1,14 @@
+import type { HydraHead } from "@hydra-manager/cli/hydra/head"
+import { displayBalances, displayUTxOs, selectWallet, signCommitTransaction } from "@hydra-manager/cli/hydra/utils"
 import type { Assets } from "@lucid-evolution/lucid"
 import { addAssets, assetsToValue, CML, utxoToCore } from "@lucid-evolution/lucid"
-import type { HydraHead } from "@template/cli/hydra/head"
-import { displayBalances, displayUTxOs, selectWallet, signCommitTransaction } from "@template/cli/hydra/utils"
 import ora from "ora-classic"
 import type { Action } from "../types.js"
+import { selectParticipant } from "../utils.js"
 
 const { select } = require("inquirer-select-pro")
 
-export { processDatasetAction } from "./dataset.js"
+export { processDatasetAction } from "./datasets.js"
 
 export const getL1BalancesAction: Action = {
   name: "Get L1 Balances",
@@ -191,20 +192,4 @@ export const createDummyTransactionSendingAllFundsLucid: Action = {
 
     spinner.succeed("All funds sent")
   }
-}
-
-async function selectParticipant(hydraHead: HydraHead) {
-  const selectedParticipant = await select(
-    {
-      message: "Select participants to commit",
-      multiple: false,
-      required: true,
-      options: hydraHead.participants.map((participant) => ({ name: participant, value: participant }))
-    }
-  )
-
-  if (!selectedParticipant) {
-    throw new Error("No participants selected")
-  }
-  return selectedParticipant
 }

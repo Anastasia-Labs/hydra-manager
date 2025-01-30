@@ -1,8 +1,8 @@
+import type { HydraHead } from "@hydra-manager/cli/hydra/head"
+import type { HydraUTxOs } from "@hydra-manager/cli/hydra/types"
+import { signCommitTransaction, sleep } from "@hydra-manager/cli/hydra/utils"
 import type { OutRef } from "@lucid-evolution/lucid"
 import { CML } from "@lucid-evolution/lucid"
-import type { HydraHead } from "@template/cli/hydra/head"
-import type { HydraUTxOs } from "@template/cli/hydra/types"
-import { signCommitTransaction, sleep } from "@template/cli/hydra/utils"
 import * as fs from "fs"
 import type { Ora } from "ora-classic"
 import { chain } from "stream-chain"
@@ -18,7 +18,7 @@ export const processDataset = async (hydraHead: HydraHead, datasetFile: string, 
 
   // Use stream-json to read the file
   const metadataPipe = chain<any>([
-    fs.createReadStream(`./datasets/${datasetFile}`),
+    fs.createReadStream(`${datasetFile}`),
     parser(),
     pick({ filter: "clientDatasets" }),
     ignore({ filter: /\d+\.txSequence/ }),
@@ -116,7 +116,7 @@ export const processDataset = async (hydraHead: HydraHead, datasetFile: string, 
   }
   await Promise.all(metadata.map(async (data, index) => {
     const txSequencePipe = chain<any>([
-      fs.createReadStream(`./datasets/${datasetFile}`),
+      fs.createReadStream(`${datasetFile}`),
       parser(),
       pick({ filter: RegExp(`clientDatasets.${index}.txSequence`) }),
       streamArray()

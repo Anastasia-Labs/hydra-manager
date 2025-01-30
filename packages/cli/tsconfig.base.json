@@ -38,8 +38,8 @@
     "removeComments": false,
     "plugins": [{ "name": "@effect/language-service" }],
     "paths": {
-      "@template/cli": ["./src/index.js"],
-      "@template/cli/*": ["./src/*.js"]
+      "@hydra-manager/cli": ["./src/index.js"],
+      "@hydra-manager/cli/*": ["./src/*.js"]
     }
   }
 }

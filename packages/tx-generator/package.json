@@ -7,7 +7,7 @@
     "npm": ">=10.5"
   },
   "author": "Golddy Dev <firingdev@gmail.com> (http://github.com/golddydev/)",
-  "type": "module",
+  "type": "commonjs",
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",

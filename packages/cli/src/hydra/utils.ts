@@ -70,14 +70,18 @@ export async function singleOutputBlueprintTx(lucid: LucidEvolution, lovelace: n
 }
 
 export async function selectWallet(participant: string, lucid: LucidEvolution) {
+  const privateKeyBech32 = getParticipantPrivateKey(participant)
+  await lucid.selectWallet.fromPrivateKey(privateKeyBech32)
+}
+
+export function getParticipantPrivateKey(participant: string) {
   const privateKey = JSON.parse(
     readFileSync(`./credentials/${participant.toLocaleLowerCase()}.sk`, { encoding: "utf-8" })
   )
 
-  const privateKeyBech32 = CML.PrivateKey.from_normal_bytes(
+  return CML.PrivateKey.from_normal_bytes(
     Buffer.from((privateKey.cborHex as string).substring(4), "hex")
   ).to_bech32()
-  await lucid.selectWallet.fromPrivateKey(privateKeyBech32)
 }
 
 export function sleep(ms: number) {
