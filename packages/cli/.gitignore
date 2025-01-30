@@ -16,3 +16,4 @@ dist/
 credentials/*
 datasets/*
 !.gitinclude
+tx-generator
