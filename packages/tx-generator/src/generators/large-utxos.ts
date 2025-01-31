@@ -20,6 +20,8 @@ import {
   serializeAssets,
   waitWritable,
 } from "./utils.js";
+import { Ora } from "ora-classic";
+import { start } from "node:repl";
 
 const TOTAL_ACCOUNT_COUNT = 100;
 const OUTPUT_UTXOS_CHUNK = 20;
@@ -34,7 +36,7 @@ interface GenerateLargeUTxOsConfig {
   transactionCount?: number;
 }
 
-const generateLargeUTxOs = async (config: GenerateLargeUTxOsConfig) => {
+const generateLargeUTxOs = async (config: GenerateLargeUTxOsConfig, spinner?: Ora) => {
   const {
     network,
     initialUTxO,
@@ -135,6 +137,9 @@ const generateLargeUTxOs = async (config: GenerateLargeUTxOsConfig) => {
   // select wallet
   lucid.selectWallet.fromAddress(initialUTxO.address, [initialUTxO]);
 
+  if (spinner)
+    spinner.info("Generating large UTxOs");
+
   // generate large utxos
   const dummyTxs: HydraTransaction[] = [];
   while (currentUtxosCount < utxosCount) {
@@ -194,6 +199,9 @@ const generateLargeUTxOs = async (config: GenerateLargeUTxOsConfig) => {
       await new Promise<void>((resolve) => setTimeout(() => resolve(), 100));
   }
 
+  if (spinner)
+    spinner.info("Generated large UTxOs");
+
   let currentStepMainAccountLovelace = (await lucid.wallet().getUtxos()).reduce(
     (acc, cur) => acc + cur.assets.lovelace,
     0n
@@ -203,17 +211,26 @@ const generateLargeUTxOs = async (config: GenerateLargeUTxOsConfig) => {
 
   // Create dummy transactions
   if (config.transactionCount && rollBackers.length > 0) {
-    for (let i = 0; i < config.transactionCount; i++) {
+    if (spinner)
+      spinner.start("Generating dummy transactions");
+    
+    const transactionStats = {
+      total: config.transactionCount,
+      generated: 0,
+      startTime: Date.now(),
+    }
 
-      const rollBacker = rollBackers.shift();
-      if (!rollBacker) break;
-      
-      const selectedUtxo = rollBacker.utxos.shift()
-      if (!selectedUtxo) break;
-      
-      lucid.selectWallet.fromAddress(selectedUtxo.address, [selectedUtxo]);
+    const rollBacker = rollBackers.shift();
+    if (!rollBacker) throw new Error("Rollbacker not found");
+    
+    let selectedUtxos = [rollBacker.utxos.shift()!];
+
+    lucid.selectWallet.fromAddress(selectedUtxos[0].address, selectedUtxos);
+    
+    for (let i = 0; i < config.transactionCount; i++) {
+          
       const txBuilder = lucid.newTx();
-      const [newWalletUTxOs, _, txSignBuilder] = await txBuilder.pay.ToAddress(selectedUtxo.address, selectedUtxo.assets).chain();
+      const [newWalletUTxOs, _, txSignBuilder] = await txBuilder.pay.ToAddress(selectedUtxos[0].address, selectedUtxos[0].assets).chain();
       const txSigned = await txSignBuilder.sign.withPrivateKey(rollBacker.privateKey).complete();
       const txHash = txSigned.toHash();
       const tx: HydraTransaction = {
@@ -234,21 +251,32 @@ const generateLargeUTxOs = async (config: GenerateLargeUTxOsConfig) => {
         dummyTxs.push(tx);
       }
       
-      rollBackers.push({
-        utxos: [...rollBacker.utxos, ...newWalletUTxOs],
-        privateKey: rollBacker.privateKey
-      })
-
       // free memory
       txBuilder.rawConfig().txBuilder.free();
       txSignBuilder.toTransaction().free();
       txSigned.toTransaction().free();
+      
+      transactionStats.generated++;
 
+      lucid.overrideUTxOs(newWalletUTxOs);      
+
+      
       // to give garbage collector time to free memory
-      if (i % 250 == 0)
+      if (i % 250 == 0) {
         await new Promise<void>((resolve) => setTimeout(() => resolve(), 100));
-
+        
+        if (spinner) 
+          spinner.text = `Generated ${transactionStats.generated} transactions out of ${transactionStats.total} TPS: ${Math.floor(transactionStats.generated / ((Date.now() - transactionStats.startTime) / 1000))}`;
+      }
     }
+
+    rollBackers.push({
+      utxos: [...rollBacker.utxos, ...(await lucid.wallet().getUtxos())],
+      privateKey: rollBacker.privateKey
+    })
+
+    if (spinner)
+      spinner.succeed("Generated dummy transactions");
 
   }
 

@@ -1,15 +1,16 @@
+import type { Action } from "@hydra-manager/cli/cli/interactive/types"
+import { selectedUTxOs, selectParticipant } from "@hydra-manager/cli/cli/interactive/utils"
 import { processDataset } from "@hydra-manager/cli/dataset/index"
 import type { HydraHead } from "@hydra-manager/cli/hydra/head"
 import { getParticipantPrivateKey } from "@hydra-manager/cli/hydra/utils"
 import { generateLargeUTxOs, type GenerateLargeUTxOsConfig } from "@hydra-manager/tx-generator"
 import { number } from "@inquirer/prompts"
+import type { UTxO } from "@lucid-evolution/lucid"
 import { addAssets } from "@lucid-evolution/lucid"
 import * as fs from "fs"
 import ora from "ora-classic"
 import os from "os"
 import path from "path"
-import type { Action } from "../types"
-import { selectedUTxOs, selectParticipant } from "../utils"
 
 const { select } = require("inquirer-select-pro")
 
@@ -48,7 +49,7 @@ export const processNewLargeUTxosDatasetAction: Action = {
       const participant = await selectParticipant(hydraHead)
       const privateKey = await getParticipantPrivateKey(participant + "-funds")
       const initialUTxOs = await selectedUTxOs(hydraHead, participant)
-      const totalAssets = addAssets(...initialUTxOs.map((utxo) => utxo.assets))
+      const totalAssets = addAssets(...initialUTxOs.map((utxo: UTxO) => utxo.assets))
 
       const utxosCount = await number({
         message: "Number of UTxOs to generate",
@@ -83,8 +84,8 @@ export const processNewLargeUTxosDatasetAction: Action = {
         writable
       }
 
-      await generateLargeUTxOs(config)
-      // await processDataset(hydraHead, tmpFilePath, spinner)
+      await generateLargeUTxOs(config, spinner)
+      await processDataset(hydraHead, tmpFilePath, spinner)
     } catch (error) {
       spinner.fail("Failed to process new large UTxOs dataset")
       throw error
