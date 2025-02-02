@@ -8,12 +8,11 @@ import {
   commitToHeadAction,
   createDummyTransactionSendingAllFunds,
   fanoutFundsAction,
-  getL1BalancesAction,
-  getL1UTxOsAction,
   initHeadAction,
   processDatasetAction,
   processNewLargeUTxosDatasetAction
 } from "./actions/index.js"
+import { mainMenuL1WalletActions } from "./actions/l1-wallet.js"
 import type { ActionCallback } from "./types.js"
 
 declare global {
@@ -79,14 +78,14 @@ const selectActionSet = (hydraHead: HydraHead): Array<{ name: string; value: Act
   switch (hydraHead.status) {
     case "IDLE":
     case "FINAL":
-      return [getL1BalancesAction, initHeadAction, getL1UTxOsAction]
+      return [mainMenuL1WalletActions, initHeadAction]
     case "INITIALIZING":
-      return [getL1BalancesAction, commitToHeadAction, processDatasetAction, processNewLargeUTxosDatasetAction]
+      return [mainMenuL1WalletActions, commitToHeadAction, processDatasetAction, processNewLargeUTxosDatasetAction]
     case "OPEN":
-      return [getL1BalancesAction, closeHeadAction, createDummyTransactionSendingAllFunds]
+      return [mainMenuL1WalletActions, closeHeadAction, createDummyTransactionSendingAllFunds]
     case "FANOUT_POSSIBLE":
-      return [getL1BalancesAction, fanoutFundsAction]
+      return [mainMenuL1WalletActions, fanoutFundsAction]
     default:
-      return [getL1BalancesAction, getL1UTxOsAction]
+      return [mainMenuL1WalletActions]
   }
 }

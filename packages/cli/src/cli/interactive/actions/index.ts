@@ -1,34 +1,14 @@
 import type { HydraHead } from "@hydra-manager/cli/hydra/head"
-import { displayBalances, displayUTxOs, selectWallet, signCommitTransaction } from "@hydra-manager/cli/hydra/utils"
+import { selectWallet, signCommitTransaction } from "@hydra-manager/cli/hydra/utils"
 import type { Assets } from "@lucid-evolution/lucid"
 import { addAssets, assetsToValue, CML, utxoToCore } from "@lucid-evolution/lucid"
 import ora from "ora-classic"
 import type { Action } from "../types.js"
 import { selectParticipant } from "../utils.js"
 
-const { select } = require("inquirer-select-pro")
+import { select } from "inquirer-select-pro"
 
 export { processDatasetAction, processNewLargeUTxosDatasetAction } from "./datasets.js"
-
-export const getL1BalancesAction: Action = {
-  name: "Get L1 Balances",
-  value: async (hydraHead: HydraHead): Promise<void> => {
-    const { participants } = hydraHead
-    const lucid = await hydraHead.getLucidL1()
-
-    await displayBalances(participants, lucid)
-  }
-}
-
-export const getL1UTxOsAction: Action = {
-  name: "Get L1 UTxOs",
-  value: async (hydraHead: HydraHead): Promise<void> => {
-    const { participants } = hydraHead
-    const lucid = await hydraHead.getLucidL1()
-
-    await displayUTxOs(participants, lucid)
-  }
-}
 
 export const initHeadAction: Action = {
   name: "Init Head",

@@ -7,6 +7,9 @@ import * as fs from "fs"
 import type { Ora } from "ora-classic"
 import { chain } from "stream-chain"
 
+import { createRequire } from "module"
+
+const require = createRequire(import.meta.url)
 const { parser } = require("stream-json")
 const { ignore } = require("stream-json/filters/Ignore")
 const { pick } = require("stream-json/filters/Pick")

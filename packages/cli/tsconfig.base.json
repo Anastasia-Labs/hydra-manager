@@ -12,7 +12,7 @@
     "exactOptionalPropertyTypes": true,
     "emitDecoratorMetadata": false,
     "experimentalDecorators": true,
-    "moduleResolution": "NodeNext",
+    "moduleResolution": "nodenext",
     "lib": ["ES2022", "DOM"],
     "isolatedModules": true,
     "sourceMap": true,

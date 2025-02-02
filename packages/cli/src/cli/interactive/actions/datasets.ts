@@ -12,7 +12,7 @@ import ora from "ora-classic"
 import os from "os"
 import path from "path"
 
-const { select } = require("inquirer-select-pro")
+import { select } from "inquirer-select-pro"
 
 export const processDatasetAction: Action = {
   name: "Process Dataset",
