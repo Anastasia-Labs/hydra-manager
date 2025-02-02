@@ -3,7 +3,6 @@ import { select } from "@inquirer/prompts"
 import { Effect, pipe } from "effect"
 import { HydraHead } from "../../hydra/head.js"
 import { sleep } from "../../hydra/utils.js"
-import { processNewLargeUTxosDatasetAction } from "./actions/datasets.js"
 import {
   closeHeadAction,
   commitToHeadAction,
@@ -12,7 +11,8 @@ import {
   getL1BalancesAction,
   getL1UTxOsAction,
   initHeadAction,
-  processDatasetAction
+  processDatasetAction,
+  processNewLargeUTxosDatasetAction
 } from "./actions/index.js"
 import type { ActionCallback } from "./types.js"
 

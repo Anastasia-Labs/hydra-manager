@@ -8,7 +8,7 @@ import { selectParticipant } from "../utils.js"
 
 const { select } = require("inquirer-select-pro")
 
-export { processDatasetAction } from "./datasets.js"
+export { processDatasetAction, processNewLargeUTxosDatasetAction } from "./datasets.js"
 
 export const getL1BalancesAction: Action = {
   name: "Get L1 Balances",
