@@ -251,7 +251,7 @@ export class HydraNode extends EventEmitter {
     this._connection.send(JSON.stringify({ tag: "Close" }))
 
     return new Promise<void>((resolve, reject) => {
-      const interval = setInterval(() => this._connection.send(JSON.stringify({ tag: "Close" })), 10000)
+      const interval = setInterval(() => this._connection.send(JSON.stringify({ tag: "Close" })), 60000)
       const resolveCallback = (data: string) => {
         const rejectCb = (reason?: any) => {
           this._connection.removeListener("message", resolveCallback)
