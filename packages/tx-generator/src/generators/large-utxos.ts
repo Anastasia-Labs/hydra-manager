@@ -11,6 +11,7 @@ import {
   UTxO,
 } from "@lucid-evolution/lucid";
 import _ from "lodash";
+import { Ora } from "ora-classic";
 
 import { HydraTransaction } from "../types.js";
 import {
@@ -20,8 +21,6 @@ import {
   serializeAssets,
   waitWritable,
 } from "./utils.js";
-import { Ora } from "ora-classic";
-import { start } from "node:repl";
 
 const TOTAL_ACCOUNT_COUNT = 100;
 const OUTPUT_UTXOS_CHUNK = 20;
@@ -111,7 +110,7 @@ const generateLargeUTxOs = async (config: GenerateLargeUTxOsConfig, spinner?: Or
     },
   });
 
-  const pLimit : any = await import("p-limit");
+  const pLimit = await import("p-limit");
   // generator accounts
   const limit = pLimit.default(10);
   const accounts = await Promise.all(
@@ -147,12 +146,16 @@ const generateLargeUTxOs = async (config: GenerateLargeUTxOsConfig, spinner?: Or
     const randomAccount =
       accounts[Math.floor(Math.random() * TOTAL_ACCOUNT_COUNT)];
     const txBuilder = lucid.newTx();
+
+    const outputChunk = utxosCount - currentUtxosCount > OUTPUT_UTXOS_CHUNK ? OUTPUT_UTXOS_CHUNK : utxosCount - currentUtxosCount;
+    
     // payout many times
-    Array.from({ length: OUTPUT_UTXOS_CHUNK }).forEach(() =>
+    Array.from({ length: outputChunk }).forEach(() => {
       txBuilder.pay.ToAddress(randomAccount.address, {
         lovelace: outputLovelace,
       })
-    );
+    });
+
     const [newWalletUTxOs, derivedOutputs, txSignBuilder] =
       await txBuilder.chain();
     const txSigned = await txSignBuilder.sign
@@ -176,7 +179,7 @@ const generateLargeUTxOs = async (config: GenerateLargeUTxOsConfig, spinner?: Or
       // save to array
       dummyTxs.push(tx);
     }
-    currentUtxosCount = currentUtxosCount + OUTPUT_UTXOS_CHUNK;
+    currentUtxosCount = currentUtxosCount + outputChunk;
     currentTxsCount = currentTxsCount + 1;
 
     // overrid utxos
@@ -223,7 +226,7 @@ const generateLargeUTxOs = async (config: GenerateLargeUTxOsConfig, spinner?: Or
     const rollBacker = rollBackers.shift();
     if (!rollBacker) throw new Error("Rollbacker not found");
     
-    let selectedUtxos = [rollBacker.utxos.shift()!];
+    const selectedUtxos = [rollBacker.utxos.shift()!];
 
     lucid.selectWallet.fromAddress(selectedUtxos[0].address, selectedUtxos);
     
