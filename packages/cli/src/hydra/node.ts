@@ -13,12 +13,16 @@ export class HydraNode extends EventEmitter {
     super()
     this._url = url
     this._status = "DISCONNECTED"
-    this._connection = new Connection(url + "?history=no")
-    this._connection.on("message", (data) => this.processStatus(data))
-    this._connection.on("message", (data) => this.processConfirmedTx(data))
-    this._connection.connect()
-
+    this._connection = new Connection(this.url + "?history=no&snapshot-utxo=no")
     this._txCircularBuffer = new CircularBuffer(1000)
+  }
+
+  connect() {
+    if (this._status === "DISCONNECTED") {
+      this._connection.on("message", (data) => this.processStatus(data))
+      this._connection.on("message", (data) => this.processConfirmedTx(data))
+      this._connection.connect()
+    }
   }
 
   private async processStatus(data: string) {

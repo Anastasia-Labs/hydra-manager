@@ -24,6 +24,7 @@ export class Hydra implements Provider {
 
   constructor(url: string, network?: Network) {
     this._node = new HydraNode(url)
+    this._node.connect()
     this._network = network ?? "Preprod"
   }
 

@@ -30,6 +30,7 @@ export class HydraHead extends EventEmitter {
       return acc
     }, {} as Record<string, HydraNode>)
 
+    this.mainNode.connect()
     this._status = this.mainNode.status
     this.mainNode.on("status", (status) => {
       this._status = status

@@ -126,6 +126,9 @@ export const processDataset = async (hydraHead: HydraHead, datasetFile: string, 
     ])
 
     const node = hydraHead.nodes[hydraHead.participants[index]]
+    if (node.status === "DISCONNECTED") {
+      node.connect()
+    }
 
     while (!txSequencePipe.readableEnded || stats.processed - (stats.confirmed + stats.failed) > 0) {
       let tx
