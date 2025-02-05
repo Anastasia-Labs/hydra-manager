@@ -3,6 +3,7 @@ import { select } from "@inquirer/prompts"
 import { Effect, pipe } from "effect"
 import { HydraHead } from "../../hydra/head.js"
 import { sleep } from "../../hydra/utils.js"
+import { processManyTransactionsDatasetAction } from "./actions/datasets.js"
 import {
   closeHeadAction,
   commitToHeadAction,
@@ -80,7 +81,13 @@ const selectActionSet = (hydraHead: HydraHead): Array<{ name: string; value: Act
     case "FINAL":
       return [mainMenuL1WalletActions, initHeadAction]
     case "INITIALIZING":
-      return [mainMenuL1WalletActions, commitToHeadAction, processDatasetAction, processNewLargeUTxosDatasetAction]
+      return [
+        mainMenuL1WalletActions,
+        commitToHeadAction,
+        processDatasetAction,
+        processNewLargeUTxosDatasetAction,
+        processManyTransactionsDatasetAction
+      ]
     case "OPEN":
       return [mainMenuL1WalletActions, closeHeadAction, createDummyTransactionSendingAllFunds]
     case "FANOUT_POSSIBLE":

@@ -3,7 +3,8 @@ import { selectedUTxOs, selectParticipant } from "@hydra-manager/cli/cli/interac
 import { processDataset } from "@hydra-manager/cli/dataset/index"
 import type { HydraHead } from "@hydra-manager/cli/hydra/head"
 import { getParticipantPrivateKey } from "@hydra-manager/cli/hydra/utils"
-import { generateLargeUTxOs, type GenerateLargeUTxOsConfig } from "@hydra-manager/tx-generator"
+import type { GenerateLargeUTxOsConfig, GenerateManyTxsConfig } from "@hydra-manager/tx-generator"
+import { generateLargeUTxOs, generateManyTxs } from "@hydra-manager/tx-generator"
 import { number } from "@inquirer/prompts"
 import type { UTxO } from "@lucid-evolution/lucid"
 import { addAssets } from "@lucid-evolution/lucid"
@@ -88,6 +89,44 @@ export const processNewLargeUTxosDatasetAction: Action = {
       await processDataset(hydraHead, tmpFilePath, spinner)
     } catch (error) {
       spinner.fail("Failed to process new large UTxOs dataset")
+      throw error
+    }
+  }
+}
+
+export const processManyTransactionsDatasetAction: Action = {
+  name: "Process Many Transactions Dataset",
+  value: async (hydraHead: HydraHead): Promise<void> => {
+    const spinner = ora("Processing many transactions dataset")
+    try {
+      const tmpDir = os.tmpdir()
+      const tmpFilePath = path.join(tmpDir, `many-transactions-${Date.now()}.json`)
+      const writable = fs.createWriteStream(tmpFilePath)
+
+      const participant = await selectParticipant(hydraHead)
+      const privateKey = await getParticipantPrivateKey(participant + "-funds")
+      const initialUTxOs = await selectedUTxOs(hydraHead, participant)
+
+      const transactionCount = await number({
+        message: "Number of transactions to generate",
+        default: 1000,
+        min: 1,
+        required: true
+      })
+
+      const config: GenerateManyTxsConfig = {
+        network: "Preprod",
+        initialUTxO: initialUTxOs[0],
+        txsCount: transactionCount!,
+        walletSeedOrPrivateKey: privateKey,
+        writable,
+        hasSmartContract: false
+      }
+
+      await generateManyTxs(config)
+      await processDataset(hydraHead, tmpFilePath, spinner)
+    } catch (error) {
+      spinner.fail("Failed to process many transactions dataset")
       throw error
     }
   }
