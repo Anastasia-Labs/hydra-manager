@@ -30,6 +30,7 @@ export async function selectedUTxOs(hydraHead: HydraHead, participant: string) {
   const selectedUTxOs = await selectPro(
     {
       message: "Select UTXOs to commit",
+      canToggleAll: true,
       multiple: true,
       options: participantUTxOs.map((utxo) => ({
         name: `${utxo.txHash}#${utxo.outputIndex} (${utxo.assets["lovelace"] / 1000000n} ADA)`,
