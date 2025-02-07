@@ -57,9 +57,17 @@ export class HydraNode extends EventEmitter {
     const message = JSON.parse(data)
 
     if (message.tag === "SnapshotConfirmed") {
-      message.snapshot.confirmedTransactions.forEach((tx: string) => {
-        this._txCircularBuffer.add(tx)
-      })
+      if (message.snapshot.confirmedTransactions !== undefined) {
+        message.snapshot.confirmedTransactions.forEach((tx: string) => {
+          this._txCircularBuffer.add(tx)
+        })
+      } else if (message.snapshot.confirmed !== undefined) {
+        message.snapshot.confirmed.forEach((tx: CardanoTransactionRequest) => {
+          this._txCircularBuffer.add(tx.txId!)
+        })
+      } else {
+        throw new Error("Invalid snapshot message message")
+      }
     }
   }
 
