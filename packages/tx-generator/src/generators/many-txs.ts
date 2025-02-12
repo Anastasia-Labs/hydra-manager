@@ -22,6 +22,8 @@ import {
   waitWritable,
 } from "./utils.js";
 
+// add option
+// whether initial UTxO is in layer 1 or layer 2
 interface GenerateManyTxsConfig {
   network: Network;
   initialUTxO: UTxO;
@@ -29,6 +31,7 @@ interface GenerateManyTxsConfig {
   walletSeedOrPrivateKey: string;
   writable?: Writable;
   hasSmartContract?: boolean;
+  onHydraTx?: (tx: HydraTransaction) => void;
 }
 
 const generateManyTxs = async (config: GenerateManyTxsConfig) => {
@@ -39,6 +42,7 @@ const generateManyTxs = async (config: GenerateManyTxsConfig) => {
     walletSeedOrPrivateKey,
     writable,
     hasSmartContract,
+    onHydraTx,
   } = config;
 
   // get payment to key to spend initial utxo
@@ -134,6 +138,7 @@ const generateManyTxs = async (config: GenerateManyTxsConfig) => {
         type: "Tx ConwayEra",
       };
 
+      if (onHydraTx) onHydraTx(tx);
       if (writable) {
         await waitWritable(writable);
         // write to file
@@ -175,6 +180,16 @@ const generateManyTxs = async (config: GenerateManyTxsConfig) => {
       lockTxSignBuilder.toTransaction().free();
       lockTxSigned.toTransaction().free();
 
+      if (writable) {
+        await waitWritable(writable);
+        // write to file
+        writable.write(`${i > 0 ? ",\n" : ""}${JSON.stringify(lockTx)}`);
+        if (onHydraTx) onHydraTx(lockTx);
+      } else {
+        // save to array
+        dummyTxs.push(lockTx);
+      }
+
       // override utxos
       lucid.overrideUTxOs(newWalletUTxOs1);
       const lockedUtxo = derivedOutputs1[0];
@@ -206,14 +221,11 @@ const generateManyTxs = async (config: GenerateManyTxsConfig) => {
       if (writable) {
         await waitWritable(writable);
         // write to file
-        writable.write(
-          `${i > 0 ? ",\n" : ""}${JSON.stringify(lockTx)},\n${JSON.stringify(
-            spendTx
-          )}`
-        );
+        writable.write(`${i > 0 ? ",\n" : ""}${JSON.stringify(spendTx)}`);
+        if (onHydraTx) onHydraTx(spendTx);
       } else {
         // save to array
-        dummyTxs.push(lockTx, spendTx);
+        dummyTxs.push(spendTx);
       }
     }
 
