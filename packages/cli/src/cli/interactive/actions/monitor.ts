@@ -12,14 +12,9 @@ class Monitor {
   }
 
   async sleep(
-    minSecondsWait: number = 10,
-    maxSecondsWait: number = 60
+    milliseconds: number = 30 * 1000
   ): Promise<void> {
-    const secondsToWait = Math.floor(
-      Math.random() * (maxSecondsWait * 1000 - minSecondsWait * 1000 + 1)
-    ) +
-      minSecondsWait * 1000
-    const stopAfter = new Date(new Date().getTime() + secondsToWait)
+    const stopAfter = new Date(Date.now() + milliseconds)
 
     return new Promise<void>((resolve) => {
       const intervalId = setInterval(() => {

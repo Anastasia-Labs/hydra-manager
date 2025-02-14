@@ -2,7 +2,7 @@ import type { Action } from "@hydra-manager/cli/cli/interactive/types"
 import { selectedUTxOs, selectParticipant } from "@hydra-manager/cli/cli/interactive/utils"
 import { processDataset } from "@hydra-manager/cli/dataset/index"
 import type { HydraHead } from "@hydra-manager/cli/hydra/head"
-import { getParticipantPrivateKey, sleep } from "@hydra-manager/cli/hydra/utils"
+import { getParticipantPrivateKey } from "@hydra-manager/cli/hydra/utils"
 import type { GenerateLargeUTxOsConfig, GenerateManyTxsConfig } from "@hydra-manager/tx-generator"
 import { generateLargeUTxOs, generateManyTxs } from "@hydra-manager/tx-generator"
 import { number } from "@inquirer/prompts"
@@ -176,10 +176,10 @@ export const processManyTransactionsIntervalAction: Action = {
         if (!monitor.finished()) {
           if (sleepTime > 0) {
             spinner.info("Sleeping for " + (sleepTime / 1000).toFixed(2) + " seconds")
-            await sleep(sleepTime)
+            await monitor.sleep(sleepTime)
           } else {
             spinner.warn("Processing transactions took longer than the interval. Sleep 30 seconds")
-            await sleep(30 * 1000)
+            await monitor.sleep(30 * 1000)
           }
         }
       }
