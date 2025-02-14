@@ -27,13 +27,17 @@ myTest("generate many txs", async ({ lucid, privateKey }) => {
 });
 
 myTest("generate large utxos", async ({ lucid, privateKey }) => {
-  const initialUTxO = await getL1InitialUTxO(lucid);
+  const utxosCount = 1000;
+  const initialUTxO = await getL1InitialUTxO(
+    lucid,
+    BigInt(utxosCount) * 1_000_000n + 10_000_000n
+  );
   if (!initialUTxO) throw new Error("No UTxO found");
 
   if (!fs.existsSync("./tests/output")) fs.mkdirSync("./tests/output");
   const config: GenerateLargeUTxOsConfig = {
     network: "Preprod",
-    utxosCount: 1000,
+    utxosCount,
     finalUtxosCount: 50,
     walletSeedOrPrivateKey: privateKey,
     initialUTxO,
@@ -48,14 +52,14 @@ myTest(
     const utxosCount = 1000;
     const initialUTxO = await getL1InitialUTxO(
       lucid,
-      BigInt(utxosCount) * 1_000_000n
+      BigInt(utxosCount) * 1_000_000n + 10_000_000n
     );
     if (!initialUTxO) throw new Error("No UTxO found");
 
     if (!fs.existsSync("./tests/output")) fs.mkdirSync("./tests/output");
     const config: GenerateLargeUTxOsConfig = {
       network: "Preprod",
-      utxosCount: 1000,
+      utxosCount,
       finalUtxosCount: 50,
       transactionCount: 100,
       walletSeedOrPrivateKey: privateKey,

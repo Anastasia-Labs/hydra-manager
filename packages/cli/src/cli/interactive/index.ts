@@ -11,6 +11,7 @@ import {
   fanoutFundsAction,
   initHeadAction,
   processDatasetAction,
+  processManyTransactionsIntervalAction,
   processNewLargeUTxosDatasetAction
 } from "./actions/index.js"
 import { mainMenuL1WalletActions } from "./actions/l1-wallet.js"
@@ -86,7 +87,8 @@ const selectActionSet = (hydraHead: HydraHead): Array<{ name: string; value: Act
         commitToHeadAction,
         processDatasetAction,
         processNewLargeUTxosDatasetAction,
-        processManyTransactionsDatasetAction
+        processManyTransactionsDatasetAction,
+        processManyTransactionsIntervalAction
       ]
     case "OPEN":
       return [mainMenuL1WalletActions, closeHeadAction, createDummyTransactionSendingAllFunds]

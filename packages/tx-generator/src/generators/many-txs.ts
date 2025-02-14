@@ -22,27 +22,25 @@ import {
   waitWritable,
 } from "./utils.js";
 
-// add option
-// whether initial UTxO is in layer 1 or layer 2
 interface GenerateManyTxsConfig {
   network: Network;
   initialUTxO: UTxO;
+  needCommit?: boolean;
   txsCount: number;
   walletSeedOrPrivateKey: string;
   writable?: Writable;
   hasSmartContract?: boolean;
-  onHydraTx?: (tx: HydraTransaction) => void;
 }
 
 const generateManyTxs = async (config: GenerateManyTxsConfig) => {
   const {
     network,
     initialUTxO,
+    needCommit = true,
     txsCount,
     walletSeedOrPrivateKey,
     writable,
     hasSmartContract,
-    onHydraTx,
   } = config;
 
   // get payment to key to spend initial utxo
@@ -56,26 +54,37 @@ const generateManyTxs = async (config: GenerateManyTxsConfig) => {
   if (publicKeyHash != initialUTxOAddressPubKeyHash)
     throw new Error("Payment Key is not valid to spend Initial UTxO");
 
-  // for json file
-  const refinedInitialUTxO = {
-    [`${initialUTxO.txHash}#${initialUTxO.outputIndex}`]: {
-      ...initialUTxO,
-      assets: serializeAssets(initialUTxO.assets),
-    },
-  };
-  const refinedpaymentKey = {
-    cborHex: getPrivateKeyCborHex(privateKey),
-    description: "paymentKey",
-    type: "PaymentSigningKeyShelley_ed25519",
-  };
+  let refinedInitialUTxO;
+  let refinedpaymentKey;
+  if (needCommit) {
+    // for json file
+    refinedInitialUTxO = {
+      [`${initialUTxO.txHash}#${initialUTxO.outputIndex}`]: {
+        ...initialUTxO,
+        assets: serializeAssets(initialUTxO.assets),
+      },
+    };
+    refinedpaymentKey = {
+      cborHex: getPrivateKeyCborHex(privateKey),
+      description: "paymentKey",
+      type: "PaymentSigningKeyShelley_ed25519",
+    };
 
-  // write initial utxo and payment key
-  if (writable) {
-    await waitWritable(writable);
-    writable.write(`{"clientDatasets":[{
-        "initialUTxO": ${JSON.stringify(refinedInitialUTxO)},
-        "paymentKey": ${JSON.stringify(refinedpaymentKey)},
-        "txSequence": [`);
+    // write initial utxo and payment key
+    if (writable) {
+      await waitWritable(writable);
+      writable.write(`{"clientDatasets":[{
+      "initialUTxO": ${JSON.stringify(refinedInitialUTxO)},
+      "paymentKey": ${JSON.stringify(refinedpaymentKey)},
+      "txSequence": [`);
+    }
+  } else {
+    // write initial utxo and payment key
+    if (writable) {
+      await waitWritable(writable);
+      writable.write(`{"clientDatasets":[{
+      "txSequence": [`);
+    }
   }
 
   // make dummy validator
@@ -138,7 +147,6 @@ const generateManyTxs = async (config: GenerateManyTxsConfig) => {
         type: "Tx ConwayEra",
       };
 
-      if (onHydraTx) onHydraTx(tx);
       if (writable) {
         await waitWritable(writable);
         // write to file
@@ -184,7 +192,6 @@ const generateManyTxs = async (config: GenerateManyTxsConfig) => {
         await waitWritable(writable);
         // write to file
         writable.write(`${i > 0 ? ",\n" : ""}${JSON.stringify(lockTx)}`);
-        if (onHydraTx) onHydraTx(lockTx);
       } else {
         // save to array
         dummyTxs.push(lockTx);
@@ -198,6 +205,7 @@ const generateManyTxs = async (config: GenerateManyTxsConfig) => {
       const [newWalletUTxOs2, _, spendTxSignBuilder] = await spendTxBuilder
         .collectFrom([lockedUtxo], Data.void())
         .attach.SpendingValidator(alwaysSuccessScript)
+        .pay.ToAddress(initialUTxO.address, initialUTxO.assets)
         .chain();
       const spendTxSigned = await spendTxSignBuilder.sign
         .withPrivateKey(privateKey)
@@ -221,8 +229,7 @@ const generateManyTxs = async (config: GenerateManyTxsConfig) => {
       if (writable) {
         await waitWritable(writable);
         // write to file
-        writable.write(`${i > 0 ? ",\n" : ""}${JSON.stringify(spendTx)}`);
-        if (onHydraTx) onHydraTx(spendTx);
+        writable.write(`${i > 0 ? ",\n" : "\n"}${JSON.stringify(spendTx)}`);
       } else {
         // save to array
         dummyTxs.push(spendTx);
@@ -241,15 +248,25 @@ const generateManyTxs = async (config: GenerateManyTxsConfig) => {
     return;
   }
 
-  return JSON.stringify({
-    clientDatasets: [
-      {
-        initialUTxO: refinedInitialUTxO,
-        paymentKey: refinedpaymentKey,
-        txSequence: dummyTxs,
-      },
-    ],
-  });
+  if (needCommit) {
+    return JSON.stringify({
+      clientDatasets: [
+        {
+          initialUTxO: refinedInitialUTxO,
+          paymentKey: refinedpaymentKey,
+          txSequence: dummyTxs,
+        },
+      ],
+    });
+  } else {
+    return JSON.stringify({
+      clientDatasets: [
+        {
+          txSequence: dummyTxs,
+        },
+      ],
+    });
+  }
 };
 
 export { generateManyTxs };
