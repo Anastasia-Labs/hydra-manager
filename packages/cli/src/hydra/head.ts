@@ -1,9 +1,9 @@
 import type { LucidEvolution, Provider } from "@lucid-evolution/lucid"
-import { Blockfrost, Koios, Lucid } from "@lucid-evolution/lucid"
+import { Lucid } from "@lucid-evolution/lucid"
 import { EventEmitter } from "node:events"
 import { HydraNode } from "./node.js"
 import { Hydra } from "./provider.js"
-import type { HydraStatus } from "./types.js"
+import type { HydraStatus, NodeConfig } from "./types.js"
 
 export class HydraHead extends EventEmitter {
   private _lucidL2: Record<string, LucidEvolution>
@@ -12,21 +12,17 @@ export class HydraHead extends EventEmitter {
   private _nodes: Record<string, HydraNode>
   private _status: HydraStatus
 
-  constructor() {
+  constructor(provider: Provider, nodes: Array<NodeConfig>) {
     super()
 
     this._lucidL2 = {}
 
-    this._participants = ["Alice", "Bob", "Carol", "Dave", "Erin"]
+    this._participants = nodes.map((node) => node.name)
 
-    if (process.env.BLOCKFROST_PROJECT_ID) {
-      this._provider = new Blockfrost("https://cardano-preprod.blockfrost.io/api/v0", process.env.BLOCKFROST_PROJECT_ID)
-    } else {
-      this._provider = new Koios("https://preprod.koios.rest/api/v1")
-    }
+    this._provider = provider
 
-    this._nodes = this._participants.reduce((acc, participant, index) => {
-      acc[participant] = new HydraNode(`http://localhost:400${index + 1}`)
+    this._nodes = nodes.reduce((acc, node) => {
+      acc[node.name] = new HydraNode(node.url)
       return acc
     }, {} as Record<string, HydraNode>)
 
