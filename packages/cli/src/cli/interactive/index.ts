@@ -1,8 +1,11 @@
 import { Command } from "@effect/cli"
+import type { HydraManagerConfig } from "@hydra-manager/cli/hydra/types"
 import { select } from "@inquirer/prompts"
+import { Blockfrost, Koios, type Provider } from "@lucid-evolution/lucid"
 import { Effect, pipe } from "effect"
 import { HydraHead } from "../../hydra/head.js"
 import { sleep } from "../../hydra/utils.js"
+import config from "../config.js"
 import { processManyTransactionsDatasetAction } from "./actions/datasets.js"
 import {
   closeHeadAction,
@@ -29,7 +32,7 @@ BigInt.prototype.toJSON = function() {
 export const interactiveCommand = Command.make("interactive", {}, () => {
   return pipe(
     Effect.tryPromise(async () => {
-      const manualCommandImpl = new ManualCommandImpl()
+      const manualCommandImpl = new ManualCommandImpl(config)
 
       await sleep(1000)
 
@@ -45,9 +48,19 @@ export const interactiveCommand = Command.make("interactive", {}, () => {
 class ManualCommandImpl {
   private _hydraHead: HydraHead
   private _abortController: AbortController
+  private _config: HydraManagerConfig
 
-  constructor() {
-    this._hydraHead = new HydraHead()
+  constructor(config: HydraManagerConfig) {
+    this._config = config
+
+    let provider: Provider
+    if (process.env.BLOCKFROST_PROJECT_ID) {
+      provider = new Blockfrost("https://cardano-preprod.blockfrost.io/api/v0", process.env.BLOCKFROST_PROJECT_ID)
+    } else {
+      provider = new Koios("https://preprod.koios.rest/api/v1")
+    }
+
+    this._hydraHead = new HydraHead(provider, this._config.nodes)
     this._abortController = new AbortController()
 
     this._hydraHead.on("status", () => {

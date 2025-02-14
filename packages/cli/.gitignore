@@ -17,3 +17,4 @@ credentials/*
 datasets/*
 !.gitinclude
 tx-generator
+config.json
