@@ -6,7 +6,6 @@ import { Effect, pipe } from "effect"
 import { HydraHead } from "../../hydra/head.js"
 import { sleep } from "../../hydra/utils.js"
 import config from "../config.js"
-import { processManyTransactionsDatasetAction } from "./actions/datasets.js"
 import {
   closeHeadAction,
   commitToHeadAction,
@@ -14,8 +13,10 @@ import {
   fanoutFundsAction,
   initHeadAction,
   processDatasetAction,
+  processManyTransactionsDatasetAction,
   processManyTransactionsIntervalAction,
-  processNewLargeUTxosDatasetAction
+  processNewLargeUTxOsDatasetAction,
+  processNewLargeUTxOsIntervalAction
 } from "./actions/index.js"
 import { mainMenuL1WalletActions } from "./actions/l1-wallet.js"
 import type { ActionCallback } from "./types.js"
@@ -99,9 +100,10 @@ const selectActionSet = (hydraHead: HydraHead): Array<{ name: string; value: Act
         mainMenuL1WalletActions,
         commitToHeadAction,
         processDatasetAction,
-        processNewLargeUTxosDatasetAction,
         processManyTransactionsDatasetAction,
-        processManyTransactionsIntervalAction
+        processManyTransactionsIntervalAction,
+        processNewLargeUTxOsDatasetAction,
+        processNewLargeUTxOsIntervalAction
       ]
     case "OPEN":
       return [mainMenuL1WalletActions, closeHeadAction, createDummyTransactionSendingAllFunds]

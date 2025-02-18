@@ -79,7 +79,7 @@ const generateManyTxs = async (config: GenerateManyTxsConfig) => {
       "txSequence": [`);
     }
   } else {
-    // write initial utxo and payment key
+    // write only txSequence
     if (writable) {
       await waitWritable(writable);
       writable.write(`{"clientDatasets":[{

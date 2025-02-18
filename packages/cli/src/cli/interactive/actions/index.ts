@@ -10,8 +10,10 @@ import { select } from "inquirer-select-pro"
 
 export {
   processDatasetAction,
+  processManyTransactionsDatasetAction,
   processManyTransactionsIntervalAction,
-  processNewLargeUTxosDatasetAction
+  processNewLargeUTxOsDatasetAction,
+  processNewLargeUTxOsIntervalAction
 } from "./datasets.js"
 
 export const initHeadAction: Action = {

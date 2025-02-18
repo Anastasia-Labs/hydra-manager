@@ -40,7 +40,7 @@ export const processDatasetAction: Action = {
   }
 }
 
-export const processNewLargeUTxosDatasetAction: Action = {
+export const processNewLargeUTxOsDatasetAction: Action = {
   name: "Process New Large UTxOs Dataset",
   value: async (hydraHead: HydraHead): Promise<void> => {
     const spinner = ora("Processing new large UTxOs dataset")
@@ -58,7 +58,7 @@ export const processNewLargeUTxosDatasetAction: Action = {
         message: "Number of UTxOs to generate",
         default: 100,
         min: 20,
-        max: Math.floor(Number((totalAssets.lovelace - 1000000n) / 1000000n)),
+        max: Math.floor(Number((totalAssets.lovelace - 1_000_000n) / 1_000_000n)),
         required: true
       })
 
@@ -91,6 +91,148 @@ export const processNewLargeUTxosDatasetAction: Action = {
       await processDataset(hydraHead, tmpFilePath, spinner)
     } catch (error) {
       spinner.fail("Failed to process new large UTxOs dataset")
+      throw error
+    }
+  }
+}
+
+export const processNewLargeUTxOsIntervalAction: Action = {
+  name: "Process New Large UTxOs Interval",
+  value: async (hydraHead: HydraHead): Promise<void> => {
+    const spinner = ora("Processing new large UTxOs Interval")
+    try {
+      const participant = await selectParticipant(hydraHead)
+      const privateKey = await getParticipantPrivateKey(participant + "-funds")
+      const initialUTxOs = await selectedUTxOs(hydraHead, participant)
+      const totalAssets = addAssets(...initialUTxOs.map((utxo: UTxO) => utxo.assets))
+
+      const utxosCount = await number({
+        message: "Number of UTxOs to generate",
+        default: 100,
+        min: 20,
+        max: Math.floor(Number((totalAssets.lovelace - 1_000_000n) / 1_000_000n)),
+        required: true
+      })
+
+      const transactionCount = await number({
+        message: "Number of transactions to generate",
+        default: 1000,
+        min: 1,
+        required: true
+      })
+
+      const interval = (await number({
+        message: "Interval to process transactions (in seconds)",
+        default: 300, // 5 minutes
+        min: 60, // 1 minute
+        required: true
+      }))! * 1000
+
+      const monitor = new Monitor()
+
+      // Setup readline interface to catch key press events
+      readline.emitKeypressEvents(process.stdin)
+      if (process.stdin.isTTY) {
+        process.stdin.setRawMode(true)
+      }
+      const stopIntervalListener = (chunk: any, key: any) => {
+        if (key.ctrl && key.name == "q") {
+          monitor.kill()
+          console.log("\n\n!!!NOTE!!!\nInterval will be stopped in next turn\n")
+        }
+      }
+      process.stdin.on("keypress", stopIntervalListener)
+      spinner.info("Press Ctrl + Q to stop the interval")
+
+      let needCommit = true
+      let initialUTxO = initialUTxOs[0]
+
+      while (!monitor.finished()) {
+        const startTime = Date.now()
+
+        const tmpDir = os.tmpdir()
+        const tmpFilePath = path.join(tmpDir, `new-large-utxos-${Date.now()}.json`)
+        const writable = fs.createWriteStream(tmpFilePath)
+
+        const config: GenerateLargeUTxOsConfig = {
+          network: "Preprod",
+          initialUTxO,
+          needCommit,
+          utxosCount: utxosCount!,
+          finalUtxosCount: 1,
+          transactionCount: transactionCount!,
+          walletSeedOrPrivateKey: privateKey,
+          writable
+        }
+
+        await generateLargeUTxOs(config, spinner)
+
+        const lastTxHashes = await processDataset(hydraHead, tmpFilePath, spinner, needCommit)
+        if (!lastTxHashes) throw new Error("Failed to process new large UTxOs dataset")
+        initialUTxO = {
+          ...initialUTxO,
+          txHash: lastTxHashes[0],
+          outputIndex: 0,
+          datum: null,
+          datumHash: null,
+          scriptRef: null
+        }
+        needCommit = false
+        fs.unlinkSync(tmpFilePath)
+
+        const endTime = Date.now()
+        const elapsedTime = endTime - startTime
+        const sleepTime = interval - elapsedTime
+        if (!monitor.finished()) {
+          if (sleepTime > 0) {
+            spinner.info("Sleeping for " + (sleepTime / 1000).toFixed(2) + " seconds")
+            await monitor.sleep(sleepTime)
+          } else {
+            spinner.warn("Processing transactions took longer than the interval. Sleep 30 seconds")
+            await monitor.sleep(30 * 1000)
+          }
+        }
+      }
+    } catch (error) {
+      spinner.fail("Failed to process new large UTxOs dataset")
+      throw error
+    }
+  }
+}
+
+export const processManyTransactionsDatasetAction: Action = {
+  name: "Process Many Transactions Dataset",
+  value: async (hydraHead: HydraHead): Promise<void> => {
+    const spinner = ora("Processing many transactions dataset")
+    try {
+      const tmpDir = os.tmpdir()
+      const tmpFilePath = path.join(tmpDir, `many-transactions-${Date.now()}.json`)
+      const writable = fs.createWriteStream(tmpFilePath)
+
+      const participant = await selectParticipant(hydraHead)
+      const privateKey = await getParticipantPrivateKey(participant + "-funds")
+      const initialUTxOs = await selectedUTxOs(hydraHead, participant)
+
+      const transactionCount = await number({
+        message: "Number of transactions to generate",
+        default: 1000,
+        min: 1,
+        required: true
+      })
+
+      const config: GenerateManyTxsConfig = {
+        network: "Preprod",
+        initialUTxO: initialUTxOs[0],
+        txsCount: transactionCount!,
+        walletSeedOrPrivateKey: privateKey,
+        writable,
+        hasSmartContract: false
+      }
+
+      await generateManyTxs(config)
+      await processDataset(hydraHead, tmpFilePath, spinner)
+    } catch (error) {
+      spinner.fail("Failed to process many transactions dataset")
       throw error
     }
   }
@@ -148,11 +290,11 @@ export const processManyTransactionsIntervalAction: Action = {
         const config: GenerateManyTxsConfig = {
           network: "Preprod",
           initialUTxO,
+          needCommit,
           txsCount: transactionCount!,
           walletSeedOrPrivateKey: privateKey,
           writable,
-          hasSmartContract: false,
-          needCommit
+          hasSmartContract: false
         }
 
         await generateManyTxs(config)
@@ -183,44 +325,6 @@ export const processManyTransactionsIntervalAction: Action = {
           }
         }
       }
-    } catch (error) {
-      spinner.fail("Failed to process many transactions dataset")
-      throw error
-    }
-  }
-}
-
-export const processManyTransactionsDatasetAction: Action = {
-  name: "Process Many Transactions Dataset",
-  value: async (hydraHead: HydraHead): Promise<void> => {
-    const spinner = ora("Processing many transactions dataset")
-    try {
-      const tmpDir = os.tmpdir()
-      const tmpFilePath = path.join(tmpDir, `many-transactions-${Date.now()}.json`)
-      const writable = fs.createWriteStream(tmpFilePath)
-
-      const participant = await selectParticipant(hydraHead)
-      const privateKey = await getParticipantPrivateKey(participant + "-funds")
-      const initialUTxOs = await selectedUTxOs(hydraHead, participant)
-
-      const transactionCount = await number({
-        message: "Number of transactions to generate",
-        default: 1000,
-        min: 1,
-        required: true
-      })
-
-      const config: GenerateManyTxsConfig = {
-        network: "Preprod",
-        initialUTxO: initialUTxOs[0],
-        txsCount: transactionCount!,
-        walletSeedOrPrivateKey: privateKey,
-        writable,
-        hasSmartContract: false
-      }
-
-      await generateManyTxs(config)
-      await processDataset(hydraHead, tmpFilePath, spinner)
     } catch (error) {
       spinner.fail("Failed to process many transactions dataset")
       throw error
