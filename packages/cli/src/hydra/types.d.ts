@@ -1,3 +1,5 @@
+import type { Network } from "@lucid-evolution/lucid"
+
 export const HYDRA_STATUS = {
   IDLE: "IDLE",
   DISCONNECTED: "DISCONNECTED",
@@ -41,3 +43,29 @@ export type HydraScriptRef = null | {
 }
 
 export type HydraScriptLanguage = "SimpleScript" | "PlutusScriptV1" | "PlutusScriptV2" | "PlutusScriptV3"
+
+export type HydraManagerConfig = {
+  nodes: Array<NodeConfig>
+  network: Network
+}
+
+export type NodeConfig =
+  & {
+    name: string
+    url: string
+    fundsWalletSK?: KeyEnvelope
+  }
+  & (
+    | { nodeWalletSK?: KeyEnvelope; nodeWalletVK?: never }
+    | { nodeWalletVK?: KeyEnvelope; nodeWalletSK?: never }
+  )
+  & (
+    | { hydraSK?: KeyEnvelope; hydraVK?: never }
+    | { hydraVK?: KeyEnvelope; hydraSK?: never }
+  )
+
+export type KeyEnvelope = {
+  type: string
+  description: string
+  cborHex: string
+}
