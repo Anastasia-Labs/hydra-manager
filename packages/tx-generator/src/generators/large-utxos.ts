@@ -28,6 +28,7 @@ const OUTPUT_UTXOS_CHUNK = 20;
 interface GenerateLargeUTxOsConfig {
   network: Network;
   initialUTxO: UTxO;
+  needCommit?: boolean;
   utxosCount: number;
   finalUtxosCount?: number;
   walletSeedOrPrivateKey: string;
@@ -35,14 +36,19 @@ interface GenerateLargeUTxOsConfig {
   transactionCount?: number;
 }
 
-const generateLargeUTxOs = async (config: GenerateLargeUTxOsConfig, spinner?: Ora) => {
+const generateLargeUTxOs = async (
+  config: GenerateLargeUTxOsConfig,
+  spinner?: Ora
+) => {
   const {
     network,
     initialUTxO,
+    needCommit = true,
     utxosCount,
     finalUtxosCount = 1,
     walletSeedOrPrivateKey,
     writable,
+    transactionCount,
   } = config;
 
   if (finalUtxosCount > utxosCount / OUTPUT_UTXOS_CHUNK)
@@ -63,26 +69,37 @@ const generateLargeUTxOs = async (config: GenerateLargeUTxOsConfig, spinner?: Or
   if (publicKeyHash != initialUTxOAddressPubKeyHash)
     throw new Error("Payment Key is not valid to spend Initial UTxO");
 
-  // for json file
-  const refinedInitialUTxO = {
-    [`${initialUTxO.txHash}#${initialUTxO.outputIndex}`]: {
-      ...initialUTxO,
-      assets: serializeAssets(initialUTxO.assets),
-    },
-  };
-  const refinedpaymentKey = {
-    cborHex: getPrivateKeyCborHex(privateKey),
-    description: "paymentKey",
-    type: "PaymentSigningKeyShelley_ed25519",
-  };
+  let refinedInitialUTxO;
+  let refinedpaymentKey;
+  if (needCommit) {
+    // for json file
+    refinedInitialUTxO = {
+      [`${initialUTxO.txHash}#${initialUTxO.outputIndex}`]: {
+        ...initialUTxO,
+        assets: serializeAssets(initialUTxO.assets),
+      },
+    };
+    refinedpaymentKey = {
+      cborHex: getPrivateKeyCborHex(privateKey),
+      description: "paymentKey",
+      type: "PaymentSigningKeyShelley_ed25519",
+    };
 
-  // write initial utxo and payment key
-  if (writable) {
-    await waitWritable(writable);
-    writable.write(`{"clientDatasets":[{
+    // write initial utxo and payment key
+    if (writable) {
+      await waitWritable(writable);
+      writable.write(`{"clientDatasets":[{
         "initialUTxO": ${JSON.stringify(refinedInitialUTxO)},
         "paymentKey": ${JSON.stringify(refinedpaymentKey)},
         "txSequence": [`);
+    }
+  } else {
+    // write only txSequence
+    if (writable) {
+      await waitWritable(writable);
+      writable.write(`{"clientDatasets":[{
+          "txSequence": [`);
+    }
   }
 
   // make emulator and lucid with initial utxo
@@ -136,8 +153,7 @@ const generateLargeUTxOs = async (config: GenerateLargeUTxOsConfig, spinner?: Or
   // select wallet
   lucid.selectWallet.fromAddress(initialUTxO.address, [initialUTxO]);
 
-  if (spinner)
-    spinner.info("Generating large UTxOs");
+  if (spinner) spinner.info("Generating large UTxOs");
 
   // generate large utxos
   const dummyTxs: HydraTransaction[] = [];
@@ -147,13 +163,16 @@ const generateLargeUTxOs = async (config: GenerateLargeUTxOsConfig, spinner?: Or
       accounts[Math.floor(Math.random() * TOTAL_ACCOUNT_COUNT)];
     const txBuilder = lucid.newTx();
 
-    const outputChunk = utxosCount - currentUtxosCount > OUTPUT_UTXOS_CHUNK ? OUTPUT_UTXOS_CHUNK : utxosCount - currentUtxosCount;
-    
+    const outputChunk =
+      utxosCount - currentUtxosCount > OUTPUT_UTXOS_CHUNK
+        ? OUTPUT_UTXOS_CHUNK
+        : utxosCount - currentUtxosCount;
+
     // payout many times
     Array.from({ length: outputChunk }).forEach(() => {
       txBuilder.pay.ToAddress(randomAccount.address, {
         lovelace: outputLovelace,
-      })
+      });
     });
 
     const [newWalletUTxOs, derivedOutputs, txSignBuilder] =
@@ -202,8 +221,7 @@ const generateLargeUTxOs = async (config: GenerateLargeUTxOsConfig, spinner?: Or
       await new Promise<void>((resolve) => setTimeout(() => resolve(), 100));
   }
 
-  if (spinner)
-    spinner.info("Generated large UTxOs");
+  if (spinner) spinner.info("Generated large UTxOs");
 
   let currentStepMainAccountLovelace = (await lucid.wallet().getUtxos()).reduce(
     (acc, cur) => acc + cur.assets.lovelace,
@@ -213,28 +231,30 @@ const generateLargeUTxOs = async (config: GenerateLargeUTxOsConfig, spinner?: Or
   const currentMainWalletUTxOs = await lucid.wallet().getUtxos();
 
   // Create dummy transactions
-  if (config.transactionCount && rollBackers.length > 0) {
-    if (spinner)
-      spinner.start("Generating dummy transactions");
-    
+  if (transactionCount && rollBackers.length > 0) {
+    if (spinner) spinner.start("Generating dummy transactions");
+
     const transactionStats = {
-      total: config.transactionCount,
+      total: transactionCount,
       generated: 0,
       startTime: Date.now(),
-    }
+    };
 
     const rollBacker = rollBackers.shift();
     if (!rollBacker) throw new Error("Rollbacker not found");
-    
+
     const selectedUtxos = [rollBacker.utxos.shift()!];
 
     lucid.selectWallet.fromAddress(selectedUtxos[0].address, selectedUtxos);
-    
-    for (let i = 0; i < config.transactionCount; i++) {
-          
+
+    for (let i = 0; i < transactionCount; i++) {
       const txBuilder = lucid.newTx();
-      const [newWalletUTxOs, _, txSignBuilder] = await txBuilder.pay.ToAddress(selectedUtxos[0].address, selectedUtxos[0].assets).chain();
-      const txSigned = await txSignBuilder.sign.withPrivateKey(rollBacker.privateKey).complete();
+      const [newWalletUTxOs, _, txSignBuilder] = await txBuilder.pay
+        .ToAddress(selectedUtxos[0].address, selectedUtxos[0].assets)
+        .chain();
+      const txSigned = await txSignBuilder.sign
+        .withPrivateKey(rollBacker.privateKey)
+        .complete();
       const txHash = txSigned.toHash();
       const tx: HydraTransaction = {
         cborHex: txSigned.toCBOR(),
@@ -246,55 +266,48 @@ const generateLargeUTxOs = async (config: GenerateLargeUTxOsConfig, spinner?: Or
       if (writable) {
         await waitWritable(writable);
         // write to file
-        writable.write(
-          `,\n${JSON.stringify(tx)}`
-        );
+        writable.write(`,\n${JSON.stringify(tx)}`);
       } else {
         // save to array
         dummyTxs.push(tx);
       }
-      
+
       // free memory
       txBuilder.rawConfig().txBuilder.free();
       txSignBuilder.toTransaction().free();
       txSigned.toTransaction().free();
-      
+
       transactionStats.generated++;
 
-      lucid.overrideUTxOs(newWalletUTxOs);      
+      lucid.overrideUTxOs(newWalletUTxOs);
 
-      
       // to give garbage collector time to free memory
       if (i % 250 == 0) {
         await new Promise<void>((resolve) => setTimeout(() => resolve(), 100));
-        
-        if (spinner) 
-          spinner.text = `Generated ${transactionStats.generated} transactions out of ${transactionStats.total} TPS: ${Math.floor(transactionStats.generated / ((Date.now() - transactionStats.startTime) / 1000))}`;
+
+        if (spinner)
+          spinner.text = `Generated ${
+            transactionStats.generated
+          } transactions out of ${transactionStats.total} TPS: ${Math.floor(
+            transactionStats.generated /
+              ((Date.now() - transactionStats.startTime) / 1000)
+          )}`;
       }
     }
 
     rollBackers.push({
       utxos: [...rollBacker.utxos, ...(await lucid.wallet().getUtxos())],
-      privateKey: rollBacker.privateKey
-    })
+      privateKey: rollBacker.privateKey,
+    });
 
-    if (spinner)
-      spinner.succeed("Generated dummy transactions");
-
+    if (spinner) spinner.succeed("Generated dummy transactions");
   }
 
   const stepForOneUtxo = Math.floor(rollBackers.length / finalUtxosCount);
   let currentStep = 0;
   let splitMainAccount = false;
 
-  // console.log("Init:", {
-  //   rollBackers: rollBackers.length,
-  //   finalUtxosCount,
-  //   stepForOneUtxo,
-  //   currentStepMainAccountLovelace,
-  // });
   // now spend all those large utxos
-
   lucid.selectWallet.fromAddress(mainAccount.address, currentMainWalletUTxOs);
 
   while (rollBackers.length > 0) {
@@ -319,12 +332,9 @@ const generateLargeUTxOs = async (config: GenerateLargeUTxOsConfig, spinner?: Or
     txBuilder.pay.ToAddress(mainAccount.address, {
       lovelace: currentStepMainAccountLovelace,
     });
-    // console.log({ currentStepMainAccountLovelace });
-    // console.log("Before:", await lucid.wallet().getUtxos());
 
     const [newWalletUTxOs, _derivedOutputs, txSignBuilder] =
       await txBuilder.chain();
-    // console.log("After:", newWalletUTxOs);
     const txSigned = await txSignBuilder.sign
       .withPrivateKey(privateKey)
       .sign.withPrivateKey(rollBacker.privateKey)
@@ -372,15 +382,25 @@ const generateLargeUTxOs = async (config: GenerateLargeUTxOsConfig, spinner?: Or
     return;
   }
 
-  return JSON.stringify({
-    clientDatasets: [
-      {
-        initialUTxO: refinedInitialUTxO,
-        paymentKey: refinedpaymentKey,
-        txSequence: dummyTxs,
-      },
-    ],
-  });
+  if (needCommit) {
+    return JSON.stringify({
+      clientDatasets: [
+        {
+          initialUTxO: refinedInitialUTxO,
+          paymentKey: refinedpaymentKey,
+          txSequence: dummyTxs,
+        },
+      ],
+    });
+  } else {
+    return JSON.stringify({
+      clientDatasets: [
+        {
+          txSequence: dummyTxs,
+        },
+      ],
+    });
+  }
 };
 
 export { generateLargeUTxOs };

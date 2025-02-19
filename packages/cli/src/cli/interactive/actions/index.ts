@@ -8,7 +8,13 @@ import { selectParticipant } from "../utils.js"
 
 import { select } from "inquirer-select-pro"
 
-export { processDatasetAction, processNewLargeUTxosDatasetAction } from "./datasets.js"
+export {
+  processDatasetAction,
+  processManyTransactionsDatasetAction,
+  processManyTransactionsIntervalAction,
+  processNewLargeUTxOsDatasetAction,
+  processNewLargeUTxOsIntervalAction
+} from "./datasets.js"
 
 export const initHeadAction: Action = {
   name: "Init Head",

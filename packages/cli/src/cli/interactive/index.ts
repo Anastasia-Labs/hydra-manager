@@ -5,8 +5,7 @@ import { Blockfrost, Koios, type Provider } from "@lucid-evolution/lucid"
 import { Effect, pipe } from "effect"
 import { HydraHead } from "../../hydra/head.js"
 import { sleep } from "../../hydra/utils.js"
-import config from "../config.js"
-import { processManyTransactionsDatasetAction } from "./actions/datasets.js"
+import loadConfig from "../config.js"
 import {
   closeHeadAction,
   commitToHeadAction,
@@ -14,7 +13,10 @@ import {
   fanoutFundsAction,
   initHeadAction,
   processDatasetAction,
-  processNewLargeUTxosDatasetAction
+  processManyTransactionsDatasetAction,
+  processManyTransactionsIntervalAction,
+  processNewLargeUTxOsDatasetAction,
+  processNewLargeUTxOsIntervalAction
 } from "./actions/index.js"
 import { mainMenuL1WalletActions } from "./actions/l1-wallet.js"
 import type { ActionCallback } from "./types.js"
@@ -32,7 +34,7 @@ BigInt.prototype.toJSON = function() {
 export const interactiveCommand = Command.make("interactive", {}, () => {
   return pipe(
     Effect.tryPromise(async () => {
-      const manualCommandImpl = new ManualCommandImpl(config)
+      const manualCommandImpl = new ManualCommandImpl(loadConfig())
 
       await sleep(1000)
 
@@ -98,8 +100,10 @@ const selectActionSet = (hydraHead: HydraHead): Array<{ name: string; value: Act
         mainMenuL1WalletActions,
         commitToHeadAction,
         processDatasetAction,
-        processNewLargeUTxosDatasetAction,
-        processManyTransactionsDatasetAction
+        processManyTransactionsDatasetAction,
+        { ...processManyTransactionsIntervalAction, value: processManyTransactionsIntervalAction.value() },
+        processNewLargeUTxOsDatasetAction,
+        { ...processNewLargeUTxOsIntervalAction, value: processNewLargeUTxOsIntervalAction.value() }
       ]
     case "OPEN":
       return [mainMenuL1WalletActions, closeHeadAction, createDummyTransactionSendingAllFunds]

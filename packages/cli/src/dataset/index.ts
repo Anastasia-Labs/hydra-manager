@@ -15,10 +15,12 @@ const { ignore } = require("stream-json/filters/Ignore")
 const { pick } = require("stream-json/filters/Pick")
 const { streamArray } = require("stream-json/streamers/StreamArray")
 
-export const processDataset = async (hydraHead: HydraHead, datasetFile: string, spinner: Ora) => {
-  const lucidL1 = await hydraHead.getLucidL1()
-  spinner.info(`Processing dataset ${datasetFile}`)
-
+export const processDataset = async (
+  hydraHead: HydraHead,
+  datasetFile: string,
+  spinner: Ora,
+  needCommit: boolean = true
+): Promise<Array<string> | undefined> => {
   // Use stream-json to read the file
   const metadataPipe = chain<any>([
     fs.createReadStream(`${datasetFile}`),
@@ -45,67 +47,72 @@ export const processDataset = async (hydraHead: HydraHead, datasetFile: string, 
     })
   })
 
-  if (metadata.length === 0) {
-    spinner.fail("No metadata found")
-    return
-  } else if (metadata.length > hydraHead.participants.length) {
-    spinner.fail("More client datasets than participants")
-    return
-  }
+  if (needCommit) {
+    const lucidL1 = await hydraHead.getLucidL1()
+    spinner.info(`Processing dataset ${datasetFile}`)
 
-  if (hydraHead.status !== "OPEN") {
-    await Promise.all(metadata.map(async (data, index) => {
-      // Check if the initial UTxOs are present in L1
-      const utxosRef: Array<OutRef> = Object.keys(data.initialUTxO).map((txRef) => {
-        return { txHash: txRef.split("#")[0], outputIndex: parseInt(txRef.split("#")[1]) }
-      })
-      const utxos = await lucidL1.utxosByOutRef(utxosRef)
-
-      if (utxos.length === 0) {
-        throw new Error("Not initial UTxOs provided in the dataset")
-      }
-
-      if (utxos.length !== utxosRef.length) {
-        throw new Error("Initial UTxOs not found in L1")
-      }
-
-      const participant = hydraHead.participants[index]
-
-      // Create commit
-      const privateKey = CML.PrivateKey.from_normal_bytes(Buffer.from(data.paymentKey.cborHex.substring(4), "hex"))
-      lucidL1.selectWallet.fromPrivateKey(privateKey.to_bech32())
-
-      const node = hydraHead.nodes[participant]
-
-      const response = await node.commit(utxos)
-
-      // Sign commit
-      const signedResponse = await signCommitTransaction(response, lucidL1)
-
-      // Commit to the head
-      await hydraHead.mainNode.cardanoTransaction(signedResponse)
-    }))
-
-    for (let i = 0; i < hydraHead.participants.length - metadata.length; i++) {
-      const index = metadata.length + i
-
-      const participant = hydraHead.participants[index]
-
-      const node = hydraHead.nodes[participant]
-
-      const response = await node.commit([])
-      await hydraHead.mainNode.cardanoTransaction(response)
+    if (metadata.length === 0) {
+      spinner.fail("No metadata found")
+      return undefined
+    } else if (metadata.length > hydraHead.participants.length) {
+      spinner.fail("More client datasets than participants")
+      return undefined
     }
-    spinner.info("All participants committed to the head")
 
-    spinner.start("Waiting for head to open")
-  }
+    if (hydraHead.status !== "OPEN") {
+      await Promise.all(metadata.map(async (data, index) => {
+        // Check if the initial UTxOs are present in L1
+        const utxosRef: Array<OutRef> = Object.keys(data.initialUTxO).map((txRef) => {
+          return { txHash: txRef.split("#")[0], outputIndex: parseInt(txRef.split("#")[1]) }
+        })
+        const utxos = await lucidL1.utxosByOutRef(utxosRef)
 
-  // Wait until the head is open
-  while (hydraHead.status !== "OPEN") {
-    await sleep(1000)
+        if (utxos.length === 0) {
+          throw new Error("Not initial UTxOs provided in the dataset")
+        }
+
+        if (utxos.length !== utxosRef.length) {
+          throw new Error("Initial UTxOs not found in L1")
+        }
+
+        const participant = hydraHead.participants[index]
+
+        // Create commit
+        const privateKey = CML.PrivateKey.from_normal_bytes(Buffer.from(data.paymentKey.cborHex.substring(4), "hex"))
+        lucidL1.selectWallet.fromPrivateKey(privateKey.to_bech32())
+
+        const node = hydraHead.nodes[participant]
+
+        const response = await node.commit(utxos)
+
+        // Sign commit
+        const signedResponse = await signCommitTransaction(response, lucidL1)
+
+        // Commit to the head
+        await hydraHead.mainNode.cardanoTransaction(signedResponse)
+      }))
+
+      for (let i = 0; i < hydraHead.participants.length - metadata.length; i++) {
+        const index = metadata.length + i
+
+        const participant = hydraHead.participants[index]
+
+        const node = hydraHead.nodes[participant]
+
+        const response = await node.commit([])
+        await hydraHead.mainNode.cardanoTransaction(response)
+      }
+      spinner.info("All participants committed to the head")
+
+      spinner.start("Waiting for head to open")
+    }
+
+    // Wait until the head is open
+    while (hydraHead.status !== "OPEN") {
+      await sleep(1000)
+    }
+    spinner.info("Head is open")
   }
-  spinner.info("Head is open")
 
   // Process the tx Sequence
   spinner.start("Processing tx sequence")
@@ -117,7 +124,8 @@ export const processDataset = async (hydraHead: HydraHead, datasetFile: string, 
     confirmed: 0,
     initTime: Date.now()
   }
-  await Promise.all(metadata.map(async (data, index) => {
+  const lastTxHashes = await Promise.all(metadata.map(async (data, index) => {
+    let lastTxHash = ""
     const txSequencePipe = chain<any>([
       fs.createReadStream(`${datasetFile}`),
       parser(),
@@ -140,6 +148,7 @@ export const processDataset = async (hydraHead: HydraHead, datasetFile: string, 
       if ((tx = txSequencePipe.read()) !== null) {
         stats.processed++
         node.newTx(tx.value).then(async (txHash) => {
+          lastTxHash = txHash
           await node.awaitTx(txHash)
           stats.confirmed++
         }).catch(() => stats.failed++)
@@ -152,6 +161,7 @@ export const processDataset = async (hydraHead: HydraHead, datasetFile: string, 
         stats.confirmed / ((Date.now() - stats.initTime) / 1000)
       }`
     }
+    return lastTxHash
   }))
 
   spinner.info(
@@ -160,4 +170,5 @@ export const processDataset = async (hydraHead: HydraHead, datasetFile: string, 
     }`
   )
   spinner.succeed("Dataset metadata processed")
+  return lastTxHashes
 }
