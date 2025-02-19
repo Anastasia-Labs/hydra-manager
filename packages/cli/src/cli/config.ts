@@ -12,6 +12,4 @@ export function loadConfig() {
   return config as HydraManagerConfig
 }
 
-const config = loadConfig()
-
-export default config
+export default loadConfig

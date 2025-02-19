@@ -22,11 +22,16 @@ export async function selectParticipant(hydraHead: HydraHead) {
   return selectedParticipant
 }
 
-export async function selectedUTxOs(hydraHead: HydraHead, participant: string) {
+export async function selectedUTxOs(hydraHead: HydraHead, participant: string, isCron: boolean = false) {
   const lucid = await hydraHead.getLucidL1()
   selectWallet(participant + "-funds", lucid)
 
   const participantUTxOs = await lucid.wallet().getUtxos()
+
+  if (isCron) {
+    if (participantUTxOs.length == 0) throw new Error("No UTXOs available")
+    return [participantUTxOs[0]]
+  }
   const selectedUTxOs = await selectPro(
     {
       message: "Select UTXOs to commit",

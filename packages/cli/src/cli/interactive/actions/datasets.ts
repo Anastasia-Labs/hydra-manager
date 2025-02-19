@@ -1,4 +1,4 @@
-import type { Action } from "@hydra-manager/cli/cli/interactive/types"
+import type { Action, CronAction, CronConfig } from "@hydra-manager/cli/cli/interactive/types"
 import { selectedUTxOs, selectParticipant } from "@hydra-manager/cli/cli/interactive/utils"
 import { processDataset } from "@hydra-manager/cli/dataset/index"
 import type { HydraHead } from "@hydra-manager/cli/hydra/head"
@@ -15,6 +15,7 @@ import path from "path"
 
 import { select } from "inquirer-select-pro"
 import readline from "readline"
+import { CronProcessLargeUTxOsConfig, CronProcessManyTransactionsConfig } from "../../cron/configs.js"
 import { Monitor } from "./monitor.js"
 
 export const processDatasetAction: Action = {
@@ -96,39 +97,52 @@ export const processNewLargeUTxOsDatasetAction: Action = {
   }
 }
 
-export const processNewLargeUTxOsIntervalAction: Action = {
+export const processNewLargeUTxOsIntervalAction: CronAction = {
   name: "Process New Large UTxOs Interval",
-  value: async (hydraHead: HydraHead): Promise<void> => {
+  value: (cronConfig?: CronConfig | undefined) => async (hydraHead: HydraHead): Promise<void> => {
     const spinner = ora("Processing new large UTxOs Interval")
+    const isCron = !!cronConfig
     try {
-      const participant = await selectParticipant(hydraHead)
+      let participant
+      if (isCron) participant = cronConfig.chosenParticipant
+      else participant = await selectParticipant(hydraHead)
       const privateKey = await getParticipantPrivateKey(participant + "-funds")
-      const initialUTxOs = await selectedUTxOs(hydraHead, participant)
+      const initialUTxOs = await selectedUTxOs(hydraHead, participant, !!cronConfig)
       const totalAssets = addAssets(...initialUTxOs.map((utxo: UTxO) => utxo.assets))
 
-      const utxosCount = await number({
+      const maxUtxosCount = Math.floor(Number((totalAssets.lovelace - 1_000_000n) / 1_000_000n))
+      const utxosCount = isCron ? maxUtxosCount : await number({
         message: "Number of UTxOs to generate",
         default: 100,
         min: 20,
-        max: Math.floor(Number((totalAssets.lovelace - 1_000_000n) / 1_000_000n)),
+        max: maxUtxosCount,
         required: true
       })
+      if (isCron) {
+        spinner.info(`Number of UTxOs to generate: ${utxosCount}`)
+      }
 
-      const transactionCount = await number({
+      const transactionCount = isCron ? CronProcessLargeUTxOsConfig.txCount : await number({
         message: "Number of transactions to generate",
         default: 1000,
         min: 1,
         required: true
       })
+      if (isCron) {
+        spinner.info(`Number of transactions to generate: ${transactionCount}`)
+      }
 
-      const interval = (await number({
+      const interval = (isCron ? cronConfig.interval : (await number({
         message: "Interval to process transactions (in seconds)",
         default: 300, // 5 minutes
         min: 60, // 1 minute
         required: true
-      }))! * 1000
+      }))!) * 1000
+      if (isCron) {
+        spinner.info(`Interval to process transactions: ${interval / 1000} seconds`)
+      }
 
-      const monitor = new Monitor()
+      const monitor = isCron ? cronConfig.monitor : new Monitor()
 
       // Setup readline interface to catch key press events
       readline.emitKeypressEvents(process.stdin)
@@ -238,30 +252,39 @@ export const processManyTransactionsDatasetAction: Action = {
   }
 }
 
-export const processManyTransactionsIntervalAction: Action = {
+export const processManyTransactionsIntervalAction: CronAction = {
   name: "Process Many Transactions Interval",
-  value: async (hydraHead: HydraHead): Promise<void> => {
+  value: (cronConfig?: CronConfig | undefined) => async (hydraHead: HydraHead): Promise<void> => {
     const spinner = ora("Processing many transactions Interval")
+    const isCron = !!cronConfig
     try {
-      const participant = await selectParticipant(hydraHead)
+      let participant
+      if (isCron) participant = cronConfig.chosenParticipant
+      else participant = await selectParticipant(hydraHead)
       const privateKey = await getParticipantPrivateKey(participant + "-funds")
-      const initialUTxOs = await selectedUTxOs(hydraHead, participant)
+      const initialUTxOs = await selectedUTxOs(hydraHead, participant, !!cronConfig)
 
-      const transactionCount = await number({
+      const transactionCount = isCron ? CronProcessManyTransactionsConfig.txCount : await number({
         message: "Number of transactions to generate",
         default: 1000,
         min: 1,
         required: true
       })
+      if (isCron) {
+        spinner.info(`Number of transactions to generate: ${transactionCount}`)
+      }
 
-      const interval = (await number({
+      const interval = (isCron ? cronConfig.interval : (await number({
         message: "Interval to process transactions (in seconds)",
         default: 300, // 5 minutes
         min: 60, // 1 minute
         required: true
-      }))! * 1000
+      }))!) * 1000
+      if (isCron) {
+        spinner.info(`Interval to process transactions: ${interval / 1000} seconds`)
+      }
 
-      const monitor = new Monitor()
+      const monitor = isCron ? cronConfig.monitor : new Monitor()
 
       // Setup readline interface to catch key press events
       readline.emitKeypressEvents(process.stdin)
