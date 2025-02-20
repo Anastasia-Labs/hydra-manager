@@ -8,7 +8,6 @@ export function loadConfig() {
 
   const configFile = readFileSync("./config.json", "utf-8")
   const config = JSON.parse(configFile)
-  console.log(configFile)
   return config as HydraManagerConfig
 }
 
