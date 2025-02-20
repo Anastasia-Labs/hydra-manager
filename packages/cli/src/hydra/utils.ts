@@ -1,7 +1,8 @@
 import type { LucidEvolution, Script, ScriptType, UTxO } from "@lucid-evolution/lucid"
 import { CML, utxoToCore } from "@lucid-evolution/lucid"
 import { readFileSync } from "node:fs"
-import type { CardanoTransactionRequest, HydraScriptLanguage, HydraUTxOs } from "./types"
+import config from "../cli/config.js"
+import type { CardanoTransactionRequest, HydraScriptLanguage, HydraUTxOs } from "./types.js"
 
 export async function displayBalances(participants: Array<string>, lucid: LucidEvolution) {
   for (const participant of participants) {
@@ -145,4 +146,47 @@ export async function signCommitTransaction(unwitnessedTransaction: CardanoTrans
     ...unwitnessedTransaction,
     cborHex: signedTx.to_cbor_hex()
   }
+}
+
+export function getHydraHeadPubkeys() {
+  return config.nodes.map((node) => {
+    if (node.hydraSK !== undefined) {
+      const privateKey = node.hydraSK.cborHex.startsWith("5820") ?
+        CML.PrivateKey.from_normal_bytes(Buffer.from(node.hydraSK.cborHex.substring(4), "hex"))
+        : CML.PrivateKey.from_extended_bytes(Buffer.from(node.hydraSK.cborHex.substring(4), "hex"))
+      return Buffer.from(privateKey.to_public().to_raw_bytes()).toString("hex")
+    } else if (node.hydraVK !== undefined) {
+      return Buffer.from(CML.PublicKey.from_bytes(Buffer.from(node.hydraVK.cborHex.substring(4), "hex")).to_raw_bytes())
+        .toString("hex")
+    }
+    return undefined
+  }).filter((hash) => hash !== undefined) as Array<string>
+}
+
+export function getCardanoNodeWalletsPubkeyHashes(skOnly = false) {
+  return config.nodes.map((node) => {
+    if (node.nodeWalletSK !== undefined) {
+      const privateKey = node.nodeWalletSK.cborHex.startsWith("5820") ?
+        CML.PrivateKey.from_normal_bytes(Buffer.from(node.nodeWalletSK.cborHex.substring(4), "hex"))
+        : CML.PrivateKey.from_extended_bytes(Buffer.from(node.nodeWalletSK.cborHex.substring(4), "hex"))
+      return privateKey.to_public().hash().to_hex()
+    } else if (node.nodeWalletVK !== undefined && !skOnly) {
+      return CML.PublicKey.from_bytes(Buffer.from(node.nodeWalletVK.cborHex.substring(4), "hex")).hash().to_hex()
+    }
+    return undefined
+  }).filter((hash) => hash !== undefined) as Array<string>
+}
+
+export function getCardanoNodeWalletPrivateKeyByPubkeyHash(pubkeyHash: string) {
+  for (const node of config.nodes) {
+    if (node.nodeWalletSK !== undefined) {
+      const privateKey = node.nodeWalletSK.cborHex.startsWith("5820") ?
+        CML.PrivateKey.from_normal_bytes(Buffer.from(node.nodeWalletSK.cborHex.substring(4), "hex"))
+        : CML.PrivateKey.from_extended_bytes(Buffer.from(node.nodeWalletSK.cborHex.substring(4), "hex"))
+      if (privateKey.to_public().hash().to_hex() === pubkeyHash) {
+        return privateKey.to_bech32()
+      }
+    }
+  }
+  return undefined
 }

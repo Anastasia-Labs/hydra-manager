@@ -46,6 +46,8 @@ export type HydraScriptLanguage = "SimpleScript" | "PlutusScriptV1" | "PlutusScr
 
 export type HydraManagerConfig = {
   nodes: Array<NodeConfig>
+  blockfrostProjectId?: string
+  contractsReferenceTxIds?: string
   network: Network
 }
 
