@@ -98,11 +98,24 @@ const decrementInputSchema = Data.Literal("Decrement_NOT_USE")
 const closeInputSchema = Data.Object({
   Close: Data.Object({ closeSchema })
 })
+const contestInputSchema = Data.Literal("Contest_NOT_USE")
+const abortInputSchema = Data.Literal("Abort")
+const fanoutInputSchema = Data.Object({
+  Fanout: Data.Object({
+    numberOfFanoutOutputs: Data.Integer(),
+    numberOfCommitOutputs: Data.Integer(),
+    numberOfDecommitOutputs: Data.Integer()
+  })
+})
+
 const inputRedeemerSchema = Data.Enum([
   collectComInputSchema,
   incrementInputSchema,
   decrementInputSchema,
-  closeInputSchema
+  closeInputSchema,
+  contestInputSchema,
+  abortInputSchema,
+  fanoutInputSchema
 ])
 export type InputRedeemer = Data.Static<typeof inputRedeemerSchema>
 export const InputRedeemer = inputRedeemerSchema as unknown as InputRedeemer
@@ -151,11 +164,13 @@ const outputDatumSchema = Data.Enum([
   Data.Object({ OutputDatum: Data.Tuple([Data.Bytes()]) })
 ])
 
+const referenceScriptSchema = maybeSchema(Data.Tuple([Data.Bytes()]))
+
 const txOutSchema = Data.Object({
   address: addressSchema,
   value: valueSchema,
   datum: outputDatumSchema,
-  referenceScript: maybeSchema(Data.Tuple([Data.Bytes()]))
+  referenceScript: referenceScriptSchema
 })
 
 export type TxOut = Data.Static<typeof txOutSchema>
@@ -169,3 +184,6 @@ export const Value = valueSchema as unknown as Value
 
 export type OutputDatum = Data.Static<typeof outputDatumSchema>
 export const OutputDatum = outputDatumSchema as unknown as OutputDatum
+
+export type ReferenceScript = Data.Static<typeof referenceScriptSchema>
+export const ReferenceScript = referenceScriptSchema as unknown as ReferenceScript

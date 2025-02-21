@@ -90,9 +90,15 @@ describe("Hydra L1", () => {
           (getHeadStateDatum(utxo.datum!) as CloseDatum).Closed !== undefined
         )[0]
 
-      console.log(headUtxo)
-
       const tx = await createFanOutTransaction(headUtxo)
+
+      console.log(tx)
+
+      const provider = getCardanoProvider()
+      const txHash = await provider.submitTx(tx)
+      console.log(txHash)
+      await provider.awaitTx(txHash)
+      console.log("Transaction submitted")
     })
   })
 })
