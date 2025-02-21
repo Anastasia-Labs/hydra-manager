@@ -1,11 +1,11 @@
 import config from "@hydra-manager/cli/cli/config"
 import { getBlockfrostAPI, getCardanoProvider } from "@hydra-manager/cli/utils"
-import type { Assets, OutputDatum as LucidOutputDatum, UTxO } from "@lucid-evolution/lucid"
-import { CML, Data, Lucid, utxoToCore } from "@lucid-evolution/lucid"
+import type { Assets, OutputDatum as LucidOutputDatum, Script, UTxO } from "@lucid-evolution/lucid"
+import { CML, Constr, Data, Lucid } from "@lucid-evolution/lucid"
 import { createHash } from "crypto"
 import { getCardanoNodeWalletPrivateKeyByPubkeyHash, getCardanoNodeWalletsPubkeyHashes } from "../utils.js"
 import { getHydraContracts } from "./index.js"
-import type { Address, CloseDatum, OpenDatum, OutputDatum, Value } from "./plutus.js"
+import type { Address, CloseDatum, OpenDatum, OutputDatum, ReferenceScript, Value } from "./plutus.js"
 import { CollectCommitDatum, getHeadStateDatum, HeadStateDatum, InputRedeemer, TxOut } from "./plutus.js"
 
 export async function createCloseOpenHeadTransaction(headUtxo: UTxO) {
@@ -156,9 +156,6 @@ export async function createFanOutTransaction(headUtxo: UTxO) {
     throw new Error("Collect commitment inputs not found")
   }
 
-  const cmlUtxo = utxoToCore(headUtxo).output().to_canonical_cbor_hex()
-  console.log(cmlUtxo)
-
   const orderedTxOuts = collectCommitmentInput
     .flatMap((input) => input.commit)
     .sort((a, b) =>
@@ -169,17 +166,84 @@ export async function createFanOutTransaction(headUtxo: UTxO) {
       return Data.from(commit.preSerializedOutput, TxOut)
     })
 
-  console.log(orderedTxOuts)
-
   const txBuilder = await lucid.newTx()
 
   orderedTxOuts.forEach((txOut) => {
     txBuilder.pay.ToAddressWithData(
       convertToAddress(txOut.address),
       convertToDatum(txOut.datum),
-      convertToAssets(txOut.value)
+      convertToAssets(txOut.value),
+      convertToReferenceScript(txOut.referenceScript)
     )
   })
+
+  const tokenToBurn: Assets = {}
+  Object.keys(headUtxo.assets).filter((asset) => asset !== "lovelace").forEach((asset) => {
+    tokenToBurn[asset] = headUtxo.assets[asset] * -1n
+  })
+  txBuilder.mintAssets(tokenToBurn, Data.to(new Constr(1, [])))
+
+  const findMintingPolicy = async (txHash: string) => {
+    const tx = await blockfrostApi.txsUtxos(txHash)
+
+    for (const input of tx.inputs) {
+      const datum: string | null = input.inline_datum
+      if (datum !== null) {
+        const decoded = getHeadStateDatum(datum) as any
+        if (
+          input.address === hydraContracts.headScriptAddress && decoded !== undefined &&
+          (decoded.Initial === undefined)
+        ) {
+          return findMintingPolicy(input.tx_hash)
+        } else if (
+          input.address === hydraContracts.headScriptAddress && decoded !== undefined && decoded.Initial !== undefined
+        ) {
+          const tx = await blockfrostApi.txsCbor(input.tx_hash)
+
+          const coreTransaction = CML.Transaction.from_cbor_hex(tx.cbor)
+
+          const mintingScript: Script = {
+            type: "PlutusV3",
+            script: coreTransaction.witness_set().plutus_v3_scripts()?.get(0).to_canonical_cbor_hex() ?? ""
+          }
+
+          if (mintingScript.script === "") {
+            throw new Error("Minting policy not found")
+          }
+
+          return mintingScript
+        }
+      }
+    }
+
+    throw new Error("Minting policy not found")
+  }
+
+  const mintingPolicy = await findMintingPolicy(headUtxo.txHash)
+  txBuilder.attach.MintingPolicy(mintingPolicy)
+
+  txBuilder.readFrom([hydraContracts.headUtxo])
+  const redeemer: InputRedeemer = {
+    Fanout: {
+      numberOfFanoutOutputs: BigInt(orderedTxOuts.length),
+      numberOfCommitOutputs: 0n,
+      numberOfDecommitOutputs: 0n
+    }
+  }
+
+  txBuilder.collectFrom([headUtxo], Data.to(redeemer, InputRedeemer))
+
+  const now = BigInt(new Date().getTime() - 20000) / 1000n * 1000n
+
+  txBuilder.validFrom(Number(now))
+
+  txBuilder.addSigner(await lucid.wallet().address())
+
+  const txUnsigned = await txBuilder.complete()
+
+  const txSigned = await (await txUnsigned.sign.withWallet()).complete()
+
+  return txSigned.toCBOR()
 }
 
 function convertToAddress(address: Address) {
@@ -234,5 +298,13 @@ function convertToDatum(datum: OutputDatum): LucidOutputDatum | undefined {
     return { kind: "hash", value: datum.OutputDatumHash[0] }
   } else {
     return { kind: "inline", value: datum.OutputDatum[0] }
+  }
+}
+
+function convertToReferenceScript(referenceScript: ReferenceScript) {
+  if (referenceScript === "Nothing") {
+    return undefined
+  } else {
+    throw new Error("Reference script not allowed. TODO")
   }
 }
