@@ -32,11 +32,17 @@ const participantNames = configs.nodes.map((item) => item.name)
 // Define Argument
 const participantOptions = Options.choice("participant", participantNames)
 const jobOptions = Options.choice("job", ["many-txs", "large-utxos"])
-const intervalOptions = Options.text("interval")
+const intervalOptions = Options.text("interval").pipe(
+  Options.withDescription("Run process every x seconds")
+)
 
 export const cronCommand = Command.make(
   "cron",
-  { participant: participantOptions, job: jobOptions, interval: intervalOptions },
+  {
+    participant: participantOptions,
+    job: jobOptions,
+    interval: intervalOptions
+  },
   ({ interval, job, participant }) => {
     return pipe(
       Effect.tryPromise(async () => {
@@ -44,7 +50,9 @@ export const cronCommand = Command.make(
         if (isNaN(intervalValue) || intervalValue <= 0) {
           throw new Error("Invalid interval")
         }
-        if (intervalValue < 60) throw new Error("Interval must be at least 60 seconds")
+        if (intervalValue < 60) {
+          throw new Error("Interval must be at least 60 seconds")
+        }
         const cronCommandImpl = new CronCommandImpl(
           loadConfig(),
           participant,
