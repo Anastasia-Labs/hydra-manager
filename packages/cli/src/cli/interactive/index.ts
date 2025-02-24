@@ -5,7 +5,7 @@ import { Blockfrost, Koios, type Provider } from "@lucid-evolution/lucid"
 import { Effect, pipe } from "effect"
 import { HydraHead } from "../../hydra/head.js"
 import { sleep } from "../../hydra/utils.js"
-import loadConfig from "../config.js"
+import config from "../config.js"
 import {
   closeHeadAction,
   commitToHeadAction,
@@ -34,7 +34,7 @@ BigInt.prototype.toJSON = function() {
 export const interactiveCommand = Command.make("interactive", {}, () => {
   return pipe(
     Effect.tryPromise(async () => {
-      const manualCommandImpl = new ManualCommandImpl(loadConfig())
+      const manualCommandImpl = new ManualCommandImpl(config)
 
       await sleep(1000)
 

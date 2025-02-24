@@ -4,7 +4,7 @@ import { Blockfrost, Koios, type Provider } from "@lucid-evolution/lucid"
 import { Effect, pipe } from "effect"
 import { HydraHead } from "../../hydra/head.js"
 import { sleep } from "../../hydra/utils.js"
-import loadConfig from "../config.js"
+import configs from "../config.js"
 import {
   closeHeadAction,
   fanoutFundsAction,
@@ -14,8 +14,6 @@ import {
 } from "../interactive/actions/index.js"
 import { Monitor } from "../interactive/actions/monitor.js"
 import type { ActionCallback, CronConfig } from "../interactive/types.js"
-
-const configs = loadConfig()
 
 declare global {
   interface BigInt {
@@ -54,7 +52,7 @@ export const cronCommand = Command.make(
           throw new Error("Interval must be at least 60 seconds")
         }
         const cronCommandImpl = new CronCommandImpl(
-          loadConfig(),
+          configs,
           participant,
           job,
           intervalValue
