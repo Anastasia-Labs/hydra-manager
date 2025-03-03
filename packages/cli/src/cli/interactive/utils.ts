@@ -7,14 +7,15 @@ import type { Action, ActionCallback } from "./types.js"
 import { select as selectPro } from "inquirer-select-pro"
 
 export async function selectParticipant(hydraHead: HydraHead) {
-  const selectedParticipant = await selectPro(
-    {
-      message: "Select participants",
-      multiple: false,
-      required: true,
-      options: hydraHead.participants.map((participant) => ({ name: participant, value: participant }))
-    }
-  )
+  const selectedParticipant = await selectPro({
+    message: "Select participants",
+    multiple: false,
+    required: true,
+    options: hydraHead.participants.map((participant) => ({
+      name: participant,
+      value: participant
+    }))
+  })
 
   if (!selectedParticipant) {
     throw new Error("No participants selected")
@@ -22,7 +23,11 @@ export async function selectParticipant(hydraHead: HydraHead) {
   return selectedParticipant
 }
 
-export async function selectedUTxOs(hydraHead: HydraHead, participant: string, isCron: boolean = false) {
+export async function selectedUTxOs(
+  hydraHead: HydraHead,
+  participant: string,
+  isCron: boolean = false
+) {
   const lucid = await hydraHead.getLucidL1()
   selectWallet(participant + "-funds", lucid)
 
@@ -30,19 +35,24 @@ export async function selectedUTxOs(hydraHead: HydraHead, participant: string, i
 
   if (isCron) {
     if (participantUTxOs.length == 0) throw new Error("No UTXOs available")
-    return [participantUTxOs[0]]
+    const biggestIndex = participantUTxOs.reduce(
+      (acc, cur, index) =>
+        acc.lovelace > cur.assets.lovelace
+          ? acc
+          : { index, lovelace: cur.assets.lovelace },
+      { index: 0, lovelace: 0n }
+    ).index
+    return [participantUTxOs[biggestIndex]]
   }
-  const selectedUTxOs = await selectPro(
-    {
-      message: "Select UTXOs to commit",
-      canToggleAll: true,
-      multiple: true,
-      options: participantUTxOs.map((utxo) => ({
-        name: `${utxo.txHash}#${utxo.outputIndex} (${utxo.assets["lovelace"] / 1000000n} ADA)`,
-        value: utxo
-      }))
-    }
-  )
+  const selectedUTxOs = await selectPro({
+    message: "Select UTXOs to commit",
+    canToggleAll: true,
+    multiple: true,
+    options: participantUTxOs.map((utxo) => ({
+      name: `${utxo.txHash}#${utxo.outputIndex} (${utxo.assets["lovelace"] / 1000000n} ADA)`,
+      value: utxo
+    }))
+  })
 
   if (!selectedUTxOs) {
     throw new Error("No UTXOs selected")
@@ -50,18 +60,24 @@ export async function selectedUTxOs(hydraHead: HydraHead, participant: string, i
   return selectedUTxOs as Array<UTxO>
 }
 
-export const actionLoop = async (hydraHead: HydraHead, actionSet: Array<Action>) => {
+export const actionLoop = async (
+  hydraHead: HydraHead,
+  actionSet: Array<Action>
+) => {
   let exit = false
   while (!exit) {
     try {
       const answer = await select<ActionCallback>({
         message: "What do you want to do?",
-        choices: [...actionSet, {
-          name: "Exit",
-          value: async () => {
-            exit = true
+        choices: [
+          ...actionSet,
+          {
+            name: "Exit",
+            value: async () => {
+              exit = true
+            }
           }
-        }]
+        ]
       })
       await answer(hydraHead)
     } catch (error) {

@@ -22,7 +22,8 @@
     "lint-fix": "pnpm lint --fix",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
-    "copy-package-json": "tsx scripts/copy-package-json.ts"
+    "copy-package-json": "tsx scripts/copy-package-json.ts",
+    "cron-job": "pm2 start ./src/bin.ts --name \"cron\" -- cron --participant Alice --job many-txs --interval 360"
   },
   "devDependencies": {
     "@effect/cli": "latest",
@@ -47,6 +48,7 @@
     "eslint-plugin-import": "^2.30.0",
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "eslint-plugin-sort-destructure-keys": "^2.0.0",
+    "pm2": "^5.4.3",
     "tsup": "^8.2.4",
     "tsx": "^4.19.1",
     "typescript": "^5.6.2",
