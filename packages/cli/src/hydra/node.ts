@@ -111,9 +111,15 @@ export class HydraNode extends EventEmitter {
             inlineDatumRaw: null,
             referenceScript: null,
             value: Object.keys(u.assets).reduce((acc, key) => {
-              acc[key] = Number(u.assets[key].valueOf())
+              if (key == "lovelace") acc[key] = Number(u.assets[key].valueOf())
+              else {
+                const policyId = key.slice(0, 56)
+                const assetName = key.slice(56)
+                if (!acc[policyId]) acc[policyId] = {}
+                ;(acc[policyId] as Record<string, number>)[assetName] = Number(u.assets[key].valueOf())
+              }
               return acc
-            }, {} as Record<string, number>)
+            }, {} as Record<string, number | Record<string, number>>)
           }
           return acc
         }, {} as Record<string, any>)
@@ -126,9 +132,15 @@ export class HydraNode extends EventEmitter {
           datumHash: u.datumHash,
           inlineDatum: u.datum,
           value: Object.keys(u.assets).reduce((acc, key) => {
-            acc[key] = Number(u.assets[key].valueOf())
+            if (key == "lovelace") acc[key] = Number(u.assets[key].valueOf())
+            else {
+              const policyId = key.slice(0, 56)
+              const assetName = key.slice(56)
+              if (!acc[policyId]) acc[policyId] = {}
+              ;(acc[policyId] as Record<string, number>)[assetName] = Number(u.assets[key].valueOf())
+            }
             return acc
-          }, {} as Record<string, number>)
+          }, {} as Record<string, number | Record<string, number>>)
         }
         return acc
       }, {} as Record<string, any>))
