@@ -18,3 +18,5 @@ datasets/*
 !.gitinclude
 tx-generator
 config.json
+
+cron.log
