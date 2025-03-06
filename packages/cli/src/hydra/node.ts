@@ -181,7 +181,14 @@ export class HydraNode extends EventEmitter {
         datum: response[key].datum,
         datumHash: response[key].datumHash,
         assets: Object.keys(response[key].value).reduce((acc, assetKey) => {
-          acc[assetKey] = BigInt(response[key].value[assetKey])
+          if (assetKey === "lovelace") {
+            acc[assetKey] = BigInt(response[key].value[assetKey])
+          } else {
+            const tokens = response[key].value[assetKey]
+            Object.keys(tokens).forEach((tokenKey) => {
+              acc[assetKey + tokenKey] = BigInt(tokens[tokenKey])
+            })
+          }
           return acc
         }, {} as Record<string, bigint>)
       }
