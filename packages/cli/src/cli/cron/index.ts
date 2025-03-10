@@ -1,7 +1,7 @@
 import { Command, Options } from "@effect/cli"
 import type { HydraManagerConfig } from "@hydra-manager/cli/hydra/types"
 import { Blockfrost, Koios, type Provider } from "@lucid-evolution/lucid"
-import { Effect, pipe } from "effect"
+import { Effect, Option, pipe } from "effect"
 import { HydraHead } from "../../hydra/head.js"
 import { sleep } from "../../hydra/utils.js"
 import configs from "../config.js"
@@ -33,15 +33,22 @@ const jobOptions = Options.choice("job", ["many-txs", "large-utxos"])
 const intervalOptions = Options.text("interval").pipe(
   Options.withDescription("Run process every x seconds")
 )
+const txsCountOptions = Options.integer("Transactions Counts")
+const utxosCountOptions = Options.integer("UTxOs Count").pipe(
+  Options.withDescription("Generate x UTxOs, if not defined will generate as much as it can"),
+  Options.optional
+)
 
 export const cronCommand = Command.make(
   "cron",
   {
     participant: participantOptions,
     job: jobOptions,
-    interval: intervalOptions
+    interval: intervalOptions,
+    txsCount: txsCountOptions,
+    utxosCount: utxosCountOptions
   },
-  ({ interval, job, participant }) => {
+  ({ interval, job, participant, txsCount, utxosCount }) => {
     return pipe(
       Effect.tryPromise(async () => {
         const intervalValue = Math.floor(Number(interval))
@@ -55,7 +62,9 @@ export const cronCommand = Command.make(
           configs,
           participant,
           job,
-          intervalValue
+          intervalValue,
+          txsCount,
+          Option.isSome(utxosCount) ? utxosCount.value : undefined
         )
 
         await sleep(1000)
@@ -78,17 +87,23 @@ class CronCommandImpl {
   private _chosenJob: string
   private _monitor: Monitor
   private _interval: number // in seconds
+  private _txsCount: number
+  private _utxosCount: number | undefined
 
   constructor(
     config: HydraManagerConfig,
     chosenParticipant: string,
     chosenJob: string,
-    interval: number
+    interval: number,
+    txsCount: number,
+    utxosCount?: number | undefined
   ) {
     this._config = config
     this._chosenParticipant = chosenParticipant
     this._chosenJob = chosenJob
     this._interval = interval
+    this._txsCount = txsCount
+    this._utxosCount = utxosCount
     this._monitor = new Monitor()
 
     let provider: Provider
@@ -118,6 +133,8 @@ class CronCommandImpl {
           this._chosenParticipant,
           this._chosenJob,
           this._interval,
+          this._txsCount,
+          this._utxosCount,
           this._monitor
         )
 
@@ -142,12 +159,16 @@ const chooseAction = (
   chosenParticipant: string,
   chosenJob: string,
   interval: number,
+  txsCount: number,
+  utxosCount: number | undefined,
   monitor: Monitor
 ): ActionCallback | "wait" | "exit" => {
   const cronConfig: CronConfig = {
     chosenParticipant,
     monitor,
-    interval
+    interval,
+    txsCount,
+    utxosCount
   }
   switch (hydraHead.status) {
     case "IDLE":

@@ -22,8 +22,7 @@
     "lint-fix": "pnpm lint --fix",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
-    "copy-package-json": "tsx scripts/copy-package-json.ts",
-    "cron-job": "tsx ./src/bin.ts cron --participant Alice --job many-txs --interval 360 > ./cron.log 2>&1 &"
+    "copy-package-json": "tsx scripts/copy-package-json.ts"
   },
   "devDependencies": {
     "@effect/cli": "latest",

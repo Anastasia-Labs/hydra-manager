@@ -15,7 +15,6 @@ import path from "path"
 
 import { select } from "inquirer-select-pro"
 import readline from "readline"
-import { CronProcessLargeUTxOsConfig, CronProcessManyTransactionsConfig } from "../../cron/configs.js"
 import { Monitor } from "./monitor.js"
 
 export const processDatasetAction: Action = {
@@ -107,11 +106,11 @@ export const processNewLargeUTxOsIntervalAction: CronAction = {
       if (isCron) participant = cronConfig.chosenParticipant
       else participant = await selectParticipant(hydraHead)
       const privateKey = await getParticipantPrivateKey(participant + "-funds")
-      const initialUTxOs = await selectedUTxOs(hydraHead, participant, !!cronConfig)
+      const initialUTxOs = await selectedUTxOs(hydraHead, participant, isCron)
       const totalAssets = addAssets(...initialUTxOs.map((utxo: UTxO) => utxo.assets))
 
       const maxUtxosCount = Math.floor(Number((totalAssets.lovelace - 1_000_000n) / 1_000_000n))
-      const utxosCount = isCron ? maxUtxosCount : await number({
+      const utxosCount = isCron ? Math.min(maxUtxosCount, cronConfig.utxosCount || maxUtxosCount) : await number({
         message: "Number of UTxOs to generate",
         default: 100,
         min: 20,
@@ -122,7 +121,7 @@ export const processNewLargeUTxOsIntervalAction: CronAction = {
         spinner.info(`Number of UTxOs to generate: ${utxosCount}`)
       }
 
-      const transactionCount = isCron ? CronProcessLargeUTxOsConfig.txCount : await number({
+      const transactionCount = isCron ? cronConfig.txsCount : await number({
         message: "Number of transactions to generate",
         default: 1000,
         min: 1,
@@ -262,9 +261,9 @@ export const processManyTransactionsIntervalAction: CronAction = {
       if (isCron) participant = cronConfig.chosenParticipant
       else participant = await selectParticipant(hydraHead)
       const privateKey = await getParticipantPrivateKey(participant + "-funds")
-      const initialUTxOs = await selectedUTxOs(hydraHead, participant, !!cronConfig)
+      const initialUTxOs = await selectedUTxOs(hydraHead, participant, isCron)
 
-      const transactionCount = isCron ? CronProcessManyTransactionsConfig.txCount : await number({
+      const transactionCount = isCron ? cronConfig.txsCount : await number({
         message: "Number of transactions to generate",
         default: 1000,
         min: 1,

@@ -14,6 +14,8 @@ export type CronConfig = {
   monitor: Monitor
   chosenParticipant: string
   interval: number
+  txsCount: number
+  utxosCount: number | undefined
 }
 
 export type ActionCallback = (hydraHead: HydraHead) => Promise<void>
