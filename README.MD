@@ -24,7 +24,7 @@ npx tsx src/bin.ts cron --help # to see all options in cron job
 ```
 
 ```bash
-npx tsx src/bin.ts cron --participant <"paricipant-name"> --job <"many-txs" | "large-utxos"> --interval <"interval-in-seconds">
+npx tsx src/bin.ts cron --participant <"paricipant-name"> --job <"many-txs" | "large-utxos"> --interval <"interval-in-seconds"> --txs-count <"transactions-count"> --utxos-count ["utxos-count"] > ./cron.log 2>&1 &
 ```
 
 - Participant
@@ -44,3 +44,27 @@ The job can be either `many-txs` or `large-utxos`.
 - Interval
 
 The interval during which the job will run.
+
+- Txs Count
+
+The number of transactions this job will generate every interval.
+
+- UTxOs Count
+
+The number of UTxOs this job will generate.
+
+This options is only for `large-utxos` job.
+
+This is optional, when optional it will generate as much as it can.
+
+(Pick biggest UTxO from selected participant)
+
+- Output Log file
+
+You can select file to keep all the logs of background cron job process.
+
+### Example command
+
+```bash
+npx tsx src/bin.ts cli --participant Alice --job many-txs --interval 60 --txs-count 2000 > ./cron.log 2>&1 &
+```
