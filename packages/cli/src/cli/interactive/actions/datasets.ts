@@ -118,7 +118,7 @@ export const processNewLargeUTxOsIntervalAction: CronAction = {
         required: true
       })
       if (isCron) {
-        spinner.info(`Number of UTxOs to generate: ${utxosCount}`)
+        spinner.info(`Number of UTxOs to generate: ${utxosCount} - ${Date.now().toLocaleString()}`)
       }
 
       const transactionCount = isCron ? cronConfig.txsCount : await number({
@@ -128,7 +128,7 @@ export const processNewLargeUTxOsIntervalAction: CronAction = {
         required: true
       })
       if (isCron) {
-        spinner.info(`Number of transactions to generate: ${transactionCount}`)
+        spinner.info(`Number of transactions to generate: ${transactionCount} - ${Date.now().toLocaleString()}`)
       }
 
       const interval = (isCron ? cronConfig.interval : (await number({
@@ -138,7 +138,7 @@ export const processNewLargeUTxOsIntervalAction: CronAction = {
         required: true
       }))!) * 1000
       if (isCron) {
-        spinner.info(`Interval to process transactions: ${interval / 1000} seconds`)
+        spinner.info(`Interval to process transactions: ${interval / 1000} seconds - ${Date.now().toLocaleString()}`)
       }
 
       const monitor = isCron ? cronConfig.monitor : new Monitor()
@@ -198,10 +198,12 @@ export const processNewLargeUTxOsIntervalAction: CronAction = {
         const sleepTime = interval - elapsedTime
         if (!monitor.finished()) {
           if (sleepTime > 0) {
-            spinner.info("Sleeping for " + (sleepTime / 1000).toFixed(2) + " seconds")
+            spinner.info(`Sleeping for " + (sleepTime / 1000).toFixed(2) + " seconds - ${Date.now().toLocaleString()}`)
             await monitor.sleep(sleepTime)
           } else {
-            spinner.warn("Processing transactions took longer than the interval. Sleep 30 seconds")
+            spinner.warn(
+              `Processing transactions took longer than the interval. Sleep 30 seconds - ${Date.now().toLocaleString()}`
+            )
             await monitor.sleep(30 * 1000)
           }
         }
@@ -273,7 +275,7 @@ export const processManyTransactionsIntervalAction: CronAction = {
         required: true
       })
       if (isCron) {
-        spinner.info(`Number of transactions to generate: ${transactionCount}`)
+        spinner.info(`Number of transactions to generate: ${transactionCount} - ${Date.now().toLocaleString()}`)
       }
 
       const interval = (isCron ? cronConfig.interval : (await number({
@@ -283,7 +285,7 @@ export const processManyTransactionsIntervalAction: CronAction = {
         required: true
       }))!) * 1000
       if (isCron) {
-        spinner.info(`Interval to process transactions: ${interval / 1000} seconds`)
+        spinner.info(`Interval to process transactions: ${interval / 1000} seconds - ${Date.now().toLocaleString()}`)
       }
 
       const monitor = isCron ? cronConfig.monitor : new Monitor()
@@ -342,10 +344,12 @@ export const processManyTransactionsIntervalAction: CronAction = {
         const sleepTime = interval - elapsedTime
         if (!monitor.finished()) {
           if (sleepTime > 0) {
-            spinner.info("Sleeping for " + (sleepTime / 1000).toFixed(2) + " seconds")
+            spinner.info(`Sleeping for " + (sleepTime / 1000).toFixed(2) + " seconds - ${Date.now().toLocaleString()}`)
             await monitor.sleep(sleepTime > 30 * 1000 ? sleepTime : 30 * 1000)
           } else {
-            spinner.warn("Processing transactions took longer than the interval. Sleep 30 seconds")
+            spinner.warn(
+              `Processing transactions took longer than the interval. Sleep 30 seconds - ${Date.now().toLocaleString()}`
+            )
             await monitor.sleep(30 * 1000)
           }
         }
