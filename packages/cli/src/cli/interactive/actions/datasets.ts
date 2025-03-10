@@ -14,7 +14,7 @@ import os from "os"
 import path from "path"
 
 import { select } from "inquirer-select-pro"
-import readline from "readline"
+// import readline from "readline"
 import { Monitor } from "./monitor.js"
 
 export const processDatasetAction: Action = {
@@ -144,18 +144,18 @@ export const processNewLargeUTxOsIntervalAction: CronAction = {
       const monitor = isCron ? cronConfig.monitor : new Monitor()
 
       // Setup readline interface to catch key press events
-      readline.emitKeypressEvents(process.stdin)
-      if (process.stdin.isTTY) {
-        process.stdin.setRawMode(true)
-      }
-      const stopIntervalListener = (chunk: any, key: any) => {
-        if (key.ctrl && key.name == "q") {
-          monitor.kill()
-          console.log("\n\n!!!NOTE!!!\nInterval will be stopped in next turn\n")
-        }
-      }
-      process.stdin.on("keypress", stopIntervalListener)
-      spinner.info("Press Ctrl + Q to stop the interval")
+      // readline.emitKeypressEvents(process.stdin)
+      // if (process.stdin.isTTY) {
+      //   process.stdin.setRawMode(true)
+      // }
+      // const stopIntervalListener = (chunk: any, key: any) => {
+      //   if (key.ctrl && key.name == "q") {
+      //     monitor.kill()
+      //     console.log("\n\n!!!NOTE!!!\nInterval will be stopped in next turn\n")
+      //   }
+      // }
+      // process.stdin.on("keypress", stopIntervalListener)
+      // spinner.info("Press Ctrl + Q to stop the interval")
 
       let needCommit = true
       let initialUTxO = initialUTxOs[0]
@@ -260,8 +260,11 @@ export const processManyTransactionsIntervalAction: CronAction = {
       let participant
       if (isCron) participant = cronConfig.chosenParticipant
       else participant = await selectParticipant(hydraHead)
+      console.log({ participant })
       const privateKey = await getParticipantPrivateKey(participant + "-funds")
+      console.log({ privateKey })
       const initialUTxOs = await selectedUTxOs(hydraHead, participant, isCron)
+      console.log("initialUTxO:", initialUTxOs)
 
       const transactionCount = isCron ? cronConfig.txsCount : await number({
         message: "Number of transactions to generate",
@@ -286,18 +289,18 @@ export const processManyTransactionsIntervalAction: CronAction = {
       const monitor = isCron ? cronConfig.monitor : new Monitor()
 
       // Setup readline interface to catch key press events
-      readline.emitKeypressEvents(process.stdin)
-      if (process.stdin.isTTY) {
-        process.stdin.setRawMode(true)
-      }
-      const stopIntervalListener = (chunk: any, key: any) => {
-        if (key.ctrl && key.name == "q") {
-          monitor.kill()
-          console.log("\n\n!!!NOTE!!!\nInterval will be stopped in next turn\n")
-        }
-      }
-      process.stdin.on("keypress", stopIntervalListener)
-      spinner.info("Press Ctrl + Q to stop the interval")
+      // readline.emitKeypressEvents(process.stdin)
+      // if (process.stdin.isTTY) {
+      //   process.stdin.setRawMode(true)
+      // }
+      // const stopIntervalListener = (chunk: any, key: any) => {
+      //   if (key.ctrl && key.name == "q") {
+      //     monitor.kill()
+      //     console.log("\n\n!!!NOTE!!!\nInterval will be stopped in next turn\n")
+      //   }
+      // }
+      // process.stdin.on("keypress", stopIntervalListener)
+      // spinner.info("Press Ctrl + Q to stop the interval")
 
       let initialUTxO = initialUTxOs[0]
       let needCommit = true
@@ -340,7 +343,7 @@ export const processManyTransactionsIntervalAction: CronAction = {
         if (!monitor.finished()) {
           if (sleepTime > 0) {
             spinner.info("Sleeping for " + (sleepTime / 1000).toFixed(2) + " seconds")
-            await monitor.sleep(sleepTime)
+            await monitor.sleep(sleepTime > 30 * 1000 ? sleepTime : 30 * 1000)
           } else {
             spinner.warn("Processing transactions took longer than the interval. Sleep 30 seconds")
             await monitor.sleep(30 * 1000)
