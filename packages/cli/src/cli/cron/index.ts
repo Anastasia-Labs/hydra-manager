@@ -178,7 +178,8 @@ const chooseAction = (
       return initHeadAction.value
     case "FINAL":
       console.log(`\nHydra Head is finalized\n`)
-      return "exit"
+      console.log(`\nHydra Head will be initialized again\n`)
+      return initHeadAction.value
     case "INITIALIZING": {
       if (chosenJob === "many-txs") {
         return processManyTransactionsIntervalAction.value(cronConfig)
