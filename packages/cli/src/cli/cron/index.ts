@@ -6,8 +6,6 @@ import { HydraHead } from "../../hydra/head.js"
 import { sleep } from "../../hydra/utils.js"
 import configs from "../config.js"
 import {
-  closeHeadAction,
-  fanoutFundsAction,
   initHeadAction,
   processManyTransactionsIntervalAction,
   processNewLargeUTxOsIntervalAction
@@ -180,6 +178,7 @@ const chooseAction = (
       console.log(`\nHydra Head is finalized\n`)
       console.log(`\nHydra Head will be initialized again\n`)
       return initHeadAction.value
+    case "OPEN":
     case "INITIALIZING": {
       if (chosenJob === "many-txs") {
         return processManyTransactionsIntervalAction.value(cronConfig)
@@ -187,12 +186,9 @@ const chooseAction = (
         return processNewLargeUTxOsIntervalAction.value(cronConfig)
       } else throw new Error("Invalid job")
     }
-    case "OPEN":
-      console.log(`\n${chosenParticipant} close Hydra Head\n`)
-      return closeHeadAction.value
     case "FANOUT_POSSIBLE":
-      console.log(`\nFanout Hydra Head\n`)
-      return fanoutFundsAction.value
+      console.log(`\nFanout Hydra Head Manually\n`)
+      return "exit"
     default:
       return "wait"
   }
