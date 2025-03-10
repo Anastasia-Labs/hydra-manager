@@ -198,7 +198,7 @@ export const processNewLargeUTxOsIntervalAction: CronAction = {
         const sleepTime = interval - elapsedTime
         if (!monitor.finished()) {
           if (sleepTime > 0) {
-            spinner.info(`Sleeping for " + (sleepTime / 1000).toFixed(2) + " seconds - ${new Date().toLocaleString()}`)
+            spinner.info(`Sleeping for + ${(sleepTime / 1000).toFixed(2)} seconds - ${new Date().toLocaleString()}`)
             await monitor.sleep(sleepTime)
           } else {
             spinner.warn(
@@ -344,7 +344,7 @@ export const processManyTransactionsIntervalAction: CronAction = {
         const sleepTime = interval - elapsedTime
         if (!monitor.finished()) {
           if (sleepTime > 0) {
-            spinner.info(`Sleeping for " + (sleepTime / 1000).toFixed(2) + " seconds - ${new Date().toLocaleString()}`)
+            spinner.info(`Sleeping for ${(sleepTime / 1000).toFixed(2)} seconds - ${new Date().toLocaleString()}`)
             await monitor.sleep(sleepTime > 30 * 1000 ? sleepTime : 30 * 1000)
           } else {
             spinner.warn(
