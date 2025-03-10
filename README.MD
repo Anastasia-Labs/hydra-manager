@@ -66,5 +66,5 @@ You can select file to keep all the logs of background cron job process.
 ### Example command
 
 ```bash
-npx tsx src/bin.ts cli --participant Alice --job many-txs --interval 60 --txs-count 2000 > ./cron.log 2>&1 &
+npx tsx src/bin.ts cron --participant Alice --job many-txs --interval 60 --txs-count 2000 > ./cron.log 2>&1 &
 ```
