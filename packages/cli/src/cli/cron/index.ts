@@ -33,8 +33,10 @@ const jobOptions = Options.choice("job", ["many-txs", "large-utxos"])
 const intervalOptions = Options.text("interval").pipe(
   Options.withDescription("Run process every x seconds")
 )
-const txsCountOptions = Options.integer("Transactions Counts")
-const utxosCountOptions = Options.integer("UTxOs Count").pipe(
+const txsCountOptions = Options.integer("txs-count").pipe(
+  Options.withDescription("Generate x Transactions")
+)
+const utxosCountOptions = Options.integer("utxos-count").pipe(
   Options.withDescription("Generate x UTxOs, if not defined will generate as much as it can"),
   Options.optional
 )
