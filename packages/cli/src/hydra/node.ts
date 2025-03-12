@@ -13,7 +13,9 @@ export class HydraNode extends EventEmitter {
     super()
     this._url = url
     this._status = "DISCONNECTED"
-    this._connection = new Connection(this.url + "?history=no&snapshot-utxo=no")
+    this._connection = new Connection(
+      this.url + "?history=no&snapshot-utxo=no"
+    )
     this._txCircularBuffer = new CircularBuffer(1000)
   }
 
@@ -31,15 +33,15 @@ export class HydraNode extends EventEmitter {
       switch (data.tag) {
         case "Greetings":
           return (data.headStatus as string).toUpperCase() as HydraStatus
-        case "HeadIsInitializing":
+        case "Initializing":
           return "INITIALIZING"
-        case "HeadIsOpen":
+        case "Open":
           return "OPEN"
-        case "HeadIsClosed":
+        case "Closed":
           return "CLOSED"
-        case "ReadyToFanout":
+        case "FanoutPossible":
           return "FANOUT_POSSIBLE"
-        case "HeadIsFinalized":
+        case "Final":
           return "FINAL"
         default:
           return null
@@ -47,7 +49,11 @@ export class HydraNode extends EventEmitter {
     }
 
     let status: HydraStatus | null = null
-    if ((status = getStatus(message)) && status !== null && status !== this._status) {
+    if (
+      (status = getStatus(message)) &&
+      status !== null &&
+      status !== this._status
+    ) {
       this._status = status
       this.emit("status", status)
     }
@@ -82,7 +88,7 @@ export class HydraNode extends EventEmitter {
         }
 
         const message = handleWsResponse(data, "Init", rejectCb)
-        if (message.tag === "HeadIsInitializing") {
+        if (message.tag === "Initializing") {
           this._connection.removeListener("message", resolveCallback)
           resolve()
         }
@@ -116,7 +122,9 @@ export class HydraNode extends EventEmitter {
                 const policyId = key.slice(0, 56)
                 const assetName = key.slice(56)
                 if (!acc[policyId]) acc[policyId] = {}
-                ;(acc[policyId] as Record<string, number>)[assetName] = Number(u.assets[key].valueOf())
+                ;(acc[policyId] as Record<string, number>)[assetName] = Number(
+                  u.assets[key].valueOf()
+                )
               }
               return acc
             }, {} as Record<string, number | Record<string, number>>)
@@ -125,25 +133,29 @@ export class HydraNode extends EventEmitter {
         }, {} as Record<string, any>)
       })
     } else {
-      bodyRequest = JSON.stringify(utxos.reduce((acc, u) => {
-        acc[u.txHash + "#" + u.outputIndex] = {
-          address: u.address,
-          datum: u.datum,
-          datumHash: u.datumHash,
-          inlineDatum: u.datum,
-          value: Object.keys(u.assets).reduce((acc, key) => {
-            if (key == "lovelace") acc[key] = Number(u.assets[key].valueOf())
-            else {
-              const policyId = key.slice(0, 56)
-              const assetName = key.slice(56)
-              if (!acc[policyId]) acc[policyId] = {}
-              ;(acc[policyId] as Record<string, number>)[assetName] = Number(u.assets[key].valueOf())
-            }
-            return acc
-          }, {} as Record<string, number | Record<string, number>>)
-        }
-        return acc
-      }, {} as Record<string, any>))
+      bodyRequest = JSON.stringify(
+        utxos.reduce((acc, u) => {
+          acc[u.txHash + "#" + u.outputIndex] = {
+            address: u.address,
+            datum: u.datum,
+            datumHash: u.datumHash,
+            inlineDatum: u.datum,
+            value: Object.keys(u.assets).reduce((acc, key) => {
+              if (key == "lovelace") acc[key] = Number(u.assets[key].valueOf())
+              else {
+                const policyId = key.slice(0, 56)
+                const assetName = key.slice(56)
+                if (!acc[policyId]) acc[policyId] = {}
+                ;(acc[policyId] as Record<string, number>)[assetName] = Number(
+                  u.assets[key].valueOf()
+                )
+              }
+              return acc
+            }, {} as Record<string, number | Record<string, number>>)
+          }
+          return acc
+        }, {} as Record<string, any>)
+      )
     }
 
     const body = await fetch(this._url.replace("ws", "http") + "/commit", {
@@ -156,20 +168,26 @@ export class HydraNode extends EventEmitter {
   }
 
   async cardanoTransaction(transaction: CardanoTransactionRequest) {
-    const body = await fetch(this._url.replace("ws", "http") + "/cardano-transaction", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(transaction)
-    })
+    const body = await fetch(
+      this._url.replace("ws", "http") + "/cardano-transaction",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(transaction)
+      }
+    )
 
     return await handleHttpResponse(body)
   }
 
   async snapshotUTxO() {
-    const body = await fetch(this._url.replace("ws", "http") + "/snapshot/utxo", {
-      method: "GET",
-      headers: { "Content-Type": "application/json" }
-    })
+    const body = await fetch(
+      this._url.replace("ws", "http") + "/snapshot/utxo",
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" }
+      }
+    )
 
     const response = await handleHttpResponse(body)
 
@@ -197,10 +215,13 @@ export class HydraNode extends EventEmitter {
   }
 
   async protocolParameters() {
-    const body = await fetch(this._url.replace("ws", "http") + "/protocol-parameters", {
-      method: "GET",
-      headers: { "Content-Type": "application/json" }
-    })
+    const body = await fetch(
+      this._url.replace("ws", "http") + "/protocol-parameters",
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" }
+      }
+    )
 
     const response = await handleHttpResponse(body)
 
@@ -223,13 +244,22 @@ export class HydraNode extends EventEmitter {
       minFeeRefScriptCostPerByte: response.minFeeRefScriptCostPerByte,
       costModels: {
         PlutusV1: Object.fromEntries(
-          response.costModels.PlutusV1.map((v: number, i: number) => [i.toString(), v])
+          response.costModels.PlutusV1.map((v: number, i: number) => [
+            i.toString(),
+            v
+          ])
         ),
         PlutusV2: Object.fromEntries(
-          response.costModels.PlutusV2.map((v: number, i: number) => [i.toString(), v])
+          response.costModels.PlutusV2.map((v: number, i: number) => [
+            i.toString(),
+            v
+          ])
         ),
         PlutusV3: Object.fromEntries(
-          response.costModels.PlutusV3.map((v: number, i: number) => [i.toString(), v])
+          response.costModels.PlutusV3.map((v: number, i: number) => [
+            i.toString(),
+            v
+          ])
         )
       }
     }
@@ -240,7 +270,9 @@ export class HydraNode extends EventEmitter {
   async newTx(transaction: CardanoTransactionRequest) {
     this._connection.send(JSON.stringify({ tag: "NewTx", transaction }))
 
-    const transactionHash = CML.hash_transaction(CML.Transaction.from_cbor_hex(transaction.cborHex).body()).to_hex()
+    const transactionHash = CML.hash_transaction(
+      CML.Transaction.from_cbor_hex(transaction.cborHex).body()
+    ).to_hex()
 
     return new Promise<string>((resolve, reject) => {
       const resolveCallback = (data: string) => {
@@ -249,11 +281,22 @@ export class HydraNode extends EventEmitter {
           reject(reason)
         }
 
-        const message = handleWsResponse(data, "NewTx", rejectCb, transactionHash)
-        if (message.tag === "TxValid" && message.transaction.txId === transactionHash) {
+        const message = handleWsResponse(
+          data,
+          "NewTx",
+          rejectCb,
+          transactionHash
+        )
+        if (
+          message.tag === "TxValid" &&
+          message.transaction.txId === transactionHash
+        ) {
           this._connection.removeListener("message", resolveCallback)
           resolve(transactionHash)
-        } else if (message.tag === "TxInvalid" && message.transaction.txId === transactionHash) {
+        } else if (
+          message.tag === "TxInvalid" &&
+          message.transaction.txId === transactionHash
+        ) {
           this._connection.removeListener("message", resolveCallback)
           reject(new Error("Transaction is invalid"))
         }
@@ -278,7 +321,10 @@ export class HydraNode extends EventEmitter {
     this._connection.send(JSON.stringify({ tag: "Close" }))
 
     return new Promise<void>((resolve, reject) => {
-      const interval = setInterval(() => this._connection.send(JSON.stringify({ tag: "Close" })), 60000)
+      const interval = setInterval(
+        () => this._connection.send(JSON.stringify({ tag: "Close" })),
+        60000
+      )
       const resolveCallback = (data: string) => {
         const rejectCb = (reason?: any) => {
           this._connection.removeListener("message", resolveCallback)
@@ -287,7 +333,7 @@ export class HydraNode extends EventEmitter {
         }
 
         const message = handleWsResponse(data, "Close", rejectCb)
-        if (message.tag === "HeadIsClosed") {
+        if (message.tag === "Closed") {
           this._connection.removeListener("message", resolveCallback)
           clearInterval(interval)
           resolve()
@@ -309,7 +355,7 @@ export class HydraNode extends EventEmitter {
         }
 
         const message = handleWsResponse(data, "Fanout", rejectCb, "Fanout")
-        if (message.tag === "HeadIsFinalized") {
+        if (message.tag === "Final") {
           this._connection.removeListener("message", resolveCallback)
           resolve()
         }
@@ -359,22 +405,38 @@ async function handleHttpResponse(response: Response) {
   }
 }
 
-function handleWsResponse(message: any, command: string, reject: (reason?: any) => void, ...args: Array<string>) {
+function handleWsResponse(
+  message: any,
+  command: string,
+  reject: (reason?: any) => void,
+  ...args: Array<string>
+) {
   try {
     message = JSON.parse(message)
 
     if (message.tag === "CommandFailed" && message.clientInput) {
       if (
-        command === "NewTx" && message.clientInput.tag === "NewTx" && message.clientInput.transaction.txId === args[0]
+        command === "NewTx" &&
+        message.clientInput.tag === "NewTx" &&
+        message.clientInput.transaction.txId === args[0]
       ) {
         reject(new Error("Error posting transaction with hash " + args[0]))
       } else if (message.clientInput.tag === command) {
         reject(new Error("Command " + command + " failed"))
       }
-    } else if (message.tag === "PostTxOnChainFailed" && message.postChainTx.tag === command + "Tx") {
+    } else if (
+      message.tag === "PostTxOnChainFailed" &&
+      message.postChainTx.tag === command + "Tx"
+    ) {
       reject(
         new Error(
-          `Error posting transaction for command ${command}./n Error:/n ${JSON.stringify(message.postTxError, null, 2)}`
+          `Error posting transaction for command ${command}./n Error:/n ${
+            JSON.stringify(
+              message.postTxError,
+              null,
+              2
+            )
+          }`
         )
       )
     }
