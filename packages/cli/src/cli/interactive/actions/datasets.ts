@@ -262,11 +262,8 @@ export const processManyTransactionsIntervalAction: CronAction = {
       let participant
       if (isCron) participant = cronConfig.chosenParticipant
       else participant = await selectParticipant(hydraHead)
-      console.log({ participant })
       const privateKey = await getParticipantPrivateKey(participant + "-funds")
-      console.log({ privateKey })
       const initialUTxOs = await selectedUTxOs(hydraHead, participant, isCron)
-      console.log("initialUTxO:", initialUTxOs)
 
       const transactionCount = isCron ? cronConfig.txsCount : await number({
         message: "Number of transactions to generate",
