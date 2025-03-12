@@ -20,3 +20,4 @@ tx-generator
 config.json
 
 cron.log
+cron.sh
