@@ -8,6 +8,7 @@ import type { Ora } from "ora-classic"
 import { chain } from "stream-chain"
 
 import { createRequire } from "module"
+import pTimeout from "p-timeout"
 
 const require = createRequire(import.meta.url)
 const { parser } = require("stream-json")
@@ -60,39 +61,52 @@ export const processDataset = async (
     }
 
     if (hydraHead.status !== "OPEN") {
-      await Promise.all(metadata.map(async (data, index) => {
-        // Check if the initial UTxOs are present in L1
-        const utxosRef: Array<OutRef> = Object.keys(data.initialUTxO).map((txRef) => {
-          return { txHash: txRef.split("#")[0], outputIndex: parseInt(txRef.split("#")[1]) }
+      await Promise.all(
+        metadata.map(async (data, index) => {
+          // Check if the initial UTxOs are present in L1
+          const utxosRef: Array<OutRef> = Object.keys(data.initialUTxO).map(
+            (txRef) => {
+              return {
+                txHash: txRef.split("#")[0],
+                outputIndex: parseInt(txRef.split("#")[1])
+              }
+            }
+          )
+          const utxos = await lucidL1.utxosByOutRef(utxosRef)
+
+          if (utxos.length === 0) {
+            throw new Error("Not initial UTxOs provided in the dataset")
+          }
+
+          if (utxos.length !== utxosRef.length) {
+            throw new Error("Initial UTxOs not found in L1")
+          }
+
+          const participant = hydraHead.participants[index]
+
+          // Create commit
+          const privateKey = CML.PrivateKey.from_normal_bytes(
+            Buffer.from(data.paymentKey.cborHex.substring(4), "hex")
+          )
+          lucidL1.selectWallet.fromPrivateKey(privateKey.to_bech32())
+
+          const node = hydraHead.nodes[participant]
+
+          const response = await node.commit(utxos)
+
+          // Sign commit
+          const signedResponse = await signCommitTransaction(response, lucidL1)
+
+          // Commit to the head
+          await hydraHead.mainNode.cardanoTransaction(signedResponse)
         })
-        const utxos = await lucidL1.utxosByOutRef(utxosRef)
+      )
 
-        if (utxos.length === 0) {
-          throw new Error("Not initial UTxOs provided in the dataset")
-        }
-
-        if (utxos.length !== utxosRef.length) {
-          throw new Error("Initial UTxOs not found in L1")
-        }
-
-        const participant = hydraHead.participants[index]
-
-        // Create commit
-        const privateKey = CML.PrivateKey.from_normal_bytes(Buffer.from(data.paymentKey.cborHex.substring(4), "hex"))
-        lucidL1.selectWallet.fromPrivateKey(privateKey.to_bech32())
-
-        const node = hydraHead.nodes[participant]
-
-        const response = await node.commit(utxos)
-
-        // Sign commit
-        const signedResponse = await signCommitTransaction(response, lucidL1)
-
-        // Commit to the head
-        await hydraHead.mainNode.cardanoTransaction(signedResponse)
-      }))
-
-      for (let i = 0; i < hydraHead.participants.length - metadata.length; i++) {
+      for (
+        let i = 0;
+        i < hydraHead.participants.length - metadata.length;
+        i++
+      ) {
         const index = metadata.length + i
 
         const participant = hydraHead.participants[index]
@@ -108,9 +122,21 @@ export const processDataset = async (
     }
 
     // Wait until the head is open
-    while (hydraHead.status !== "OPEN") {
-      await sleep(1000)
-    }
+    // timeout 5 minutes
+    await pTimeout(
+      new Promise((resolve) => {
+        const interval = setInterval(() => {
+          if (hydraHead.status === "OPEN") {
+            clearInterval(interval)
+            resolve(true)
+          }
+        }, 1000)
+      }),
+      {
+        milliseconds: 5 * 60 * 1000,
+        message: "Couldn't open Hydra Head within 5 minutes"
+      }
+    )
     spinner.info("Head is open")
   }
 
@@ -124,45 +150,56 @@ export const processDataset = async (
     confirmed: 0,
     initTime: Date.now()
   }
-  const lastTxHashes = await Promise.all(metadata.map(async (data, index) => {
-    let lastTxHash = ""
-    const txSequencePipe = chain<any>([
-      fs.createReadStream(`${datasetFile}`),
-      parser(),
-      pick({ filter: RegExp(`clientDatasets.${index}.txSequence`) }),
-      streamArray()
-    ])
+  const lastTxHashes = await Promise.all(
+    metadata.map(async (data, index) => {
+      let lastTxHash = ""
+      const txSequencePipe = chain<any>([
+        fs.createReadStream(`${datasetFile}`),
+        parser(),
+        pick({ filter: RegExp(`clientDatasets.${index}.txSequence`) }),
+        streamArray()
+      ])
 
-    const node = hydraHead.nodes[hydraHead.participants[index]]
-    if (node.status === "DISCONNECTED") {
-      node.connect()
-    }
-
-    while (!txSequencePipe.readableEnded || stats.processed - (stats.confirmed + stats.failed) > 0) {
-      let tx
-      if (stats.processed - (stats.confirmed + stats.failed) > maxBackPreasure) {
-        await sleep(1)
-        continue
+      const node = hydraHead.nodes[hydraHead.participants[index]]
+      if (node.status === "DISCONNECTED") {
+        node.connect()
       }
 
-      if ((tx = txSequencePipe.read()) !== null) {
-        stats.processed++
-        node.newTx(tx.value).then(async (txHash) => {
-          lastTxHash = txHash
-          await node.awaitTx(txHash)
-          stats.confirmed++
-        }).catch(() => stats.failed++)
-        await sleep(1)
-      } else {
-        await sleep(1)
-      }
+      while (
+        !txSequencePipe.readableEnded ||
+        stats.processed - (stats.confirmed + stats.failed) > 0
+      ) {
+        let tx
+        if (
+          stats.processed - (stats.confirmed + stats.failed) >
+            maxBackPreasure
+        ) {
+          await sleep(1)
+          continue
+        }
 
-      spinner.text = `Processed: ${stats.processed}, Confirmed: ${stats.confirmed}, Failed: ${stats.failed}, TPS: ${
-        stats.confirmed / ((Date.now() - stats.initTime) / 1000)
-      }`
-    }
-    return lastTxHash
-  }))
+        if ((tx = txSequencePipe.read()) !== null) {
+          stats.processed++
+          node
+            .newTx(tx.value)
+            .then(async (txHash) => {
+              lastTxHash = txHash
+              await node.awaitTx(txHash)
+              stats.confirmed++
+            })
+            .catch(() => stats.failed++)
+          await sleep(1)
+        } else {
+          await sleep(1)
+        }
+
+        spinner.text = `Processed: ${stats.processed}, Confirmed: ${stats.confirmed}, Failed: ${stats.failed}, TPS: ${
+          stats.confirmed / ((Date.now() - stats.initTime) / 1000)
+        }`
+      }
+      return lastTxHash
+    })
+  )
 
   spinner.info(
     `Processed: ${stats.processed}, Confirmed: ${stats.confirmed}, Failed: ${stats.failed}, TPS: ${

@@ -38,6 +38,9 @@ importers:
       ora-classic:
         specifier: ^5.4.2
         version: 5.4.2
+      p-timeout:
+        specifier: ^6.1.4
+        version: 6.1.4
       stream-chain:
         specifier: ^3.3.2
         version: 3.4.0
@@ -50,7 +53,7 @@ importers:
     devDependencies:
       '@effect/cli':
         specifier: latest
-        version: 0.56.4(@effect/platform@0.77.4(effect@3.13.4))(@effect/printer-ansi@0.40.7(@effect/typeclass@0.31.7(effect@3.13.4))(effect@3.13.4))(@effect/printer@0.40.7(@effect/typeclass@0.31.7(effect@3.13.4))(effect@3.13.4))(effect@3.13.4)
+        version: 0.58.1(@effect/platform@0.79.1(effect@3.13.10))(@effect/printer-ansi@0.40.7(@effect/typeclass@0.31.7(effect@3.13.10))(effect@3.13.10))(@effect/printer@0.40.7(@effect/typeclass@0.31.7(effect@3.13.10))(effect@3.13.10))(effect@3.13.10)
       '@effect/eslint-plugin':
         specifier: ^0.2.0
         version: 0.2.0
@@ -59,13 +62,13 @@ importers:
         version: 0.1.0
       '@effect/platform':
         specifier: latest
-        version: 0.77.4(effect@3.13.4)
+        version: 0.79.1(effect@3.13.10)
       '@effect/platform-node':
         specifier: latest
-        version: 0.73.4(@effect/platform@0.77.4(effect@3.13.4))(effect@3.13.4)
+        version: 0.75.1(@effect/platform@0.79.1(effect@3.13.10))(effect@3.13.10)
       '@effect/vitest':
         specifier: latest
-        version: 0.19.2(effect@3.13.4)(vitest@2.1.8(@types/node@22.12.0))
+        version: 0.19.8(effect@3.13.10)(vitest@2.1.8(@types/node@22.12.0))
       '@eslint/compat':
         specifier: 1.1.1
         version: 1.1.1
@@ -92,7 +95,7 @@ importers:
         version: 8.22.0(eslint@9.19.0)(typescript@5.7.3)
       effect:
         specifier: latest
-        version: 3.13.4
+        version: 3.13.10
       eslint:
         specifier: ^9.10.0
         version: 9.19.0
@@ -394,13 +397,13 @@ packages:
   '@dprint/typescript@0.91.8':
     resolution: {integrity: sha512-tuKn4leCPItox1O4uunHcQF0QllDCvPWklnNQIh2PiWWVtRAGltJJnM4Cwj5AciplosD1Hiz7vAY3ew3crLb3A==}
 
-  '@effect/cli@0.56.4':
-    resolution: {integrity: sha512-1xEqfo4T53gEdwq9gTQkEA8qwTxrV3bP+2X/jmZIDHziQhV29ZB6RhdLHRH336KdPQ8VesQ5fpqsAParTWF+Xw==}
+  '@effect/cli@0.58.1':
+    resolution: {integrity: sha512-0wNUcamT7vcXB+FN+WSt4FHgzXLIOUK4gMrQSw42AwpN/JdA1q10Y7Msmz8pL67RXWAaBldoLiTo75anGlN9tg==}
     peerDependencies:
-      '@effect/platform': ^0.77.4
-      '@effect/printer': ^0.41.4
-      '@effect/printer-ansi': ^0.41.4
-      effect: ^3.13.4
+      '@effect/platform': ^0.79.1
+      '@effect/printer': ^0.41.10
+      '@effect/printer-ansi': ^0.41.10
+      effect: ^3.13.10
 
   '@effect/eslint-plugin@0.2.0':
     resolution: {integrity: sha512-PC/hEDGctYGYIjZyhM6kbD4FyHxLgoYNoQNjGkCXcFEzi71vQc3PJKe2JnCgzcUDvr/Nc2qgTVU4ONYwjHzQGA==}
@@ -408,27 +411,27 @@ packages:
   '@effect/language-service@0.1.0':
     resolution: {integrity: sha512-BnlM8LlaqCAYgdRfxlbR7gXGh/FD1scL1fPgNVJEPoOM08od1jtJz+iKhwfaud8TPnnhZR+TED2h5ynjanLeCQ==}
 
-  '@effect/platform-node-shared@0.27.4':
-    resolution: {integrity: sha512-j1Rk9BQt32c//tG6yRggbrLVYS7cFno/xpKsD7e+uYNYAjLNiSOKDi2Cl8+C4g4zpeMO81+iWQJ8giOQc8Mqpw==}
+  '@effect/platform-node-shared@0.29.1':
+    resolution: {integrity: sha512-UQnYe4cfgMlk0FCx0a/IibF8iJ+o4VlsaDOOZUhhRZiAoht74HFsRN3UALybcP0q/i6GHwKdzK84H/AM8J2ajQ==}
     peerDependencies:
-      '@effect/platform': ^0.77.4
-      effect: ^3.13.4
+      '@effect/platform': ^0.79.1
+      effect: ^3.13.10
 
-  '@effect/platform-node@0.73.4':
-    resolution: {integrity: sha512-mIsOxD3mmbwDjSrsRbxYYCzmSztQSRk4Bu/wej2E3c3pKQq5nwBtob8+H+idC1ugtTyuzJs7lJGSSuACiDjTnA==}
+  '@effect/platform-node@0.75.1':
+    resolution: {integrity: sha512-p+H239RIDpOI8Y0JRt7MW9pqhNZeuJ48C12NMWLv0fUwtQhMf5t6MDcCVNpLpxwcTojbAmVfaHO8Olj4nLGxqA==}
     peerDependencies:
-      '@effect/platform': ^0.77.4
-      effect: ^3.13.4
+      '@effect/platform': ^0.79.1
+      effect: ^3.13.10
 
   '@effect/platform@0.71.7':
     resolution: {integrity: sha512-Ttw8OhbcP1x5cPgcX4VdnDSWrskVdUrf9bO3eDd++TTcQzEiYVu9GZJaSMvz6Yqzfzt+1tIKoKi2jp6dLdJ9dg==}
     peerDependencies:
       effect: ^3.11.10
 
-  '@effect/platform@0.77.4':
-    resolution: {integrity: sha512-3jBDn4bAWqRSKARmoMY2NmMxIMM5Py5BqJdUuYJqPyI6jbz7qkOMwgeaF62rWqiqhQLHLTgU4QL/cPwyZl7mVg==}
+  '@effect/platform@0.79.1':
+    resolution: {integrity: sha512-kCoeBuQrdMuEigcuXk9eDoL9WiFIlLlLZeQZj/LapxC3kgnw/6BViJsRQm+Iqei7Z+zRr930suMpdX75CujCXA==}
     peerDependencies:
-      effect: ^3.13.4
+      effect: ^3.13.10
 
   '@effect/printer-ansi@0.40.7':
     resolution: {integrity: sha512-wKZO1P05+SXjPzr54YxQd9ql4CbODSqKCihn7efStRViwrOzYifDKun7LdxUlwgxA1jqKHGL1+pe89Dm9Vv1DQ==}
@@ -460,10 +463,10 @@ packages:
     peerDependencies:
       effect: ^3.12.7
 
-  '@effect/vitest@0.19.2':
-    resolution: {integrity: sha512-PNCVLlgORQSYHlWBzspnJFSEFFr5My3d9OXjzaPzbVf/iVZkLhcF5zuARq+iXhBDfwcpYp+u2Wg0Totl2BjEUw==}
+  '@effect/vitest@0.19.8':
+    resolution: {integrity: sha512-AB5mhWvKoZuQDhXc4PVgIzdy4xjiJa+Zs1ZyoJVuZA+HaaThlt8mvfOuaAUTKb50M7Zc4Z5hhpD6KShIntfBAA==}
     peerDependencies:
-      effect: ^3.13.4
+      effect: ^3.13.10
       vitest: ^3.0.0
 
   '@emurgo/cardano-message-signing-browser@1.1.0':
@@ -2079,8 +2082,8 @@ packages:
   eastasianwidth@0.2.0:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==}
 
-  effect@3.13.4:
-    resolution: {integrity: sha512-XZgCImyBpONuKdsBRk37JfV7242yxTu8r/TcL5ZELIyqRbMYa+Prr86cz1INxXi7iFXfU0havZkCJGyYp1BsiA==}
+  effect@3.13.10:
+    resolution: {integrity: sha512-f2n51BJJ25G9rb/C1ClkgsVFXH6YTkCHmd6ebpu6cAkwQxfhnfbkVWKgkn3nyW9YnC9z4K8bGohRYaZ+HyWtLg==}
 
   electron-to-chromium@1.5.88:
     resolution: {integrity: sha512-K3C2qf1o+bGzbilTDCTBhTQcMS9KW60yTAaTeeXsfvQuTDDwlokLam/AdqlqcSy9u4UainDgsHV23ksXAOgamw==}
@@ -4276,12 +4279,12 @@ snapshots:
 
   '@dprint/typescript@0.91.8': {}
 
-  '@effect/cli@0.56.4(@effect/platform@0.77.4(effect@3.13.4))(@effect/printer-ansi@0.40.7(@effect/typeclass@0.31.7(effect@3.13.4))(effect@3.13.4))(@effect/printer@0.40.7(@effect/typeclass@0.31.7(effect@3.13.4))(effect@3.13.4))(effect@3.13.4)':
+  '@effect/cli@0.58.1(@effect/platform@0.79.1(effect@3.13.10))(@effect/printer-ansi@0.40.7(@effect/typeclass@0.31.7(effect@3.13.10))(effect@3.13.10))(@effect/printer@0.40.7(@effect/typeclass@0.31.7(effect@3.13.10))(effect@3.13.10))(effect@3.13.10)':
     dependencies:
-      '@effect/platform': 0.77.4(effect@3.13.4)
-      '@effect/printer': 0.40.7(@effect/typeclass@0.31.7(effect@3.13.4))(effect@3.13.4)
-      '@effect/printer-ansi': 0.40.7(@effect/typeclass@0.31.7(effect@3.13.4))(effect@3.13.4)
-      effect: 3.13.4
+      '@effect/platform': 0.79.1(effect@3.13.10)
+      '@effect/printer': 0.40.7(@effect/typeclass@0.31.7(effect@3.13.10))(effect@3.13.10)
+      '@effect/printer-ansi': 0.40.7(@effect/typeclass@0.31.7(effect@3.13.10))(effect@3.13.10)
+      effect: 3.13.10
       ini: 4.1.3
       toml: 3.0.0
       yaml: 2.7.0
@@ -4294,18 +4297,18 @@ snapshots:
 
   '@effect/language-service@0.1.0': {}
 
-  '@effect/platform-node-shared@0.27.4(@effect/platform@0.77.4(effect@3.13.4))(effect@3.13.4)':
+  '@effect/platform-node-shared@0.29.1(@effect/platform@0.79.1(effect@3.13.10))(effect@3.13.10)':
     dependencies:
-      '@effect/platform': 0.77.4(effect@3.13.4)
+      '@effect/platform': 0.79.1(effect@3.13.10)
       '@parcel/watcher': 2.5.1
-      effect: 3.13.4
+      effect: 3.13.10
       multipasta: 0.2.5
 
-  '@effect/platform-node@0.73.4(@effect/platform@0.77.4(effect@3.13.4))(effect@3.13.4)':
+  '@effect/platform-node@0.75.1(@effect/platform@0.79.1(effect@3.13.10))(effect@3.13.10)':
     dependencies:
-      '@effect/platform': 0.77.4(effect@3.13.4)
-      '@effect/platform-node-shared': 0.27.4(@effect/platform@0.77.4(effect@3.13.4))(effect@3.13.4)
-      effect: 3.13.4
+      '@effect/platform': 0.79.1(effect@3.13.10)
+      '@effect/platform-node-shared': 0.29.1(@effect/platform@0.79.1(effect@3.13.10))(effect@3.13.10)
+      effect: 3.13.10
       mime: 3.0.0
       undici: 7.3.0
       ws: 8.18.0
@@ -4313,46 +4316,46 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  '@effect/platform@0.71.7(effect@3.13.4)':
+  '@effect/platform@0.71.7(effect@3.13.10)':
     dependencies:
-      effect: 3.13.4
+      effect: 3.13.10
       find-my-way-ts: 0.1.5
       multipasta: 0.2.5
 
-  '@effect/platform@0.77.4(effect@3.13.4)':
+  '@effect/platform@0.79.1(effect@3.13.10)':
     dependencies:
-      effect: 3.13.4
+      effect: 3.13.10
       find-my-way-ts: 0.1.5
       multipasta: 0.2.5
 
-  '@effect/printer-ansi@0.40.7(@effect/typeclass@0.31.7(effect@3.13.4))(effect@3.13.4)':
+  '@effect/printer-ansi@0.40.7(@effect/typeclass@0.31.7(effect@3.13.10))(effect@3.13.10)':
     dependencies:
-      '@effect/printer': 0.40.7(@effect/typeclass@0.31.7(effect@3.13.4))(effect@3.13.4)
-      '@effect/typeclass': 0.31.7(effect@3.13.4)
-      effect: 3.13.4
+      '@effect/printer': 0.40.7(@effect/typeclass@0.31.7(effect@3.13.10))(effect@3.13.10)
+      '@effect/typeclass': 0.31.7(effect@3.13.10)
+      effect: 3.13.10
 
-  '@effect/printer@0.40.7(@effect/typeclass@0.31.7(effect@3.13.4))(effect@3.13.4)':
+  '@effect/printer@0.40.7(@effect/typeclass@0.31.7(effect@3.13.10))(effect@3.13.10)':
     dependencies:
-      '@effect/typeclass': 0.31.7(effect@3.13.4)
-      effect: 3.13.4
+      '@effect/typeclass': 0.31.7(effect@3.13.10)
+      effect: 3.13.10
 
-  '@effect/schema@0.66.16(effect@3.13.4)(fast-check@3.23.2)':
+  '@effect/schema@0.66.16(effect@3.13.10)(fast-check@3.23.2)':
     dependencies:
-      effect: 3.13.4
+      effect: 3.13.10
       fast-check: 3.23.2
 
-  '@effect/schema@0.68.27(effect@3.13.4)':
+  '@effect/schema@0.68.27(effect@3.13.10)':
     dependencies:
-      effect: 3.13.4
+      effect: 3.13.10
       fast-check: 3.23.2
 
-  '@effect/typeclass@0.31.7(effect@3.13.4)':
+  '@effect/typeclass@0.31.7(effect@3.13.10)':
     dependencies:
-      effect: 3.13.4
+      effect: 3.13.10
 
-  '@effect/vitest@0.19.2(effect@3.13.4)(vitest@2.1.8(@types/node@22.12.0))':
+  '@effect/vitest@0.19.8(effect@3.13.10)(vitest@2.1.8(@types/node@22.12.0))':
     dependencies:
-      effect: 3.13.4
+      effect: 3.13.10
       vitest: 2.1.8(@types/node@22.12.0)
 
   '@emurgo/cardano-message-signing-browser@1.1.0': {}
@@ -4901,7 +4904,7 @@ snapshots:
     dependencies:
       '@anastasia-labs/cardano-multiplatform-lib-browser': 6.0.2-3
       '@anastasia-labs/cardano-multiplatform-lib-nodejs': 6.0.2-3
-      '@effect/schema': 0.66.16(effect@3.13.4)(fast-check@3.23.2)
+      '@effect/schema': 0.66.16(effect@3.13.10)(fast-check@3.23.2)
       '@emurgo/cardano-message-signing-nodejs': 1.1.0
       '@lucid-evolution/core-types': 0.1.21
       '@lucid-evolution/core-utils': 0.1.16
@@ -4911,7 +4914,7 @@ snapshots:
       '@lucid-evolution/uplc': 0.2.18
       '@lucid-evolution/utils': 0.1.63(@harmoniclabs/bytestring@1.0.0)(@harmoniclabs/cbor@1.5.0)(@harmoniclabs/crypto@0.2.5)(@harmoniclabs/pair@1.0.0)
       '@lucid-evolution/wallet': 0.1.69(@harmoniclabs/bytestring@1.0.0)(@harmoniclabs/cbor@1.5.0)(@harmoniclabs/crypto@0.2.5)(@harmoniclabs/pair@1.0.0)
-      effect: 3.13.4
+      effect: 3.13.10
     transitivePeerDependencies:
       - '@harmoniclabs/bytestring'
       - '@harmoniclabs/cbor'
@@ -4924,7 +4927,7 @@ snapshots:
       '@anastasia-labs/cardano-multiplatform-lib-browser': 6.0.2-3
       '@anastasia-labs/cardano-multiplatform-lib-nodejs': 6.0.2-3
       '@cardano-sdk/core': 0.45.2(rxjs@7.8.1)
-      '@effect/schema': 0.66.16(effect@3.13.4)(fast-check@3.23.2)
+      '@effect/schema': 0.66.16(effect@3.13.10)(fast-check@3.23.2)
       '@emurgo/cardano-message-signing-nodejs': 1.1.0
       '@lucid-evolution/core-types': 0.1.22
       '@lucid-evolution/core-utils': 0.1.16
@@ -4934,7 +4937,7 @@ snapshots:
       '@lucid-evolution/uplc': 0.2.19
       '@lucid-evolution/utils': 0.1.64(@harmoniclabs/bytestring@1.0.0)(@harmoniclabs/cbor@1.5.0)(@harmoniclabs/crypto@0.2.5)(@harmoniclabs/pair@1.0.0)
       '@lucid-evolution/wallet': 0.1.70(@harmoniclabs/bytestring@1.0.0)(@harmoniclabs/cbor@1.5.0)(@harmoniclabs/crypto@0.2.5)(@harmoniclabs/pair@1.0.0)
-      effect: 3.13.4
+      effect: 3.13.10
     transitivePeerDependencies:
       - '@dcspark/cardano-multiplatform-lib-asmjs'
       - '@dcspark/cardano-multiplatform-lib-browser'
@@ -4969,13 +4972,13 @@ snapshots:
     dependencies:
       '@anastasia-labs/cardano-multiplatform-lib-browser': 6.0.2-3
       '@anastasia-labs/cardano-multiplatform-lib-nodejs': 6.0.2-3
-      '@effect/platform': 0.71.7(effect@3.13.4)
-      '@effect/schema': 0.68.27(effect@3.13.4)
+      '@effect/platform': 0.71.7(effect@3.13.10)
+      '@effect/schema': 0.68.27(effect@3.13.10)
       '@lucid-evolution/core-types': 0.1.21
       '@lucid-evolution/core-utils': 0.1.16
       '@lucid-evolution/utils': 0.1.63(@harmoniclabs/bytestring@1.0.0)(@harmoniclabs/cbor@1.5.0)(@harmoniclabs/crypto@0.2.5)(@harmoniclabs/pair@1.0.0)
       '@lucid-evolution/wallet': 0.1.69(@harmoniclabs/bytestring@1.0.0)(@harmoniclabs/cbor@1.5.0)(@harmoniclabs/crypto@0.2.5)(@harmoniclabs/pair@1.0.0)
-      effect: 3.13.4
+      effect: 3.13.10
     transitivePeerDependencies:
       - '@harmoniclabs/bytestring'
       - '@harmoniclabs/cbor'
@@ -4986,13 +4989,13 @@ snapshots:
     dependencies:
       '@anastasia-labs/cardano-multiplatform-lib-browser': 6.0.2-3
       '@anastasia-labs/cardano-multiplatform-lib-nodejs': 6.0.2-3
-      '@effect/platform': 0.71.7(effect@3.13.4)
-      '@effect/schema': 0.68.27(effect@3.13.4)
+      '@effect/platform': 0.71.7(effect@3.13.10)
+      '@effect/schema': 0.68.27(effect@3.13.10)
       '@lucid-evolution/core-types': 0.1.22
       '@lucid-evolution/core-utils': 0.1.16
       '@lucid-evolution/utils': 0.1.64(@harmoniclabs/bytestring@1.0.0)(@harmoniclabs/cbor@1.5.0)(@harmoniclabs/crypto@0.2.5)(@harmoniclabs/pair@1.0.0)
       '@lucid-evolution/wallet': 0.1.70(@harmoniclabs/bytestring@1.0.0)(@harmoniclabs/cbor@1.5.0)(@harmoniclabs/crypto@0.2.5)(@harmoniclabs/pair@1.0.0)
-      effect: 3.13.4
+      effect: 3.13.10
     transitivePeerDependencies:
       - '@harmoniclabs/bytestring'
       - '@harmoniclabs/cbor'
@@ -5025,7 +5028,7 @@ snapshots:
     dependencies:
       '@anastasia-labs/cardano-multiplatform-lib-browser': 6.0.2-3
       '@anastasia-labs/cardano-multiplatform-lib-nodejs': 6.0.2-3
-      '@effect/schema': 0.68.27(effect@3.13.4)
+      '@effect/schema': 0.68.27(effect@3.13.10)
       '@harmoniclabs/plutus-data': 1.2.4(@harmoniclabs/bytestring@1.0.0)(@harmoniclabs/cbor@1.5.0)
       '@harmoniclabs/uplc': 1.4.0(@harmoniclabs/bytestring@1.0.0)(@harmoniclabs/cbor@1.5.0)(@harmoniclabs/crypto@0.2.5)(@harmoniclabs/pair@1.0.0)(@harmoniclabs/plutus-data@1.2.4(@harmoniclabs/bytestring@1.0.0)(@harmoniclabs/cbor@1.5.0))
       '@lucid-evolution/core-types': 0.1.21
@@ -5035,7 +5038,7 @@ snapshots:
       '@lucid-evolution/uplc': 0.2.18
       bip39: 3.1.0
       cbor-x: 1.6.0
-      effect: 3.13.4
+      effect: 3.13.10
     transitivePeerDependencies:
       - '@harmoniclabs/bytestring'
       - '@harmoniclabs/cbor'
@@ -5046,7 +5049,7 @@ snapshots:
     dependencies:
       '@anastasia-labs/cardano-multiplatform-lib-browser': 6.0.2-3
       '@anastasia-labs/cardano-multiplatform-lib-nodejs': 6.0.2-3
-      '@effect/schema': 0.68.27(effect@3.13.4)
+      '@effect/schema': 0.68.27(effect@3.13.10)
       '@harmoniclabs/plutus-data': 1.2.4(@harmoniclabs/bytestring@1.0.0)(@harmoniclabs/cbor@1.5.0)
       '@harmoniclabs/uplc': 1.4.0(@harmoniclabs/bytestring@1.0.0)(@harmoniclabs/cbor@1.5.0)(@harmoniclabs/crypto@0.2.5)(@harmoniclabs/pair@1.0.0)(@harmoniclabs/plutus-data@1.2.4(@harmoniclabs/bytestring@1.0.0)(@harmoniclabs/cbor@1.5.0))
       '@lucid-evolution/core-types': 0.1.22
@@ -5056,7 +5059,7 @@ snapshots:
       '@lucid-evolution/uplc': 0.2.19
       bip39: 3.1.0
       cbor-x: 1.6.0
-      effect: 3.13.4
+      effect: 3.13.10
     transitivePeerDependencies:
       - '@harmoniclabs/bytestring'
       - '@harmoniclabs/cbor'
@@ -5987,7 +5990,7 @@ snapshots:
 
   eastasianwidth@0.2.0: {}
 
-  effect@3.13.4:
+  effect@3.13.10:
     dependencies:
       '@standard-schema/spec': 1.0.0
       fast-check: 3.23.2

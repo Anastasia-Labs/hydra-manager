@@ -35,7 +35,9 @@ const txsCountOptions = Options.integer("txs-count").pipe(
   Options.withDescription("Generate x Transactions")
 )
 const utxosCountOptions = Options.integer("utxos-count").pipe(
-  Options.withDescription("Generate x UTxOs, if not defined will generate as much as it can"),
+  Options.withDescription(
+    "Generate x UTxOs, if not defined will generate as much as it can"
+  ),
   Options.optional
 )
 
