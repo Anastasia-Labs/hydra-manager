@@ -68,3 +68,24 @@ You can select file to keep all the logs of background cron job process.
 ```bash
 npx tsx src/bin.ts cron --participant Alice --job many-txs --interval 60 --txs-count 2000 > ./cron.log 2>&1 &
 ```
+
+### Using nohup
+
+Make `cron.sh` file to execute cron command
+
+`cron.sh`
+
+```bash
+#!/bin/bash
+
+# Run the npm script
+npx tsx src/bin.ts cron --participant Alice --job many-txs --interval 60 --txs-count 3000
+```
+
+Run this command
+
+```bash
+nohup ./cron.sh > ./cron.log & # run cron.sh in background
+
+disown -h %1 # remove the job from job table, preventing it from terminating after session ends
+```
