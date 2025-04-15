@@ -47,7 +47,6 @@ function getParticipantAddressFromConfig(isFundsAddress: Boolean, participant: s
   ) ?? (() => {throw new Error("Couldn't find a node with a name: " + participant.toLocaleLowerCase())})();
 
   if (!isFundsAddress){
-
     if (namedNode.nodeWalletSK!.cborHex.startsWith("5820")) {
       const privateKey = CML.PrivateKey.from_normal_bytes(Buffer.from(namedNode.nodeWalletSK!.cborHex.substring(4), "hex"))
       return Buffer.from(privateKey.to_public().to_raw_bytes()).toString("hex")
