@@ -6,16 +6,16 @@ import type { CardanoTransactionRequest, HydraScriptLanguage, HydraUTxOs } from 
 
 export async function displayBalances(participants: Array<string>, lucid: LucidEvolution) {
   for (const participant of participants) {
-    const balance = await getBalance(participant, lucid)
+    const balance = await getBalance(false, participant, lucid)
     console.log(`${participant} node wallet balance: ${balance} ADA`)
-    const fundBalance = await getBalance(participant + "-funds", lucid)
+    const fundBalance = await getBalance(true, participant, lucid)
     console.log(`${participant} funds wallet balance: ${fundBalance} ADA`)
   }
 }
 export async function displayUTxOs(participants: Array<string>, lucid: LucidEvolution) {
   for (const participant of participants) {
-    await showUTxOs(getParticipantAddress(participant), participant)
-    await showUTxOs(getParticipantAddress(participant + "-funds"), participant + "-funds")
+    await showUTxOs(getParticipantAddressFromConfig(false, participant), participant)
+    await showUTxOs(getParticipantAddressFromConfig(true, participant), participant)
   }
 
   async function showUTxOs(address: string, participant: string) {
@@ -34,15 +34,34 @@ export async function printHydraUTxOs(lucid: LucidEvolution) {
   console.log(JSON.stringify(utxoToHydraUTxO(utxos), null, 2))
 }
 
-async function getBalance(participant: string, lucid: LucidEvolution) {
-  const address = getParticipantAddress(participant)
+async function getBalance(isFundsAddress: Boolean, participant: string, lucid: LucidEvolution) {
+  const address = getParticipantAddressFromConfig(isFundsAddress, participant)
   const utxos = await lucid.utxosAt(address)
   const balance = utxos.reduce((acc, utxo) => acc + utxo.assets["lovelace"].valueOf(), 0n) / 1000000n
   return balance
 }
 
-function getParticipantAddress(participant: string) {
-  return readFileSync(`./credentials/${participant.toLocaleLowerCase()}.addr`, { encoding: "utf-8" })
+function getParticipantAddressFromConfig(isFundsAddress: Boolean, participant: string) {
+  const namedNode = config.nodes.find((node) =>
+    (node.name.toLocaleLowerCase().trim() == participant.toLocaleLowerCase().trim())
+  ) ?? (() => {throw new Error("Couldn't find a node with a name: " + participant.toLocaleLowerCase())})();
+
+  if (!isFundsAddress){
+
+    if (namedNode.nodeWalletSK!.cborHex.startsWith("5820")) {
+      const privateKey = CML.PrivateKey.from_normal_bytes(Buffer.from(namedNode.nodeWalletSK!.cborHex.substring(4), "hex"))
+      return Buffer.from(privateKey.to_public().to_raw_bytes()).toString("hex")
+    } else {
+      throw "Wrong nodeWalletSK format provided for: " + participant
+    }
+  } else {
+    if (namedNode.fundsWalletSK!.cborHex.startsWith("5820")) {
+      const privateKey = CML.PrivateKey.from_normal_bytes(Buffer.from(namedNode.fundsWalletSK!.cborHex.substring(4), "hex"))
+      return Buffer.from(privateKey.to_public().to_raw_bytes()).toString("hex")
+    } else {
+      throw "Wrong fundsWalletSK format provided for: " + participant
+    }
+  }
 }
 
 export async function singleOutputBlueprintTx(lucid: LucidEvolution, lovelace: number) {
