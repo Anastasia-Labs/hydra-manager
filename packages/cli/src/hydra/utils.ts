@@ -34,28 +34,34 @@ export async function printHydraUTxOs(lucid: LucidEvolution) {
   console.log(JSON.stringify(utxoToHydraUTxO(utxos), null, 2))
 }
 
-async function getBalance(isFundsAddress: Boolean, participant: string, lucid: LucidEvolution) {
+async function getBalance(isFundsAddress: boolean, participant: string, lucid: LucidEvolution) {
   const address = getParticipantAddressFromConfig(isFundsAddress, participant)
   const utxos = await lucid.utxosAt(address)
   const balance = utxos.reduce((acc, utxo) => acc + utxo.assets["lovelace"].valueOf(), 0n) / 1000000n
   return balance
 }
 
-function getParticipantAddressFromConfig(isFundsAddress: Boolean, participant: string) {
-  const namedNode = config.nodes.find((node) =>
-    (node.name.toLocaleLowerCase().trim() == participant.toLocaleLowerCase().trim())
-  ) ?? (() => {throw new Error("Couldn't find a node with a name: " + participant.toLocaleLowerCase())})();
+function getParticipantAddressFromConfig(isFundsAddress: boolean, participant: string) {
+  const namedNode =
+    config.nodes.find((node) => (node.name.toLocaleLowerCase().trim() == participant.toLocaleLowerCase().trim())) ??
+      (() => {
+        throw new Error("Couldn't find a node with a name: " + participant.toLocaleLowerCase())
+      })()
 
-  if (!isFundsAddress){
+  if (!isFundsAddress) {
     if (namedNode.nodeWalletSK!.cborHex.startsWith("5820")) {
-      const privateKey = CML.PrivateKey.from_normal_bytes(Buffer.from(namedNode.nodeWalletSK!.cborHex.substring(4), "hex"))
+      const privateKey = CML.PrivateKey.from_normal_bytes(
+        Buffer.from(namedNode.nodeWalletSK!.cborHex.substring(4), "hex")
+      )
       return Buffer.from(privateKey.to_public().to_raw_bytes()).toString("hex")
     } else {
       throw "Wrong nodeWalletSK format provided for: " + participant
     }
   } else {
     if (namedNode.fundsWalletSK!.cborHex.startsWith("5820")) {
-      const privateKey = CML.PrivateKey.from_normal_bytes(Buffer.from(namedNode.fundsWalletSK!.cborHex.substring(4), "hex"))
+      const privateKey = CML.PrivateKey.from_normal_bytes(
+        Buffer.from(namedNode.fundsWalletSK!.cborHex.substring(4), "hex")
+      )
       return Buffer.from(privateKey.to_public().to_raw_bytes()).toString("hex")
     } else {
       throw "Wrong fundsWalletSK format provided for: " + participant
