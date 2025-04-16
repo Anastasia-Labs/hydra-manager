@@ -6,10 +6,13 @@ import type { CardanoTransactionRequest, HydraScriptLanguage, HydraUTxOs } from 
 
 export async function displayBalances(participants: Array<string>, lucid: LucidEvolution) {
   for (const participant of participants) {
+    const nodeAddress = getParticipantAddressFromConfig(false, participant)
+    const fundsAddress = getParticipantAddressFromConfig(true, participant)
+
     const balance = await getBalance(false, participant, lucid)
-    console.log(`${participant} node wallet balance: ${balance} ADA`)
+    console.log(`${participant} node wallet balance: ${balance} ADA at ${nodeAddress}`)
     const fundBalance = await getBalance(true, participant, lucid)
-    console.log(`${participant} funds wallet balance: ${fundBalance} ADA`)
+    console.log(`${participant} funds wallet balance: ${fundBalance} ADA at ${fundsAddress}`)
   }
 }
 export async function displayUTxOs(participants: Array<string>, lucid: LucidEvolution) {
@@ -53,7 +56,7 @@ function getParticipantAddressFromConfig(isFundsAddress: boolean, participant: s
       const privateKey = CML.PrivateKey.from_normal_bytes(
         Buffer.from(namedNode.nodeWalletSK!.cborHex.substring(4), "hex")
       )
-      return Buffer.from(privateKey.to_public().to_raw_bytes()).toString("hex")
+      return CML.EnterpriseAddress.new(0, CML.Credential.new_pub_key(privateKey.to_public().hash())).to_address().to_bech32();
     } else {
       throw "Wrong nodeWalletSK format provided for: " + participant
     }
@@ -62,7 +65,7 @@ function getParticipantAddressFromConfig(isFundsAddress: boolean, participant: s
       const privateKey = CML.PrivateKey.from_normal_bytes(
         Buffer.from(namedNode.fundsWalletSK!.cborHex.substring(4), "hex")
       )
-      return Buffer.from(privateKey.to_public().to_raw_bytes()).toString("hex")
+      return CML.EnterpriseAddress.new(0, CML.Credential.new_pub_key(privateKey.to_public().hash())).to_address().to_bech32();
     } else {
       throw "Wrong fundsWalletSK format provided for: " + participant
     }
