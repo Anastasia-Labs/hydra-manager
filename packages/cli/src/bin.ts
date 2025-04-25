@@ -2,13 +2,23 @@
 
 import * as NodeContext from "@effect/platform-node/NodeContext"
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime"
-import { config } from "dotenv"
 import * as Effect from "effect/Effect"
-import { run } from "./Cli.js"
+import { runCommands } from "./Cli.js"
+import { HydraHeadService, HydraHead } from "./hydra/head.js"
+import { Context } from "effect"
+import { getCardanoProvider } from "./utils.js"
+import config from "./cli/config.js"
 
-config()
+const provider = getCardanoProvider()
+const hydraHead = new HydraHead(provider, config.nodes)
 
-run(process.argv).pipe(
+const hydraContext = Context.make(
+  HydraHeadService, {
+    get: hydraHead
+  })
+
+runCommands(process.argv).pipe(
   Effect.provide(NodeContext.layer),
-  NodeRuntime.runMain({ disableErrorReporting: true })
+  Effect.provide(hydraContext),
+  NodeRuntime.runMain({ disableErrorReporting: false })
 )
