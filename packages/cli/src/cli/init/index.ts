@@ -19,6 +19,7 @@ function runAction() : Effect.Effect<void, Error, HydraHeadService> {
     yield* Effect.tryPromise({ try : () => initHeadAction.value(hydraHead),
                                catch: (e) => new Error(`Failed to init head with error: ${e}`)
     })
+    hydraHead.mainNode.disconnect()
   })}
 
 const checkStatus = (

@@ -25,6 +25,10 @@ export class HydraNode extends EventEmitter {
     }
   }
 
+  disconnect() {
+    this._connection.disconnect()
+  }
+
   private async processStatus(data: string) {
     const message = JSON.parse(data)
     function getStatus(data: any): HydraStatus | null {
