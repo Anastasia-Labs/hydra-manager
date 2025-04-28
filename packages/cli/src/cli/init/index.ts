@@ -6,15 +6,8 @@ import {
 } from "../interactive/actions/index.js"
 
 export const initCommand = Command.make("init", {}).pipe(
-  Command.withHandler(handleCommand)
+  Command.withHandler(runAction)
 )
-
-function handleCommand() {
-  return Effect.gen(function* () {
-    yield* runAction()
-    yield* Effect.succeed(0)
-  })
-}
 
 function runAction() : Effect.Effect<void, Error, HydraHeadService> {
   return Effect.gen(function* () {
@@ -23,9 +16,9 @@ function runAction() : Effect.Effect<void, Error, HydraHeadService> {
 
     const policy = Schedule.fixed("1000 millis")
     yield* Effect.retry(checkStatus(hydraHead), policy)
-    yield* Effect.tryPromise(() => initHeadAction.value(hydraHead))
-    console.log("Done runAction")
-    Effect.succeed(0)
+    yield* Effect.tryPromise({ try : () => initHeadAction.value(hydraHead),
+                               catch: (e) => new Error(`Failed to init head with error: ${e}`)
+    })
   })}
 
 const checkStatus = (
