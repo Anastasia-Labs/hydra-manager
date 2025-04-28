@@ -1,0 +1,16 @@
+{
+  "name": "@hydra-manager/cli",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "devDependencies": {
+    "@hydra-manager/typescript-config": "workspace:*"
+  },
+  "dependencies": {
+    "@effect/platform": "^0.80.14",
+    "@effect/platform-node": "^0.77.2",
+    "@lucid-evolution/lucid": "^0.4.27",
+    "effect": "^3.14.14"
+  }
+}

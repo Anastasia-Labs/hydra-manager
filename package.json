@@ -1,5 +1,5 @@
 {
-  "name": "my-turborepo",
+  "name": "hydra-manager",
   "private": true,
   "scripts": {
     "build": "turbo run build",
