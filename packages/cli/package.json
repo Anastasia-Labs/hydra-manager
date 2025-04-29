@@ -5,12 +5,16 @@
   "license": "MIT",
   "type": "module",
   "devDependencies": {
-    "@hydra-manager/typescript-config": "workspace:*"
+    "@hydra-manager/typescript-config": "workspace:*",
+    "@types/ws": "^8.18.1"
   },
   "dependencies": {
     "@effect/platform": "^0.80.14",
     "@effect/platform-node": "^0.77.2",
+    "@lucid-evolution/core-types": "^0.1.22",
     "@lucid-evolution/lucid": "^0.4.27",
-    "effect": "^3.14.14"
+    "@lucid-evolution/utils": "^0.1.65",
+    "effect": "^3.14.14",
+    "ws": "^8.18.1"
   }
 }
