@@ -42,7 +42,7 @@ export class HydraNode extends EventEmitter {
         case "HeadIsClosed":
           return "CLOSED"
         case "ReadyToFanout":
-          return "FANOUT_POSSIBLE"
+          return "FANOUTPOSSIBLE"
         case "HeadIsFinalized":
           return "FINAL"
         default:

@@ -188,7 +188,7 @@ const chooseAction = (
         return processNewLargeUTxOsIntervalAction.value(cronConfig)
       } else throw new Error("Invalid job")
     }
-    case "FANOUT_POSSIBLE":
+    case "FANOUTPOSSIBLE":
       console.log(`\nFanout Hydra Head Manually\n`)
       return "exit"
     default:
