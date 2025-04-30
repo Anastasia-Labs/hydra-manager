@@ -15,5 +15,10 @@ const testLayer = Layer.provide(
   ProjectConfig.testLayer,
 );
 
+const mainLayer = Layer.provide(
+  ProviderEffect.ProviderEffect.DefaultWithoutDependencies,
+  ProjectConfig.ProjectConfig.Default,
+);
+
 const runnable = program.pipe(Effect.provide(testLayer));
 NodeRuntime.runMain(runnable);

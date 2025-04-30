@@ -8,10 +8,10 @@ export class ProviderEffect extends Effect.Service<ProviderEffect>()(
     effect: Effect.gen(function* () {
       const config = yield* ProjectConfig.ProjectConfig;
       const provider: Provider =
-        config.blockfrostProjectId._tag === "Some"
+        ("blockfrostProjectId" in config.providerId)
           ? new Blockfrost(
               `https://cardano-${config.network.toLocaleLowerCase()}.blockfrost.io/api/v0`,
-              config.blockfrostProjectId.value,
+              config.providerId.blockfrostProjectId,
             )
           : new Koios(
               `https://${config.network.toLocaleLowerCase()}.koios.rest/api/v1`,
