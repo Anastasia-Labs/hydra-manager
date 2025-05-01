@@ -29,7 +29,7 @@ const NodeSchema = Schema.Struct({
 const ProjectConfigSchema = Schema.Struct({
   network: Schema.String,
   providerId: CardanoProvider,
-  contractsReferenceTxIds: Schema.Array(Schema.String),
+  contractsReferenceTxIds: Schema.String,
   nodes: Schema.Array(NodeSchema),
 })
 
@@ -42,14 +42,17 @@ export class ProjectConfig extends Effect.Service<ProjectConfig>()(
       const path = yield* Path.Path;
       const fs = yield* FileSystem.FileSystem;
       const configRaw = yield* fs.readFileString(path.join(path.resolve(), "config.json"));
+      const configJSON = Schema.decodeUnknownSync(Schema.parseJson())(configRaw)
+      const config = Schema.decodeUnknown(ProjectConfigSchema)(configJSON)
+      const res : ProjectConfigType = yield* checkConfig(config)
+      return res
       // TODO: add environment configuration lookups
-      const config = Schema.decodeUnknown(ProjectConfigSchema)(configRaw)
-      return yield* checkConfig(config)
     })
   },
 ) {}
 
-function checkConfig(effectConfig: Effect.Effect<ProjectConfigType, Error, never>) : Effect.Effect<ProjectConfigType, Error, never> {
+function checkConfig(effectConfig: Effect.Effect<ProjectConfigType, Error, never>)
+  : Effect.Effect<ProjectConfigType, Error, never> {
   return Effect.gen(function* () {
     const config = yield* effectConfig
 
@@ -94,7 +97,7 @@ export const testLayer = Layer.succeed(
     providerId: {
       blockfrostProjectId: "validID"
     },
-    contractsReferenceTxIds: [""],
+    contractsReferenceTxIds: "",
     nodes: [
       {
         "name": "Alice",
