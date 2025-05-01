@@ -5,8 +5,11 @@
   "license": "MIT",
   "type": "module",
   "devDependencies": {
+    "@effect/vitest": "^0.20.16",
     "@hydra-manager/typescript-config": "workspace:*",
-    "@types/ws": "^8.18.1"
+    "@types/ws": "^8.18.1",
+    "vitest": "^3.1.2",
+    "vitest-websocket-mock": "^0.5.0"
   },
   "dependencies": {
     "@effect/platform": "^0.80.14",
