@@ -1,18 +1,30 @@
-import { Effect, Queue } from "effect";
+import { Effect, Queue, Runtime } from "effect";
 
 export class SocketClient extends Effect.Service<SocketClient>()(
   "SocketClient",
   {
-    effect: Effect.gen(function* () {
+    scoped: Effect.gen(function* () {
       const connectToWebSocket = (url: string) =>
         Effect.gen(function* () {
-          const ws = yield* createAndConnectSocket(url);
+          const socket = yield* createAndConnectSocket(url);
           const messageQueue = yield* Queue.unbounded<Uint8Array>();
 
-          ws.onmessage = (event) => {
-            console.log("WebSocket message received:", event.data);
+          const runtime = yield* Effect.runtime();
+          const runtimeFork = Runtime.runFork(runtime);
+
+          socket.onmessage = (event) => {
             const data = new TextEncoder().encode(event.data);
-            Effect.runFork(messageQueue.offer(data)); // new thread
+            runtimeFork(
+              messageQueue
+                .offer(data)
+                .pipe(
+                  Effect.tap(() =>
+                    Effect.log(
+                      `WebSocket message received and queued: ${event.data}`,
+                    ),
+                  ),
+                ),
+            ); // Send the data to the queue
           };
 
           // Send function with connection state check using standard Error
@@ -21,7 +33,7 @@ export class SocketClient extends Effect.Service<SocketClient>()(
           ) =>
             Effect.gen(function* () {
               // Check if the socket is open before attempting to send
-              if (ws.readyState !== WebSocket.OPEN) {
+              if (socket.readyState !== WebSocket.OPEN) {
                 return yield* Effect.fail(
                   new Error(
                     "Cannot send message: WebSocket is not in OPEN state",
@@ -31,23 +43,26 @@ export class SocketClient extends Effect.Service<SocketClient>()(
 
               return yield* Effect.try({
                 try: () => {
-                  console.log(
-                    "Sending message via WebSocket:",
-                    typeof message === "string" ? message : "(binary data)",
-                  );
-                  ws.send(message);
+                  socket.send(message);
                   return true;
                 },
                 catch: (error) =>
                   new Error(`Failed to send WebSocket message: ${error}`),
-              });
+              }).pipe(
+                Effect.tap(() =>
+                  Effect.log(
+                    `WebSocket message sent: ${typeof message === "string" ? message : "(binary data)"}`,
+                  ),
+                ),
+              );
             });
 
           return {
             messageQueue,
             sendMessage,
-            socket: ws,
-            isConnected: () => Effect.succeed(ws.readyState === WebSocket.OPEN),
+            socket,
+            isConnected: () =>
+              Effect.succeed(socket.readyState === WebSocket.OPEN),
           };
         });
 
@@ -60,57 +75,55 @@ export class SocketClient extends Effect.Service<SocketClient>()(
 
 const createAndConnectSocket = (url: string) =>
   Effect.acquireRelease(
-    // Acquire: Create and connect the WebSocket
-    Effect.async<WebSocket, Error>((resume) => {
-      // console.log(`Attempting to connect to WebSocket at ${url}...`);
-      Effect.runSync(
-        Effect.log(`Attempting to connect to WebSocket at ${url}...`),
-      );
+    Effect.gen(function* () {
+      yield* Effect.log(`Attempting to connect to WebSocket at ${url}...`);
       const socket = new WebSocket(url);
-
-      // Log the current readyState immediately
-      console.log(`Initial WebSocket readyState: ${socket.readyState}`);
-      // 0 = CONNECTING, 1 = OPEN, 2 = CLOSING, 3 = CLOSED
-
       const cleanup = () => {
         socket.onopen = null;
         socket.onerror = null;
         socket.onclose = null;
         socket.onmessage = null;
       };
-
-      socket.onopen = () => {
-        console.log(
-          `WebSocket connection opened! readyState: ${socket.readyState}`,
-        );
-        cleanup();
-        resume(Effect.succeed(socket));
-      };
-
-      socket.onerror = (err) => {
-        console.error(`WebSocket error occurred: ${JSON.stringify(err)}`);
-        cleanup();
-        resume(Effect.fail(new Error(`WebSocket error: ${err}`)));
-      };
-
-      // Add a timeout to detect if the connection is taking too long
-      const connectionTimeout = setTimeout(() => {
-        if (socket.readyState !== WebSocket.OPEN) {
-          console.log(
-            `WebSocket connection timed out. Current readyState: ${socket.readyState}`,
+      // Log the current readyState immediately
+      yield* Effect.log(`Initial WebSocket readyState: ${socket.readyState}`); // 0 = CONNECTING, 1 = OPEN, 2 = CLOSING, 3 = CLOSED
+      const socketConnection = Effect.async<WebSocket, Error>((resume) => {
+        socket.onopen = () => {
+          resume(
+            Effect.succeed(socket).pipe(
+              Effect.tap(() =>
+                Effect.log(
+                  `WebSocket connection opened! readyState: ${socket.readyState}`,
+                ),
+              ),
+            ),
           );
-          cleanup();
-          resume(Effect.fail(new Error("WebSocket connection timed out")));
-        }
-      }, 5000); // 5 second timeout
+        };
 
-      // Check if already open (rare but possible)
-      if (socket.readyState === WebSocket.OPEN) {
-        console.log("WebSocket connection already open!");
-        clearTimeout(connectionTimeout);
-        cleanup();
-        resume(Effect.succeed(socket));
-      }
+        socket.onerror = (err) => {
+          cleanup();
+          resume(Effect.fail(new Error(`WebSocket error: ${url}`)));
+        };
+
+        // Check if already open (rare but possible)
+        if (socket.readyState === WebSocket.OPEN) {
+          resume(
+            Effect.succeed(socket).pipe(
+              Effect.tap(() =>
+                Effect.log(
+                  `WebSocket connection already open! readyState: ${socket.readyState}`,
+                ),
+              ),
+            ),
+          );
+        }
+      });
+      const socketConnectionWithTimeout = yield* socketConnection.pipe(
+        Effect.timeoutFail({
+          duration: 500,
+          onTimeout: () => new Error("WebSocket connection timed out"),
+        }),
+      );
+      return socketConnectionWithTimeout;
     }),
     // Release: Clean up the WebSocket
     (socket) =>
