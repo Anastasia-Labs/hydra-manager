@@ -26,7 +26,7 @@ export class Node extends EventEmitter {
     this._url = url;
     this._status = "DISCONNECTED";
     this.connection = new Connection(
-      this._url + "?history=no&snapshot-utxo=no",
+      this._url + "?history=no&snapshot-utxo=no"
     );
     this.connection.on("message", (data) => this.processStatus(data));
     this.connection.on("message", (data) => this.processConfirmedTx(data));
@@ -148,12 +148,12 @@ export class Node extends EventEmitter {
                   }
                   return acc;
                 },
-                {} as Record<string, number | Record<string, number>>,
+                {} as Record<string, number | Record<string, number>>
               ),
             };
             return acc;
           },
-          {} as Record<string, any>,
+          {} as Record<string, any>
         ),
       });
     } else {
@@ -178,13 +178,13 @@ export class Node extends EventEmitter {
                   }
                   return acc;
                 },
-                {} as Record<string, number | Record<string, number>>,
+                {} as Record<string, number | Record<string, number>>
               ),
             };
             return acc;
           },
-          {} as Record<string, any>,
-        ),
+          {} as Record<string, any>
+        )
       );
     }
 
@@ -195,7 +195,7 @@ export class Node extends EventEmitter {
     });
 
     const txRequest = (await this.handleHttpResponse(
-      body,
+      body
     )) as TransactionRequest;
 
     return txRequest.cborHex as Transaction;
@@ -208,7 +208,7 @@ export class Node extends EventEmitter {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(transaction),
-      },
+      }
     );
 
     return await this.handleHttpResponse(body);
@@ -220,7 +220,7 @@ export class Node extends EventEmitter {
       {
         method: "GET",
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
 
     const response = await this.handleHttpResponse(body);
@@ -244,7 +244,7 @@ export class Node extends EventEmitter {
             }
             return acc;
           },
-          {} as Record<string, bigint>,
+          {} as Record<string, bigint>
         ),
       };
       return utxo;
@@ -257,7 +257,7 @@ export class Node extends EventEmitter {
       {
         method: "GET",
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
 
     const response = await this.handleHttpResponse(body);
@@ -284,19 +284,19 @@ export class Node extends EventEmitter {
           response.costModels.PlutusV1.map((v: number, i: number) => [
             i.toString(),
             v,
-          ]),
+          ])
         ),
         PlutusV2: Object.fromEntries(
           response.costModels.PlutusV2.map((v: number, i: number) => [
             i.toString(),
             v,
-          ]),
+          ])
         ),
         PlutusV3: Object.fromEntries(
           response.costModels.PlutusV3.map((v: number, i: number) => [
             i.toString(),
             v,
-          ]),
+          ])
         ),
       },
     };
@@ -308,7 +308,7 @@ export class Node extends EventEmitter {
     this.connection.send(JSON.stringify({ tag: "NewTx", transaction }));
 
     const transactionHash = CML.hash_transaction(
-      CML.Transaction.from_cbor_hex(transaction.cborHex).body(),
+      CML.Transaction.from_cbor_hex(transaction.cborHex).body()
     ).to_hex();
 
     return new Promise<string>((resolve, reject) => {
@@ -322,7 +322,7 @@ export class Node extends EventEmitter {
           data,
           "NewTx",
           rejectCb,
-          transactionHash,
+          transactionHash
         );
         if (
           message.tag === "TxValid" &&
@@ -360,7 +360,7 @@ export class Node extends EventEmitter {
     return new Promise<void>((resolve, reject) => {
       const interval = setInterval(
         () => this.connection.send(JSON.stringify({ tag: "Close" })),
-        60000,
+        60000
       );
       const resolveCallback = (data: string) => {
         const rejectCb = (reason?: any) => {
@@ -395,7 +395,7 @@ export class Node extends EventEmitter {
           data,
           "Fanout",
           rejectCb,
-          "Fanout",
+          "Fanout"
         );
         if (message.tag === "HeadIsFinalized") {
           this.connection.removeListener("message", resolveCallback);
@@ -453,8 +453,8 @@ export class Node extends EventEmitter {
       ) {
         reject(
           new Error(
-            `Error posting transaction for command ${command}./n Error:/n ${JSON.stringify(message.postTxError, null, 2)}`,
-          ),
+            `Error posting transaction for command ${command}./n Error:/n ${JSON.stringify(message.postTxError, null, 2)}`
+          )
         );
       }
 
