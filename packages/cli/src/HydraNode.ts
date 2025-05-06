@@ -291,5 +291,5 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       snapshotUTxO,
       getStatus: () => status,
     };
-  }).pipe(Effect.provide(FetchHttpClient.layer)),
+  })
 }) {}
