@@ -19,7 +19,7 @@ const makeServer = Effect.acquireRelease(
 );
 
 describe("SocketService", () => {
-  it.scoped("should send messages to the server", () =>
+  it.scoped.only("should send messages to the server", () =>
     Effect.gen(function* () {
       const server = yield* makeServer;
       const socketService = yield* SocketService;
@@ -31,12 +31,8 @@ describe("SocketService", () => {
 
       // Verify the server received the message
       const receivedMessage = yield* Effect.promise(() => server.nextMessage);
-      yield* Effect.log(
-        `Message received by server: ${new TextDecoder().decode(receivedMessage as Uint8Array)}`,
-      );
-      expect(new TextDecoder().decode(receivedMessage as Uint8Array)).toBe(
-        "Hello from client!",
-      );
+      yield* Effect.log(`Message received by server: ${receivedMessage}`);
+      expect(receivedMessage).toBe("Hello from client!");
     }).pipe(
       Effect.provide(SocketService.Default),
       Effect.provide(Socket.layerWebSocketConstructorGlobal),
@@ -44,7 +40,7 @@ describe("SocketService", () => {
     ),
   );
 
-  it.scoped("should handle messages from the server", () =>
+  it.scoped.only("should handle messages from the server", () =>
     Effect.gen(function* () {
       const server = yield* makeServer;
       const socketService = yield* SocketService;
@@ -70,7 +66,7 @@ describe("SocketService", () => {
     ),
   );
 
-  it.scoped("should handle binary data", () =>
+  it.scoped.only("should handle binary data", () =>
     Effect.gen(function* () {
       const server = yield* makeServer;
       const socketService = yield* SocketService;
@@ -84,11 +80,11 @@ describe("SocketService", () => {
       yield* connection.sendMessage(binaryData);
 
       // Verify the server received the binary data
-      const receivedData = yield* Effect.promise(() => server.nextMessage);
-      yield* Effect.log(
-        `Binary data received by server: ${new Uint8Array(receivedData as ArrayBuffer)}`,
-      );
-      expect(new Uint8Array(receivedData as ArrayBuffer)).toEqual(binaryData);
+      const receivedData = (yield* Effect.promise(
+        () => server.nextMessage,
+      )) as Uint8Array;
+      yield* Effect.log(`Binary data received by server: ${receivedData}`);
+      expect(receivedData).toEqual(binaryData);
 
       // Test receiving binary data from server
       server.send(binaryData.buffer); // Send as ArrayBuffer to ensure binary transmission
@@ -102,7 +98,7 @@ describe("SocketService", () => {
     ),
   );
 
-  it.scoped("should handle multiple connections", () =>
+  it.scoped.only("should handle multiple connections", () =>
     Effect.gen(function* () {
       const server = yield* makeServer;
       const socketService = yield* SocketService;
@@ -117,13 +113,14 @@ describe("SocketService", () => {
       expect(server.server.clients().length).toEqual(2);
 
       // Verify server received both messages
-      const message1 = yield* Effect.promise(() => server.nextMessage);
-      const message2 = yield* Effect.promise(() => server.nextMessage);
+      const message1 = (yield* Effect.promise(
+        () => server.nextMessage,
+      )) as string;
+      const message2 = (yield* Effect.promise(
+        () => server.nextMessage,
+      )) as string;
 
-      const decodedMessages = [
-        new TextDecoder().decode(message1 as Uint8Array),
-        new TextDecoder().decode(message2 as Uint8Array),
-      ].sort();
+      const decodedMessages = [message1, message2].sort();
 
       expect(decodedMessages).toEqual(
         ["Message from connection 1", "Message from connection 2"].sort(),
@@ -148,7 +145,7 @@ describe("SocketService", () => {
     ),
   );
 
-  it.scoped("should handle multiple messages from server", () =>
+  it.scoped.only("should handle multiple messages from server", () =>
     Effect.gen(function* () {
       const server = yield* makeServer;
       const socketService = yield* SocketService;
@@ -189,7 +186,7 @@ describe("SocketService", () => {
     ),
   );
 
-  it.scoped("should handle connection errors", () =>
+  it.scoped.only("should handle connection errors", () =>
     Effect.gen(function* () {
       // Use a non-existent URL to trigger an error
       const invalidUrl = "ws://non-existent-server:9999";
@@ -214,7 +211,7 @@ describe("SocketService", () => {
     ),
   );
 
-  it.scoped("should close connections properly", () =>
+  it.scoped.only("should close connections properly", () =>
     Effect.gen(function* () {
       const server = yield* makeServer;
       const socketService = yield* SocketService;
@@ -223,10 +220,10 @@ describe("SocketService", () => {
 
       // Send a message to verify the connection is working
       yield* connection.sendMessage("Test message");
-      const receivedMessage = yield* Effect.promise(() => server.nextMessage);
-      expect(new TextDecoder().decode(receivedMessage as Uint8Array)).toBe(
-        "Test message",
-      );
+      const receivedMessage = (yield* Effect.promise(
+        () => server.nextMessage,
+      )) as string;
+      expect(receivedMessage).toBe("Test message");
 
       // When the scope closes, the connection should be closed automatically
       // We can test this by checking server clients before and after releasing the scope
