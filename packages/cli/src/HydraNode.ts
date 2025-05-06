@@ -26,10 +26,10 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
     const nodeNameConf = yield* NodeNameConfig
     const nodeName = yield* nodeNameConf.name
     const config = yield* ProjectConfig
-    const node = yield* config.nodeConfigByName(nodeName)
+    const nodeConfig = yield* config.nodeConfigByName(nodeName)
 
     const connection = yield* SocketClient.createWebSocketConnection(
-      node.url,
+      nodeConfig.url,
     );
 
     let status: Status = "DISCONNECTED";
