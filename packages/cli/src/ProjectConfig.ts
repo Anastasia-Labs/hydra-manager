@@ -1,5 +1,5 @@
 import { Path, FileSystem } from "@effect/platform";
-import { Config, Effect, JSONSchema, Layer, Schema } from "effect";
+import { Config, Context, Effect, JSONSchema, Layer, Schema } from "effect";
 import * as Option from "effect/Option";
 
 const CardanoProvider = Schema.Union(
@@ -34,6 +34,12 @@ const ProjectConfigSchema = Schema.Struct({
 })
 
 type ProjectConfigType = Schema.Schema.Type<typeof ProjectConfigSchema>
+type NodeConfigType = Schema.Schema.Type<typeof NodeSchema>
+
+export class NodeNameConfig extends Context.Tag("NodeNameConfig")<
+  NodeNameConfig,
+  { readonly name: Effect.Effect<string> }
+>() {}
 
 export class ProjectConfig extends Effect.Service<ProjectConfig>()(
   "ProjectConfig",
@@ -43,9 +49,21 @@ export class ProjectConfig extends Effect.Service<ProjectConfig>()(
       const fs = yield* FileSystem.FileSystem;
       const configRaw = yield* fs.readFileString(path.join(path.resolve(), "config.json"));
       const configJSON = Schema.decodeUnknownSync(Schema.parseJson())(configRaw)
-      const config = Schema.decodeUnknown(ProjectConfigSchema)(configJSON)
-      const res : ProjectConfigType = yield* checkConfig(config)
-      return res
+      const configEffect = Schema.decodeUnknown(ProjectConfigSchema)(configJSON)
+      const projectConfig : ProjectConfigType = yield* checkConfig(configEffect)
+
+      const nodeConfigByName = (nodeName: String) => (
+        Effect.gen(function* () {
+          const mbNode = projectConfig.nodes.find((node) => node.name === nodeName)
+          if (mbNode !== undefined) {
+            const nodeConf : NodeConfigType = mbNode
+            return yield* Effect.succeed(nodeConf)
+          }
+          return yield* Effect.fail(new Error(`Failed to produce node config for node with a name ${nodeName}`))
+        })
+      )
+
+      return { projectConfig, nodeConfigByName }
       // TODO: add environment configuration lookups
     })
   },
@@ -88,6 +106,13 @@ function checkConfig(effectConfig: Effect.Effect<ProjectConfigType, Error, never
     return config
   })
 }
+
+export const testNodeNameConfig = Layer.succeed(
+  NodeNameConfig,
+  {
+    name: Effect.succeed("Alice")
+  }
+)
 
 // Simulate a project config for testing purposes
 export const testLayer = Layer.succeed(

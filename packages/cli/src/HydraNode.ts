@@ -3,6 +3,7 @@ import * as SocketClient from "./Socket.js";
 import * as HydraMessage from "./HydraMessage.js";
 import { ParseError } from "effect/ParseResult";
 import { SocketError } from "@effect/platform/Socket";
+import { NodeNameConfig, ProjectConfig,  } from "./ProjectConfig.js";
 
 type Status =
   | "DISCONNECTED"
@@ -22,9 +23,13 @@ type TransactionRequest = {
 
 export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
   effect: Effect.gen(function* () {
-    //TODO: Replace with actual server URL from config context
+    const nodeNameConf = yield* NodeNameConfig
+    const nodeName = yield* nodeNameConf.name
+    const config = yield* ProjectConfig
+    const node = yield* config.nodeConfigByName(nodeName)
+
     const connection = yield* SocketClient.createWebSocketConnection(
-      "ws://localhost:1234",
+      node.url,
     );
 
     let status: Status = "DISCONNECTED";
