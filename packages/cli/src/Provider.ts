@@ -51,6 +51,7 @@ export class ProviderEffect extends Effect.Service<ProviderEffect>()(
         awaitTx,
         submitTx,
         evaluateTx,
+        provider,
       } as const;
     }),
     dependencies: [ProjectConfig.ProjectConfig.Default],
