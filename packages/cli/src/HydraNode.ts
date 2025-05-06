@@ -2,6 +2,7 @@ import { Effect, Either, pipe, Schema } from "effect";
 import * as SocketClient from "./Socket.js";
 import * as HydraMessage from "./HydraMessage.js";
 import { ParseError } from "effect/ParseResult";
+import { SocketError } from "@effect/platform/Socket";
 
 type Status =
   | "DISCONNECTED"
@@ -28,25 +29,28 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
 
     let status: Status = "DISCONNECTED";
 
-    const initialize = Effect.gen(function* () {
-      yield* connection.sendMessage(JSON.stringify({ tag: "Init" }));
-      const response = new TextDecoder().decode(
-        yield* connection.messages.take,
-      );
-      const hydraMessage: HydraMessage.InitializingMessage =
-        yield* Schema.decode(
-          Schema.parseJson(HydraMessage.InitializingMessageSchema),
-        )(response);
-      status = "INITIALIZING";
-    }).pipe(Effect.scoped);
+    const initialize: Effect.Effect<void, ParseError | SocketError> =
+      Effect.gen(function* () {
+        yield* connection.sendMessage(JSON.stringify({ tag: "Init" }));
+        const response: string = new TextDecoder().decode(
+          yield* connection.messages.take,
+        );
+        const hydraMessage: HydraMessage.InitializingMessage =
+          yield* Schema.decode(
+            Schema.parseJson(HydraMessage.InitializingMessageSchema),
+          )(response);
+        status = "INITIALIZING";
+      }).pipe(Effect.scoped);
 
-    const newTx = (transaction: TransactionRequest) =>
+    const newTx = (
+      transaction: TransactionRequest,
+    ): Effect.Effect<string, SocketError | Error> =>
       Effect.gen(function* () {
         yield* connection.sendMessage(
           JSON.stringify({ tag: "NewTx", transaction }),
         );
 
-        const response = new TextDecoder().decode(
+        const response: string = new TextDecoder().decode(
           yield* connection.messages.take,
         );
 
