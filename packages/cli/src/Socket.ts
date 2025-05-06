@@ -19,44 +19,23 @@ export const createWebSocketConnection = (url: string) =>
         .run((data) => {
           return Effect.gen(function* () {
             yield* Effect.log(
-              `WebSocket message received in handler: ${data}, type ${typeof data}`,
+              `WebSocket message received in handler: ${data}, length ${data.length}`,
             );
-
-            // Ensure we're handling binary data correctly - data should already be Uint8Array
-            // but we need to ensure we don't accidentally convert it to string
-            const binaryData =
-              data instanceof Uint8Array
-                ? data
-                : typeof data === "string"
-                  ? new TextEncoder().encode(data)
-                  : new Uint8Array(data);
-
-            return yield* messages.offer(binaryData);
+            return yield* messages.offer(data);
           });
         })
         .pipe(
-          Effect.tap(() =>
-            Effect.log("WebSocket message received and queued"),
-          ),
+          Effect.tap(() => Effect.log("WebSocket message received and queued")),
         ),
     );
     yield* Effect.log("WebSocket handler fiber started");
 
     /**
      * Send data through the WebSocket
-     * @param data Data to send (string, ArrayBuffer, or ArrayBufferView)
      */
-    const sendMessage = (data: string | ArrayBuffer | ArrayBufferView) =>
+    const sendMessage = (chunk: Uint8Array | string | Socket.CloseEvent) =>
       socket.writer.pipe(
-        Effect.flatMap((write) =>
-          write(
-            typeof data === "string"
-              ? new TextEncoder().encode(data)
-              : new Uint8Array(
-                  data instanceof ArrayBuffer ? data : data.buffer,
-                ),
-          ),
-        ),
+        Effect.flatMap((write) => write(chunk)),
         Effect.catchAll((error) =>
           Effect.logError(`Failed to send message: ${error}`).pipe(
             Effect.flatMap(() => Effect.fail(error)),

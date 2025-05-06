@@ -2,7 +2,7 @@ import { Effect } from "effect";
 
 /**
  * Standard error handling utility for Effect wrappers
- * 
+ *
  * @param error The error to handle
  * @param context Context information about the operation (e.g., "connecting to node")
  * @param specificErrorHandlers Optional specific error handlers for known error types
@@ -12,9 +12,9 @@ export function handleEffectError(
   error: unknown,
   context: string,
   specificErrorHandlers?: {
-    condition: (error: Error) => boolean,
-    message: string
-  }[]
+    condition: (error: Error) => boolean;
+    message: string;
+  }[],
 ): Error {
   if (error instanceof Error) {
     // Check for specific error conditions first
@@ -42,7 +42,7 @@ export function handleEffectError(
 
 /**
  * Creates a standardized tryPromise with error handling
- * 
+ *
  * @param promiseFn The promise-returning function to execute
  * @param context Context information about the operation
  * @param specificErrorHandlers Optional specific error handlers for known error types
@@ -52,19 +52,19 @@ export function tryPromiseWithErrorHandling<T>(
   promiseFn: () => Promise<T>,
   context: string,
   specificErrorHandlers?: {
-    condition: (error: Error) => boolean,
-    message: string
-  }[]
+    condition: (error: Error) => boolean;
+    message: string;
+  }[],
 ) {
   return Effect.tryPromise({
     try: promiseFn,
-    catch: (error) => handleEffectError(error, context, specificErrorHandlers)
+    catch: (error) => handleEffectError(error, context, specificErrorHandlers),
   });
 }
 
 /**
  * Creates a standardized try with error handling for synchronous functions
- * 
+ *
  * @param tryFn The synchronous function to execute
  * @param context Context information about the operation
  * @param specificErrorHandlers Optional specific error handlers for known error types
@@ -74,12 +74,12 @@ export function tryWithErrorHandling<T>(
   tryFn: () => T,
   context: string,
   specificErrorHandlers?: {
-    condition: (error: Error) => boolean,
-    message: string
-  }[]
+    condition: (error: Error) => boolean;
+    message: string;
+  }[],
 ) {
   return Effect.try({
     try: tryFn,
-    catch: (error) => handleEffectError(error, context, specificErrorHandlers)
+    catch: (error) => handleEffectError(error, context, specificErrorHandlers),
   });
 }
