@@ -32,7 +32,6 @@ export const createWebSocketConnection = (url: string) =>
 
     /**
      * Send data through the WebSocket
-     * @param data Data to send (string, ArrayBuffer, or ArrayBufferView)
      */
     const sendMessage = (chunk: Uint8Array | string | Socket.CloseEvent) =>
       socket.writer.pipe(
