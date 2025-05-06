@@ -27,18 +27,23 @@ const NodeSchema = Schema.Struct({
 })
 
 const ProjectConfigSchema = Schema.Struct({
-  network: Schema.String,
+  network: Schema.Literal("Preprod", "Preview", "Mainnet", "Custom"),
   providerId: CardanoProvider,
   contractsReferenceTxIds: Schema.String,
   nodes: Schema.Array(NodeSchema),
 })
 
-type ProjectConfigType = Schema.Schema.Type<typeof ProjectConfigSchema>
-type NodeConfigType = Schema.Schema.Type<typeof NodeSchema>
+export type ProjectConfigType = Schema.Schema.Type<typeof ProjectConfigSchema>
+export type NodeConfigType = Schema.Schema.Type<typeof NodeSchema>
 
 export class NodeNameConfig extends Context.Tag("NodeNameConfig")<
   NodeNameConfig,
   { readonly name: Effect.Effect<string> }
+>() {}
+
+export class NodeConfig extends Context.Tag("NodeConfig")<
+  NodeConfig,
+  { readonly nodeConfig: Effect.Effect<NodeConfigType> }
 >() {}
 
 export class ProjectConfig extends Effect.Service<ProjectConfig>()(
@@ -118,7 +123,7 @@ export const testNodeNameConfig = Layer.succeed(
 export const testLayer = Layer.succeed(
   ProjectConfig,
   ProjectConfig.make({
-    network: "preprod",
+    network: "Preprod",
     providerId: {
       blockfrostProjectId: "validID"
     },
