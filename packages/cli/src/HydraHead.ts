@@ -2,8 +2,8 @@ import type { LucidEvolution, Provider } from "@lucid-evolution/lucid"
 import { Lucid, Network } from "@lucid-evolution/lucid"
 import { EventEmitter } from "node:events"
 
-import { Context, Effect } from "effect"
-import { NodeConfigType, NodeNameConfig, ProjectConfig } from "./ProjectConfig.js";
+import { Context, Effect, Layer } from "effect"
+import { NodeConfig, NodeConfigType, NodeNameConfig, ProjectConfig } from "./ProjectConfig.js";
 import { ProviderEffect } from "./Provider.js";
 import { HydraNode } from "./HydraNode.js";
 
@@ -25,10 +25,17 @@ export class HydraHead extends Effect.Service<HydraHead>()(
 
                 const nodeNames = config.projectConfig.nodes.map((node) => node.name)
                 const nodeConfigs : NodeConfigType[] = nodeNames.map((name) => yield* config.nodeConfigByName(name))
+                const nodeConfigLayers = nodeConfigs.map((conf) => Layer.succeed(
+                    NodeConfig,
+                    {
+                      nodeConfig: Effect.succeed(conf)
+                    }
+                ));
+
                 const hydra_nodes = yield* Effect.forEach(
-                    nodeConfigs,
-                    (config) => HydraNode.pipe(Effect.provide(config))
-                  );
+                    nodeConfigLayers,
+                    (l) => HydraNode.pipe(Effect.provide(l))
+                );
 
                 const res : HydraHeadType = { provider_lucid_L1: provider_lucid_L1 }
                 return res

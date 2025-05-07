@@ -103,6 +103,8 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
     const connection = yield* SocketClient.createWebSocketConnection(
       nodeConfig.url,
     );
+
+    const httpServerUrl = nodeConfig.url.replace("ws://", "http://");
     const httpClient = yield* HttpClient.HttpClient;
 
     let status: Status = "DISCONNECTED";
