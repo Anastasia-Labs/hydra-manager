@@ -3,7 +3,7 @@ import * as SocketClient from "./Socket.js";
 import * as HydraMessage from "./HydraMessage.js";
 import { ParseError } from "effect/ParseResult";
 import { SocketError } from "@effect/platform/Socket";
-import { NodeConfig, NodeNameConfig, ProjectConfig } from "./ProjectConfig.js";
+import { NodeConfig } from "./ProjectConfig.js";
 import {
   FetchHttpClient,
   HttpClient,

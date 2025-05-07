@@ -3,12 +3,7 @@ import { Lucid, Network } from "@lucid-evolution/lucid";
 import { EventEmitter } from "node:events";
 
 import { Context, Effect, Layer } from "effect";
-import {
-  NodeConfig,
-  NodeConfigType,
-  NodeNameConfig,
-  ProjectConfig,
-} from "./ProjectConfig.js";
+import { NodeConfig, NodeConfigType, ProjectConfig } from "./ProjectConfig.js";
 import { ProviderEffect } from "./Provider.js";
 import { HydraNode } from "./HydraNode.js";
 

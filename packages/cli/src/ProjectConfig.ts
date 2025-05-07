@@ -36,11 +36,6 @@ const ProjectConfigSchema = Schema.Struct({
 export type ProjectConfigType = Schema.Schema.Type<typeof ProjectConfigSchema>;
 export type NodeConfigType = Schema.Schema.Type<typeof NodeSchema>;
 
-export class NodeNameConfig extends Context.Tag("NodeNameConfig")<
-  NodeNameConfig,
-  { readonly name: Effect.Effect<string> }
->() {}
-
 export class NodeConfig extends Context.Tag("NodeConfig")<
   NodeConfig,
   { readonly nodeConfig: Effect.Effect<NodeConfigType> }
@@ -145,21 +140,40 @@ function checkConfig(
   });
 }
 
-export const testNodeNameConfig = Layer.succeed(NodeNameConfig, {
-  name: Effect.succeed("Alice"),
-});
-
 // Simulate a project config for testing purposes
 export const testLayer = Layer.succeed(
   ProjectConfig,
   ProjectConfig.make({
-    network: "Preprod",
-    providerId: {
-      blockfrostProjectId: "validID",
+    projectConfig: {
+      network: "Preprod",
+      providerId: {
+        blockfrostProjectId: "validID",
+      },
+      contractsReferenceTxIds: "",
+      nodes: [
+        {
+          name: "Alice",
+          url: "ws://localhost:4001",
+          fundsWalletSK: {
+            type: "PaymentSigningKeyShelley_ed25519",
+            description: "Payment Signing Key",
+            cborHex: "5820...",
+          },
+          nodeWalletSK: {
+            type: "PaymentSigningKeyShelley_ed25519",
+            description: "Payment Signing Key",
+            cborHex: "5820...",
+          },
+          hydraSK: {
+            type: "HydraSigningKey_ed25519",
+            description: "",
+            cborHex: "5820...",
+          },
+        },
+      ],
     },
-    contractsReferenceTxIds: "",
-    nodes: [
-      {
+    nodeConfigByName: (nodeName) =>
+      Effect.succeed({
         name: "Alice",
         url: "ws://localhost:4001",
         fundsWalletSK: {
@@ -177,7 +191,6 @@ export const testLayer = Layer.succeed(
           description: "",
           cborHex: "5820...",
         },
-      },
-    ],
+      }),
   }),
 );
