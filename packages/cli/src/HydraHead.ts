@@ -1,14 +1,16 @@
 import type { LucidEvolution, Provider } from "@lucid-evolution/lucid";
 import { Lucid, Network } from "@lucid-evolution/lucid";
-import { EventEmitter } from "node:events";
 
 import { Context, Effect, Layer } from "effect";
 import { NodeConfig, NodeConfigType, ProjectConfig } from "./ProjectConfig.js";
 import { ProviderEffect } from "./Provider.js";
 import { HydraNode } from "./HydraNode.js";
+import { HydraWrapper } from "./lucid/HydraWrapper.js";
 
 type HydraHeadType = {
   provider_lucid_L1: LucidEvolution;
+  hydra_nodes: HydraNode[];
+  node_lucid_L2: (nodeName: string) => HydraWrapper;
 };
 
 export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
@@ -36,7 +38,31 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       HydraNode.pipe(Effect.provide(l)),
     );
 
-    const res: HydraHeadType = { provider_lucid_L1: provider_lucid_L1 };
-    return res;
+    const node_lucid_L2 = (nodeName: String) =>
+        yield* Effect.gen(function* () {
+        const mbNode = config.projectConfig.nodes.find(
+          (node) => node.name === nodeName,
+        );
+        if (mbNode !== undefined) {
+          const nodeConf: NodeConfigType = mbNode;
+          const hydra = new HydraWrapper(
+            nodeConf.url,
+            config.projectConfig.network,
+          );
+          return yield* Effect.succeed(hydra);
+        }
+        return yield* Effect.fail(
+          new Error(
+            `Failed to find config for node with a name ${nodeName}`,
+          ),
+        );
+      });
+
+    const hydra_head: HydraHeadType = {
+      provider_lucid_L1: provider_lucid_L1,
+      hydra_nodes: hydra_nodes,
+      node_lucid_L2,
+    };
+    return hydra_head;
   }),
 }) {}
