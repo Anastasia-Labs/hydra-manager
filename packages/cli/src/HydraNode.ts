@@ -3,7 +3,7 @@ import * as SocketClient from "./Socket.js";
 import * as HydraMessage from "./HydraMessage.js";
 import { ParseError } from "effect/ParseResult";
 import { SocketError } from "@effect/platform/Socket";
-import { NodeConfig, NodeNameConfig, ProjectConfig,  } from "./ProjectConfig.js";
+import { NodeConfig, NodeNameConfig, ProjectConfig } from "./ProjectConfig.js";
 import {
   FetchHttpClient,
   HttpClient,
@@ -97,8 +97,8 @@ type UTxOResponseType = typeof UTxOResponseSchema.Type;
 
 export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
   effect: Effect.gen(function* () {
-    const nodeConfigEffect = yield* NodeConfig
-    const nodeConfig = yield* nodeConfigEffect.nodeConfig
+    const nodeConfigEffect = yield* NodeConfig;
+    const nodeConfig = yield* nodeConfigEffect.nodeConfig;
 
     const connection = yield* SocketClient.createWebSocketConnection(
       nodeConfig.url,
@@ -295,5 +295,5 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       snapshotUTxO,
       getStatus: () => status,
     };
-  })
+  }),
 }) {}
