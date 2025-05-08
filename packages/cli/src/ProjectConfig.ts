@@ -30,6 +30,7 @@ const ProjectConfigSchema = Schema.Struct({
   network: Schema.Literal("Preprod", "Preview", "Mainnet", "Custom"),
   providerId: CardanoProvider,
   contractsReferenceTxIds: Schema.String,
+  mainNodeName: Schema.String,
   nodes: Schema.Array(NodeSchema),
 });
 
@@ -150,6 +151,7 @@ export const testLayer = Layer.succeed(
         blockfrostProjectId: "validID",
       },
       contractsReferenceTxIds: "",
+      mainNodeName: "Alice",
       nodes: [
         {
           name: "Alice",

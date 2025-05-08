@@ -9,6 +9,7 @@ import { HydraWrapper } from "./lucid/HydraWrapper.js";
 
 type HydraHeadType = {
   provider_lucid_L1: LucidEvolution;
+  main_node: HydraNode;
   hydra_nodes: HydraNode[];
   node_lucid_L2: (nodeName: string) => HydraWrapper;
 };
@@ -38,6 +39,20 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       HydraNode.pipe(Effect.provide(l)),
     );
 
+    const main_node = yield* Effect.gen(function* () {
+      const mainNodeName = config.projectConfig.mainNodeName
+      const mbMainMode = hydra_nodes.find((node) => (node.nodeName === mainNodeName))
+      if (mbMainMode !== undefined) {
+        const mainNode : HydraNode = mbMainMode
+        return yield* Effect.succeed(mainNode);
+      }
+      return yield* Effect.fail(
+        new Error(
+          `Failed to find node with a name ${mainNodeName}`,
+        ),
+      );
+    })
+
     const node_lucid_L2 = (nodeName: String) =>
         yield* Effect.gen(function* () {
         const mbNode = config.projectConfig.nodes.find(
@@ -60,6 +75,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
 
     const hydra_head: HydraHeadType = {
       provider_lucid_L1: provider_lucid_L1,
+      main_node,
       hydra_nodes: hydra_nodes,
       node_lucid_L2,
     };
