@@ -6,7 +6,7 @@ export class ProviderEffect extends Effect.Service<ProviderEffect>()(
   "ProviderEffect",
   {
     effect: Effect.gen(function* () {
-      const config = yield* ProjectConfig.ProjectConfig;
+      const config = yield* ProjectConfig.ProjectConfigService;
       const provider: Provider =
         "blockfrostProjectId" in config.projectConfig.providerId
           ? new Blockfrost(
@@ -54,6 +54,5 @@ export class ProviderEffect extends Effect.Service<ProviderEffect>()(
         provider,
       } as const;
     }),
-    dependencies: [ProjectConfig.ProjectConfig.Default],
   },
 ) {}

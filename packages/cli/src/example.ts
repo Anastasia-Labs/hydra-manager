@@ -11,13 +11,13 @@ const program = Effect.gen(function* () {
 
 // Simulate a project config for testing purposes
 const testLayer = Layer.provide(
-  ProviderEffect.ProviderEffect.DefaultWithoutDependencies,
-  ProjectConfig.testLayer,
+  ProviderEffect.ProviderEffect.Default,
+  ProjectConfig.ProjectConfigTestLayer,
 );
 
 const mainLayer = Layer.provide(
-  ProviderEffect.ProviderEffect.DefaultWithoutDependencies,
-  ProjectConfig.ProjectConfig.Default,
+  ProviderEffect.ProviderEffect.Default,
+  ProjectConfig.ProjectConfigFSLayer,
 );
 
 const runnable = program.pipe(Effect.provide(mainLayer));
