@@ -8,7 +8,7 @@ import { HydraNode } from "./HydraNode.js";
 import { HydraWrapper } from "./lucid/HydraWrapper.js";
 
 type HydraHeadType = {
-  provider_lucid_L1: LucidEvolution;
+  // provider_lucid_L1: LucidEvolution;
   main_node: HydraNode;
   hydra_nodes: HydraNode[];
   node_lucid_L2: (nodeName: string) => Effect.Effect<HydraWrapper, Error, never>;
@@ -21,11 +21,11 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
     const config = yield* ProjectConfig;
     const providerEffect = yield* ProviderEffect;
 
-    const provider_lucid_L1: LucidEvolution = yield* Effect.tryPromise({
-      try: () => Lucid(providerEffect.provider, config.projectConfig.network),
-      catch: (e) =>
-        new Error(`Failed to get LucidEvolution object for provider: ${e}`),
-    });
+    // const provider_lucid_L1: LucidEvolution = yield* Effect.tryPromise({
+    //   try: () => Lucid(providerEffect.provider, config.projectConfig.network),
+    //   catch: (e) =>
+    //     new Error(`Failed to get LucidEvolution object for provider: ${e}`),
+    // });
 
     const nodeNames = config.projectConfig.nodes.map((node) => node.name);
     const nodeConfigs = yield* Effect.forEach(
@@ -78,7 +78,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       });
 
     const hydra_head: HydraHeadType = {
-      provider_lucid_L1: provider_lucid_L1,
+      // provider_lucid_L1: provider_lucid_L1,
       main_node,
       hydra_nodes: hydra_nodes,
       node_lucid_L2,
