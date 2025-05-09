@@ -5,6 +5,10 @@ export const InitializingMessageSchema = Schema.Struct({
 });
 export type InitializingMessage = typeof InitializingMessageSchema.Type;
 
+export const decodeInitializingMessage = Schema.decode(
+  Schema.parseJson(InitializingMessageSchema),
+);
+
 export const OpenMessageSchema = Schema.Struct({
   tag: Schema.Literal("HeadIsOpen"),
 });

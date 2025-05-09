@@ -15,13 +15,11 @@ export const createWebSocketConnection = (url: string) =>
     /*
      * Start a fiber that continuously processes incoming messages into the pubsub queue
      */
-    const publishMessageFiber = Effect.fork(
+    const publishMessageFiber = yield* Effect.fork(
       socket
         .run((data) => {
           return Effect.gen(function* () {
-            yield* Effect.log(
-              `Client Socket message received : ${data}, length ${data.length}`,
-            );
+            yield* Effect.log(`Client Socket message received`);
             return yield* PubSub.publish(messages, data);
           });
         })
