@@ -17,6 +17,7 @@
     "@lucid-evolution/core-types": "^0.1.22",
     "@lucid-evolution/lucid": "^0.4.27",
     "@lucid-evolution/utils": "^0.1.65",
+    "@effect/cli": "latest",
     "effect": "^3.14.14",
     "ws": "^8.18.1"
   }

@@ -1,12 +1,14 @@
-import { Effect, Either, pipe, Record, Schema } from "effect";
+import { Effect, Either, pipe, PubSub, Option, Record, Schema } from "effect";
 import * as SocketClient from "./Socket.js";
 import * as HydraMessage from "./HydraMessage.js";
 import { ParseError } from "effect/ParseResult";
 import { SocketError } from "@effect/platform/Socket";
+import { NodeConfig } from "./ProjectConfig.js";
 import {
   FetchHttpClient,
   HttpClient,
   HttpClientResponse,
+  Socket,
 } from "@effect/platform";
 import { Assets, ProtocolParameters, UTxO } from "@lucid-evolution/core-types";
 import { HttpClientError } from "@effect/platform/HttpClientError";
@@ -96,27 +98,75 @@ type UTxOResponseType = typeof UTxOResponseSchema.Type;
 
 export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
   effect: Effect.gen(function* () {
-    //TODO: Replace with actual server URL from config context
-    const serverUrl = "ws://localhost:1234";
-    const httpServerUrl = serverUrl.replace("ws://", "http://");
+    yield* Effect.log("HydraNode was created");
+    const nodeConfigEffect = yield* NodeConfig;
+    const nodeConfig = yield* nodeConfigEffect.nodeConfig;
+    const nodeName = nodeConfig.name;
 
-    const connection = yield* SocketClient.createWebSocketConnection(serverUrl);
+    const connection = yield* SocketClient.createWebSocketConnection(
+      nodeConfig.url,
+    );
+    const initializeMessage = yield* PubSub.subscribe(connection.messages).pipe(
+      Effect.tap(() => Effect.log(`initializeMessage at: ${nodeConfig.name}`)),
+    );
+    const newTxMessage = yield* PubSub.subscribe(connection.messages).pipe(
+      Effect.tap(() => Effect.log(`newTxMessage at: ${nodeConfig.name}`)),
+    );
+    yield* connection.publishMessageFiber;
+
     const httpClient = yield* HttpClient.HttpClient;
+    const httpServerUrl = nodeConfig.url.replace("ws://", "http://");
 
+    //TODO: When constructing this service the status should be initialized by the server using the greetings websocket message.
+    // For now, we will set it to "DISCONNECTED" until we receive a valid initializing message.
     let status: Status = "DISCONNECTED";
 
     const initialize: Effect.Effect<void, ParseError | SocketError> =
       Effect.gen(function* () {
-        yield* connection.sendMessage(JSON.stringify({ tag: "Init" }));
-        const response: string = new TextDecoder().decode(
-          yield* connection.messages.take,
+        // Send initialization message
+        yield* connection.sendMessage(JSON.stringify({ tag: "Init" })).pipe(
+          Effect.tap(() => Effect.log("Init message sent")),
+          Effect.scoped,
         );
-        const hydraMessage: HydraMessage.InitializingMessage =
-          yield* Schema.decode(
-            Schema.parseJson(HydraMessage.InitializingMessageSchema),
-          )(response);
-        status = "INITIALIZING";
-      }).pipe(Effect.scoped);
+
+        // Wait for a valid initializing message from the server
+        while (status !== "INITIALIZING") {
+          // Take next message from subscription
+          const rawMessage: Uint8Array = yield* initializeMessage.take;
+          const messageText: string = new TextDecoder().decode(rawMessage);
+
+          yield* Effect.log(
+            `Received raw message during initialization: ${messageText}`,
+          );
+
+          // Try to decode and validate the message
+          const maybe: Option.Option<HydraMessage.InitializingMessage> =
+            yield* Effect.option(
+              Schema.decode(
+                Schema.parseJson(HydraMessage.InitializingMessageSchema),
+              )(messageText),
+            );
+
+          if (Option.isSome(maybe)) {
+            // Valid initializing message found
+            const hydraMessage: HydraMessage.InitializingMessage = maybe.value;
+            yield* Effect.log(
+              `Valid initializing message received: ${maybe.value.tag}`,
+            );
+            status = "INITIALIZING";
+            break;
+          } else {
+            // Log failure but continue waiting
+            yield* Effect.log(
+              `Received non-initializing message: ${messageText}`,
+            );
+          }
+        }
+
+        yield* Effect.log(
+          "Initialization complete, status is now INITIALIZING",
+        );
+      });
 
     const newTx = (
       transaction: TransactionRequest,
@@ -127,7 +177,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
         );
 
         const response: string = new TextDecoder().decode(
-          yield* connection.messages.take,
+          yield* newTxMessage.take,
         );
 
         // Try to decode as a TxValidMessage
@@ -285,11 +335,14 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
     });
 
     return {
+      nodeName,
       initialize,
       newTx,
       protocolParameters,
       snapshotUTxO,
       getStatus: () => status,
     };
-  })
+  }),
+
+  dependencies: [Socket.layerWebSocketConstructorGlobal, FetchHttpClient.layer],
 }) {}
