@@ -20,6 +20,9 @@ importers:
 
   packages/cli:
     dependencies:
+      '@effect/cli':
+        specifier: latest
+        version: 0.59.21(@effect/platform@0.80.14(effect@3.14.14))(@effect/printer-ansi@0.42.21(@effect/typeclass@0.33.21(effect@3.14.14))(effect@3.14.14))(@effect/printer@0.42.21(@effect/typeclass@0.33.21(effect@3.14.14))(effect@3.14.14))(effect@3.14.14)
       '@effect/platform':
         specifier: ^0.80.14
         version: 0.80.14(effect@3.14.14)
@@ -44,7 +47,7 @@ importers:
     devDependencies:
       '@effect/vitest':
         specifier: ^0.20.16
-        version: 0.20.16(effect@3.14.14)(vitest@3.1.2(@types/node@22.15.3))
+        version: 0.20.16(effect@3.14.14)(vitest@3.1.2(@types/node@22.15.3)(yaml@2.7.1))
       '@hydra-manager/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
@@ -53,10 +56,10 @@ importers:
         version: 8.18.1
       vitest:
         specifier: ^3.1.2
-        version: 3.1.2(@types/node@22.15.3)
+        version: 3.1.2(@types/node@22.15.3)(yaml@2.7.1)
       vitest-websocket-mock:
         specifier: ^0.5.0
-        version: 0.5.0(vitest@3.1.2(@types/node@22.15.3))
+        version: 0.5.0(vitest@3.1.2(@types/node@22.15.3)(yaml@2.7.1))
 
   packages/typescript-config: {}
 
@@ -153,6 +156,14 @@ packages:
   '@chainsafe/netmask@2.0.0':
     resolution: {integrity: sha512-I3Z+6SWUoaljh3TBzCnCxjlUyN8tA+NAk5L6m9IxvCf1BENQTePzPMis97CoN/iMW1St3WN+AWCCRp+TTBRiDg==}
 
+  '@effect/cli@0.59.21':
+    resolution: {integrity: sha512-gO7bf31ED2H/mUfETIeuE1IeJ4rNQzQGVRwdUtIfcocr3ZqDgUS4qPtmXzY1U+zDfw9fG37KiGtqEqcB/W7Rwg==}
+    peerDependencies:
+      '@effect/platform': ^0.80.21
+      '@effect/printer': ^0.42.21
+      '@effect/printer-ansi': ^0.42.21
+      effect: ^3.14.21
+
   '@effect/cluster@0.30.2':
     resolution: {integrity: sha512-221SsceyBPTGIpt4WRWa6Hqtz4aGiKM7SQ48yWDZ7frdSrwxfd8IdQdU6zcJQei8YlTBYh5PPujO0m1b74625Q==}
     peerDependencies:
@@ -202,6 +213,18 @@ packages:
     peerDependencies:
       effect: ^3.14.14
 
+  '@effect/printer-ansi@0.42.21':
+    resolution: {integrity: sha512-dGJ3GqxfOOkeCdA0TneE/6Bt8VjUZsJy3IQXhKnOD2uYFfepSmnaMq9ZYTuyTKaqZQRboAO54FVx5YrRzLjlWg==}
+    peerDependencies:
+      '@effect/typeclass': ^0.33.21
+      effect: ^3.14.21
+
+  '@effect/printer@0.42.21':
+    resolution: {integrity: sha512-oNrp1Y4J2JyH+T/s3Qo9iRLpsJUkolYct86z6x8jsHjUk5MecZ9wQrUAhMmoZHFhqkrW03oVWNEVAhq1NKJljw==}
+    peerDependencies:
+      '@effect/typeclass': ^0.33.21
+      effect: ^3.14.21
+
   '@effect/rpc@0.56.2':
     resolution: {integrity: sha512-PY8MfVWUvebAnA04WWnooy6hzv0TA86qs8yS1k53DMsP0CnewdyA7aywmPkcB2ehiHfyNEyA0VYCMbG8jRtL2Q==}
     peerDependencies:
@@ -227,6 +250,11 @@ packages:
       '@effect/experimental': ^0.44.14
       '@effect/platform': ^0.80.14
       effect: ^3.14.14
+
+  '@effect/typeclass@0.33.21':
+    resolution: {integrity: sha512-ZI0BcCPVFb8SoimMPQFQfSjidcGP9XBqQtxQay3UYP+iBz5tNHxOD29WWtKWvZz6sRfpZpPq4BNkme4oZ8rdjA==}
+    peerDependencies:
+      effect: ^3.14.21
 
   '@effect/vitest@0.20.16':
     resolution: {integrity: sha512-jFbeqeuEff9BeFvTa4DSyv9D1T3UOx1furG/VBRhzi2nvMNMmCUzQQYlB5oMkQDWAGWHMUftwdzE2Bo4klP/ZA==}
@@ -984,6 +1012,10 @@ packages:
   inherits@2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
 
+  ini@4.1.3:
+    resolution: {integrity: sha512-X7rqawQBvfdjS10YU1y1YVreA3SsLrW9dX2CewP2EbBJM4ypVNLDkO5y04gejPwKIY9lR+7r9gn3rFPt/kmWFg==}
+    engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
+
   ip-address@9.0.5:
     resolution: {integrity: sha512-zHtQzGojZXTwZTHQqra+ETKd4Sn3vgi7uBmlPoXVWZqYvuKmtI0l/VZTjqGmJY9x88GGOaZ9+G9ES8hC4T4X8g==}
     engines: {node: '>= 12'}
@@ -1316,6 +1348,9 @@ packages:
     resolution: {integrity: sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==}
     engines: {node: '>=8.0'}
 
+  toml@3.0.0:
+    resolution: {integrity: sha512-y/mWCZinnvxjTKYhJ+pYxwD0mRLVvOtdS2Awbgxln6iEnt4rk0yBxeSBHkGJcPucRiG0e55mwWp+g/05rsrd6w==}
+
   tr46@0.0.3:
     resolution: {integrity: sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==}
 
@@ -1519,6 +1554,11 @@ packages:
       utf-8-validate:
         optional: true
 
+  yaml@2.7.1:
+    resolution: {integrity: sha512-10ULxpnOCQXxJvBgxsn9ptjq6uviG/htZKk9veJGhlqn3w/DxQ631zFF+nlQXLwmImeS5amR2dl2U8sg6U9jsQ==}
+    engines: {node: '>= 14'}
+    hasBin: true
+
 snapshots:
 
   '@anastasia-labs/cardano-multiplatform-lib-browser@6.0.2-2': {}
@@ -1628,6 +1668,16 @@ snapshots:
     dependencies:
       '@chainsafe/is-ip': 2.1.0
 
+  '@effect/cli@0.59.21(@effect/platform@0.80.14(effect@3.14.14))(@effect/printer-ansi@0.42.21(@effect/typeclass@0.33.21(effect@3.14.14))(effect@3.14.14))(@effect/printer@0.42.21(@effect/typeclass@0.33.21(effect@3.14.14))(effect@3.14.14))(effect@3.14.14)':
+    dependencies:
+      '@effect/platform': 0.80.14(effect@3.14.14)
+      '@effect/printer': 0.42.21(@effect/typeclass@0.33.21(effect@3.14.14))(effect@3.14.14)
+      '@effect/printer-ansi': 0.42.21(@effect/typeclass@0.33.21(effect@3.14.14))(effect@3.14.14)
+      effect: 3.14.14
+      ini: 4.1.3
+      toml: 3.0.0
+      yaml: 2.7.1
+
   '@effect/cluster@0.30.2(@effect/platform@0.80.14(effect@3.14.14))(@effect/rpc@0.56.2(@effect/platform@0.80.14(effect@3.14.14))(effect@3.14.14))(@effect/sql@0.33.14(@effect/experimental@0.44.14(@effect/platform@0.80.14(effect@3.14.14))(effect@3.14.14))(@effect/platform@0.80.14(effect@3.14.14))(effect@3.14.14))(effect@3.14.14)':
     dependencies:
       '@effect/platform': 0.80.14(effect@3.14.14)
@@ -1683,6 +1733,17 @@ snapshots:
       msgpackr: 1.11.2
       multipasta: 0.2.5
 
+  '@effect/printer-ansi@0.42.21(@effect/typeclass@0.33.21(effect@3.14.14))(effect@3.14.14)':
+    dependencies:
+      '@effect/printer': 0.42.21(@effect/typeclass@0.33.21(effect@3.14.14))(effect@3.14.14)
+      '@effect/typeclass': 0.33.21(effect@3.14.14)
+      effect: 3.14.14
+
+  '@effect/printer@0.42.21(@effect/typeclass@0.33.21(effect@3.14.14))(effect@3.14.14)':
+    dependencies:
+      '@effect/typeclass': 0.33.21(effect@3.14.14)
+      effect: 3.14.14
+
   '@effect/rpc@0.56.2(@effect/platform@0.80.14(effect@3.14.14))(effect@3.14.14)':
     dependencies:
       '@effect/platform': 0.80.14(effect@3.14.14)
@@ -1706,10 +1767,14 @@ snapshots:
       effect: 3.14.14
       uuid: 11.1.0
 
-  '@effect/vitest@0.20.16(effect@3.14.14)(vitest@3.1.2(@types/node@22.15.3))':
+  '@effect/typeclass@0.33.21(effect@3.14.14)':
     dependencies:
       effect: 3.14.14
-      vitest: 3.1.2(@types/node@22.15.3)
+
+  '@effect/vitest@0.20.16(effect@3.14.14)(vitest@3.1.2(@types/node@22.15.3)(yaml@2.7.1))':
+    dependencies:
+      effect: 3.14.14
+      vitest: 3.1.2(@types/node@22.15.3)(yaml@2.7.1)
 
   '@emurgo/cardano-message-signing-browser@1.1.0': {}
 
@@ -2174,13 +2239,13 @@ snapshots:
       chai: 5.2.0
       tinyrainbow: 2.0.0
 
-  '@vitest/mocker@3.1.2(vite@6.3.3(@types/node@22.15.3))':
+  '@vitest/mocker@3.1.2(vite@6.3.3(@types/node@22.15.3)(yaml@2.7.1))':
     dependencies:
       '@vitest/spy': 3.1.2
       estree-walker: 3.0.3
       magic-string: 0.30.17
     optionalDependencies:
-      vite: 6.3.3(@types/node@22.15.3)
+      vite: 6.3.3(@types/node@22.15.3)(yaml@2.7.1)
 
   '@vitest/pretty-format@3.1.2':
     dependencies:
@@ -2475,6 +2540,8 @@ snapshots:
 
   inherits@2.0.4: {}
 
+  ini@4.1.3: {}
+
   ip-address@9.0.5:
     dependencies:
       jsbn: 1.1.0
@@ -2733,6 +2800,8 @@ snapshots:
     dependencies:
       is-number: 7.0.0
 
+  toml@3.0.0: {}
+
   tr46@0.0.3: {}
 
   ts-custom-error@3.3.1: {}
@@ -2801,13 +2870,13 @@ snapshots:
 
   uuid@11.1.0: {}
 
-  vite-node@3.1.2(@types/node@22.15.3):
+  vite-node@3.1.2(@types/node@22.15.3)(yaml@2.7.1):
     dependencies:
       cac: 6.7.14
       debug: 4.4.0
       es-module-lexer: 1.7.0
       pathe: 2.0.3
-      vite: 6.3.3(@types/node@22.15.3)
+      vite: 6.3.3(@types/node@22.15.3)(yaml@2.7.1)
     transitivePeerDependencies:
       - '@types/node'
       - jiti
@@ -2822,7 +2891,7 @@ snapshots:
       - tsx
       - yaml
 
-  vite@6.3.3(@types/node@22.15.3):
+  vite@6.3.3(@types/node@22.15.3)(yaml@2.7.1):
     dependencies:
       esbuild: 0.25.3
       fdir: 6.4.4(picomatch@4.0.2)
@@ -2833,17 +2902,18 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.15.3
       fsevents: 2.3.3
+      yaml: 2.7.1
 
-  vitest-websocket-mock@0.5.0(vitest@3.1.2(@types/node@22.15.3)):
+  vitest-websocket-mock@0.5.0(vitest@3.1.2(@types/node@22.15.3)(yaml@2.7.1)):
     dependencies:
       '@vitest/utils': 3.1.2
       mock-socket: 9.3.1
-      vitest: 3.1.2(@types/node@22.15.3)
+      vitest: 3.1.2(@types/node@22.15.3)(yaml@2.7.1)
 
-  vitest@3.1.2(@types/node@22.15.3):
+  vitest@3.1.2(@types/node@22.15.3)(yaml@2.7.1):
     dependencies:
       '@vitest/expect': 3.1.2
-      '@vitest/mocker': 3.1.2(vite@6.3.3(@types/node@22.15.3))
+      '@vitest/mocker': 3.1.2(vite@6.3.3(@types/node@22.15.3)(yaml@2.7.1))
       '@vitest/pretty-format': 3.1.2
       '@vitest/runner': 3.1.2
       '@vitest/snapshot': 3.1.2
@@ -2860,8 +2930,8 @@ snapshots:
       tinyglobby: 0.2.13
       tinypool: 1.0.2
       tinyrainbow: 2.0.0
-      vite: 6.3.3(@types/node@22.15.3)
-      vite-node: 3.1.2(@types/node@22.15.3)
+      vite: 6.3.3(@types/node@22.15.3)(yaml@2.7.1)
+      vite-node: 3.1.2(@types/node@22.15.3)(yaml@2.7.1)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 22.15.3
@@ -2910,3 +2980,5 @@ snapshots:
   ws@7.5.10: {}
 
   ws@8.18.1: {}
+
+  yaml@2.7.1: {}

@@ -3,6 +3,7 @@ import * as SocketClient from "./Socket.js";
 import * as HydraMessage from "./HydraMessage.js";
 import { ParseError } from "effect/ParseResult";
 import { SocketError } from "@effect/platform/Socket";
+import { NodeConfig } from "./ProjectConfig.js";
 import {
   FetchHttpClient,
   HttpClient,
@@ -98,13 +99,24 @@ type UTxOResponseType = typeof UTxOResponseSchema.Type;
 
 export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
   effect: Effect.gen(function* () {
-    //TODO: Replace with actual server URL from config context
-    const serverUrl = "ws://localhost:1234";
-    const httpServerUrl = serverUrl.replace("ws://", "http://");
+    yield* Effect.log("HydraNode was created");
+    const nodeConfigEffect = yield* NodeConfig;
+    const nodeConfig = yield* nodeConfigEffect.nodeConfig;
+    const nodeName = nodeConfig.name;
 
-    const connection = yield* SocketClient.createWebSocketConnection(serverUrl);
+    const connection = yield* SocketClient.createWebSocketConnection(
+      nodeConfig.url,
+    );
+    const initializeMessage = yield* PubSub.subscribe(connection.messages).pipe(
+      Effect.tap(() => Effect.log(`initializeMessage at: ${nodeConfig.name}`)),
+    );
+    const newTxMessage = yield* PubSub.subscribe(connection.messages).pipe(
+      Effect.tap(() => Effect.log(`newTxMessage at: ${nodeConfig.name}`)),
+    );
+    yield* connection.publishMessageFiber;
 
     const httpClient = yield* HttpClient.HttpClient;
+    const httpServerUrl = nodeConfig.url.replace("ws://", "http://");
 
     //TODO: When constructing this service the status should be initialized by the server using the greetings websocket message.
     // For now, we will set it to "DISCONNECTED" until we receive a valid initializing message.
@@ -324,6 +336,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
     });
 
     return {
+      nodeName,
       initialize,
       newTx,
       protocolParameters,
@@ -331,5 +344,6 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       getStatus: () => status,
     };
   }),
-  dependencies: [Socket.layerWebSocketConstructorGlobal, FetchHttpClient.layer], // Default
+
+  dependencies: [Socket.layerWebSocketConstructorGlobal, FetchHttpClient.layer],
 }) {}

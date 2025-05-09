@@ -17,9 +17,7 @@ const testLayer = Layer.provide(
 
 const mainLayer = Layer.provide(
   ProviderEffect.ProviderEffect.DefaultWithoutDependencies,
-  ProjectConfig.ProjectConfig.Default.pipe(Layer.provide(
-    NodeContext.layer
-  ))
+  ProjectConfig.ProjectConfig.Default,
 );
 
 const runnable = program.pipe(Effect.provide(mainLayer));
