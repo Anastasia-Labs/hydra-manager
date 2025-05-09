@@ -98,7 +98,7 @@ it.scopedLive(
     }).pipe(Effect.provide(HydraNodeTestLayer)),
 );
 
-it.scopedLive("submits a initializes command from a hydra head ", () =>
+it.scopedLive("submits an initialization command from a hydra head", () =>
   Effect.gen(function* () {
     const server = yield* makeServer;
     const hydraHead = yield* HydraHead.HydraHead;
