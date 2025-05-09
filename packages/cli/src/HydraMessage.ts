@@ -5,6 +5,10 @@ export const InitializingMessageSchema = Schema.Struct({
 });
 export type InitializingMessage = typeof InitializingMessageSchema.Type;
 
+export const decodeInitializingMessage = Schema.decode(
+  Schema.parseJson(InitializingMessageSchema),
+);
+
 export const OpenMessageSchema = Schema.Struct({
   tag: Schema.Literal("HeadIsOpen"),
 });
@@ -169,3 +173,11 @@ export const UTxOResponseSchema = Schema.Record({
 export type ProtocolParametersResponse =
   typeof ProtocolParametersResponseSchema.Type;
 export type UTxOResponseType = typeof UTxOResponseSchema.Type;
+
+export const TransactionRequestSchema = Schema.Struct({
+  type: Schema.String,
+  description: Schema.String,
+  cborHex: Schema.String,
+  txId: Schema.optional(Schema.String),
+});
+export type TransactionRequestType = typeof TransactionRequestSchema.Type;

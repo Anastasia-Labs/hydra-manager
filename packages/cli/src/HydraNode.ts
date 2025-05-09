@@ -1,9 +1,9 @@
-import { Effect, Either, pipe, PubSub, Option, Record, Schema } from "effect";
+import { Effect, Either, pipe, PubSub, Option, Schema } from "effect";
 import * as SocketClient from "./Socket.js";
 import * as HydraMessage from "./HydraMessage.js";
 import { ParseError } from "effect/ParseResult";
 import { SocketError } from "@effect/platform/Socket";
-import { NodeConfig } from "./ProjectConfig.js";
+import * as NodeConfig from "./NodeConfig.js";
 import {
   FetchHttpClient,
   HttpClient,
@@ -12,6 +12,7 @@ import {
 } from "@effect/platform";
 import { Assets, ProtocolParameters, UTxO } from "@lucid-evolution/core-types";
 import { HttpClientError } from "@effect/platform/HttpClientError";
+import { Scope } from "effect/Scope";
 
 type Status =
   | "DISCONNECTED"
@@ -22,98 +23,15 @@ type Status =
   | "FANOUT_POSSIBLE"
   | "FINAL";
 
-type TransactionRequest = {
-  type: string;
-  description: string;
-  cborHex: string;
-  txId?: string;
-};
-
-// Define schema for protocol parameters response
-const ProtocolParametersResponseSchema = Schema.Struct({
-  txFeePerByte: Schema.Number,
-  txFeeFixed: Schema.Number,
-  maxTxSize: Schema.Number,
-  maxValueSize: Schema.Number,
-  stakeAddressDeposit: Schema.String,
-  stakePoolDeposit: Schema.String,
-  dRepDeposit: Schema.String,
-  govActionDeposit: Schema.String,
-  executionUnitPrices: Schema.Struct({
-    priceMemory: Schema.Number,
-    priceSteps: Schema.Number,
-  }),
-  maxTxExecutionUnits: Schema.Struct({
-    memory: Schema.String,
-    steps: Schema.String,
-  }),
-  utxoCostPerByte: Schema.String,
-  collateralPercentage: Schema.Number,
-  maxCollateralInputs: Schema.Number,
-  minFeeRefScriptCostPerByte: Schema.Number,
-  costModels: Schema.Struct({
-    PlutusV1: Schema.Array(Schema.Number),
-    PlutusV2: Schema.Array(Schema.Number),
-    PlutusV3: Schema.Array(Schema.Number),
-  }),
-});
-
-const LovelaceSchema = Schema.Struct({
-  lovelace: Schema.Number,
-});
-
-const TokenSchema = Schema.Record({
-  key: Schema.String,
-  value: Schema.Number,
-});
-
-const AssetsSchema = Schema.Record({
-  key: Schema.String,
-  value: TokenSchema,
-});
-
-type AssetsSchema = typeof AssetsSchema.Type;
-
-const ValueSchema = Schema.Struct(LovelaceSchema.fields, AssetsSchema);
-
-type Value = typeof ValueSchema.Type;
-
-const UTxOItemSchema = Schema.Struct({
-  address: Schema.String,
-  datum: Schema.optional(Schema.String),
-  datumHash: Schema.optional(Schema.String),
-  inlineDatum: Schema.optional(Schema.String),
-  inlineDatumRaw: Schema.optional(Schema.String),
-  referenceScript: Schema.optional(Schema.String),
-  value: ValueSchema,
-});
-
-const UTxOResponseSchema = Schema.Record({
-  key: Schema.String,
-  value: UTxOItemSchema,
-});
-
-type ProtocolParametersResponse = typeof ProtocolParametersResponseSchema.Type;
-type UTxOResponseType = typeof UTxOResponseSchema.Type;
-
 export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
   effect: Effect.gen(function* () {
     yield* Effect.log("HydraNode was created");
-    const nodeConfigEffect = yield* NodeConfig;
-    const nodeConfig = yield* nodeConfigEffect.nodeConfig;
+    const { nodeConfig } = yield* NodeConfig.NodeConfigService;
     const nodeName = nodeConfig.name;
 
     const connection = yield* SocketClient.createWebSocketConnection(
       nodeConfig.url,
     );
-    const initializeMessage = yield* PubSub.subscribe(connection.messages).pipe(
-      Effect.tap(() => Effect.log(`initializeMessage at: ${nodeConfig.name}`)),
-    );
-    const newTxMessage = yield* PubSub.subscribe(connection.messages).pipe(
-      Effect.tap(() => Effect.log(`newTxMessage at: ${nodeConfig.name}`)),
-    );
-    yield* connection.publishMessageFiber;
-
     const httpClient = yield* HttpClient.HttpClient;
     const httpServerUrl = nodeConfig.url.replace("ws://", "http://");
 
@@ -121,57 +39,54 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
     // For now, we will set it to "DISCONNECTED" until we receive a valid initializing message.
     let status: Status = "DISCONNECTED";
 
-    const initialize: Effect.Effect<void, ParseError | SocketError> =
-      Effect.gen(function* () {
-        // Send initialization message
-        yield* connection.sendMessage(JSON.stringify({ tag: "Init" })).pipe(
-          Effect.tap(() => Effect.log("Init message sent")),
-          Effect.scoped,
-        );
+    const initialize = Effect.gen(function* () {
+      const initializeMessage = yield* PubSub.subscribe(connection.messages);
+      // Send initialization message
+      yield* connection.sendMessage(JSON.stringify({ tag: "Init" })).pipe(
+        Effect.tap(() => Effect.log("Init message sent")),
+        Effect.scoped,
+      );
 
-        // Wait for a valid initializing message from the server
-        while (status !== "INITIALIZING") {
-          // Take next message from subscription
-          const rawMessage: Uint8Array = yield* initializeMessage.take;
-          const messageText: string = new TextDecoder().decode(rawMessage);
-
-          yield* Effect.log(
-            `Received raw message during initialization: ${messageText}`,
-          );
-
-          // Try to decode and validate the message
-          const maybe: Option.Option<HydraMessage.InitializingMessage> =
-            yield* Effect.option(
-              Schema.decode(
-                Schema.parseJson(HydraMessage.InitializingMessageSchema),
-              )(messageText),
-            );
-
-          if (Option.isSome(maybe)) {
-            // Valid initializing message found
-            const hydraMessage: HydraMessage.InitializingMessage = maybe.value;
-            yield* Effect.log(
-              `Valid initializing message received: ${maybe.value.tag}`,
-            );
-            status = "INITIALIZING";
-            break;
-          } else {
-            // Log failure but continue waiting
-            yield* Effect.log(
-              `Received non-initializing message: ${messageText}`,
-            );
-          }
-        }
+      // Wait for a valid initializing message from the server
+      while (status !== "INITIALIZING") {
+        // Take next message from subscription
+        const rawMessage: Uint8Array = yield* initializeMessage.take; // pause
+        const messageText: string = new TextDecoder().decode(rawMessage);
 
         yield* Effect.log(
-          "Initialization complete, status is now INITIALIZING",
+          `Received raw message during initialization: ${messageText}`,
         );
-      });
+
+        // Try to decode and validate the message
+        const maybe: Option.Option<HydraMessage.InitializingMessage> =
+          yield* Effect.option(
+            HydraMessage.decodeInitializingMessage(messageText),
+          );
+
+        if (Option.isSome(maybe)) {
+          // Valid initializing message found
+          const hydraMessage: HydraMessage.InitializingMessage = maybe.value;
+          yield* Effect.log(
+            `Valid initializing message received: ${maybe.value.tag}`,
+          );
+          status = "INITIALIZING";
+          break;
+        } else {
+          // Log failure but continue waiting
+          yield* Effect.log(
+            `Received non-initializing message: ${messageText}`,
+          );
+        }
+      }
+
+      yield* Effect.log("Initialization complete, status is now INITIALIZING");
+    }).pipe(Effect.timeout(1000));
 
     const newTx = (
-      transaction: TransactionRequest,
-    ): Effect.Effect<string, SocketError | Error> =>
+      transaction: HydraMessage.TransactionRequestType,
+    ): Effect.Effect<string, SocketError | Error, Scope> =>
       Effect.gen(function* () {
+        const newTxMessage = yield* PubSub.subscribe(connection.messages);
         yield* connection.sendMessage(
           JSON.stringify({ tag: "NewTx", transaction }),
         );
@@ -221,11 +136,14 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       const response = yield* httpClient.get(
         `${httpServerUrl}/protocol-parameters`,
       );
+      yield* Effect.log(
+        `Received response from protocol-parameters endpoint: ${response}`,
+      );
 
       // Parse and validate response using schema
-      const responseData: ProtocolParametersResponse =
+      const responseData: HydraMessage.ProtocolParametersResponse =
         yield* HttpClientResponse.schemaBodyJson(
-          ProtocolParametersResponseSchema,
+          HydraMessage.ProtocolParametersResponseSchema,
         )(response);
 
       // Transform response data to ProtocolParameters format
@@ -270,8 +188,10 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       const response = yield* httpClient.get(`${httpServerUrl}/snapshot/utxo`);
 
       // Parse and validate response using schema
-      const responseData: UTxOResponseType =
-        yield* HttpClientResponse.schemaBodyJson(UTxOResponseSchema)(response);
+      const responseData: HydraMessage.UTxOResponseType =
+        yield* HttpClientResponse.schemaBodyJson(
+          HydraMessage.UTxOResponseSchema,
+        )(response);
 
       // Transform response data to UTxO array format
       const utxos: Array<UTxO> = Object.entries(responseData).map(

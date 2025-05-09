@@ -9,5 +9,5 @@ export const initCommand = Command.make("init", {}).pipe(
 
 export const initHeadCommand = Effect.gen(function* () {
   const hydraHead = yield* HydraHead;
-  yield* hydraHead.main_node.initialize;
+  yield* hydraHead.mainNode.initialize;
 });
