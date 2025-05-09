@@ -99,7 +99,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
   effect: Effect.gen(function* () {
     const nodeConfigEffect = yield* NodeConfig;
     const nodeConfig = yield* nodeConfigEffect.nodeConfig;
-    const nodeName = nodeConfig.name
+    const nodeName = nodeConfig.name;
 
     const connection = yield* SocketClient.createWebSocketConnection(
       nodeConfig.url,

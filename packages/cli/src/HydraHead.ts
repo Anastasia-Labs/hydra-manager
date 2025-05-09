@@ -40,21 +40,21 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
     );
 
     const main_node = yield* Effect.gen(function* () {
-      const mainNodeName = config.projectConfig.mainNodeName
-      const mbMainMode = hydra_nodes.find((node) => (node.nodeName === mainNodeName))
+      const mainNodeName = config.projectConfig.mainNodeName;
+      const mbMainMode = hydra_nodes.find(
+        (node) => node.nodeName === mainNodeName,
+      );
       if (mbMainMode !== undefined) {
-        const mainNode : HydraNode = mbMainMode
+        const mainNode: HydraNode = mbMainMode;
         return yield* Effect.succeed(mainNode);
       }
       return yield* Effect.fail(
-        new Error(
-          `Failed to find node with a name ${mainNodeName}`,
-        ),
+        new Error(`Failed to find node with a name ${mainNodeName}`),
       );
-    })
+    });
 
     const node_lucid_L2 = (nodeName: String) =>
-        yield* Effect.gen(function* () {
+      yield* Effect.gen(function* () {
         const mbNode = config.projectConfig.nodes.find(
           (node) => node.name === nodeName,
         );
@@ -67,9 +67,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
           return yield* Effect.succeed(hydra);
         }
         return yield* Effect.fail(
-          new Error(
-            `Failed to find config for node with a name ${nodeName}`,
-          ),
+          new Error(`Failed to find config for node with a name ${nodeName}`),
         );
       });
 
