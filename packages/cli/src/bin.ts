@@ -9,20 +9,9 @@ import { HydraHead } from "./HydraHead.js";
 import { ProviderEffect } from "./Provider.js";
 import { ProjectConfig } from "./ProjectConfig.js";
 
-const hydraHeadLayer = Effect.gen(function* () {
-})
-
-const hydraHead = HydraHead.Default
-
-const program = Effect.gen(function* () {
-  yield* Effect.addFinalizer((exit) =>
-    Console.log(`Finalizer executed. Exit status: ${exit._tag}`)
-  )
-  return yield* Effect.fail("Uh oh!")
-})
-
 runCommands(process.argv).pipe(
   Effect.provide(NodeContext.layer),
   Effect.provide(HydraHead.Default),
-  NodeRuntime.runMain({ disableErrorReporting: false })
+  Effect.scoped,
+  NodeRuntime.runMain()
 )

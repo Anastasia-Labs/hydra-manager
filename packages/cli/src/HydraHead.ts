@@ -11,7 +11,7 @@ type HydraHeadType = {
   provider_lucid_L1: LucidEvolution;
   main_node: HydraNode;
   hydra_nodes: HydraNode[];
-  node_lucid_L2: (nodeName: string) => HydraWrapper;
+  node_lucid_L2: (nodeName: string) => Effect.Effect<HydraWrapper, Error, never>;
 };
 
 export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
@@ -26,9 +26,11 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
     });
 
     const nodeNames = config.projectConfig.nodes.map((node) => node.name);
-    const nodeConfigs: NodeConfigType[] = nodeNames.map(
-      (name) => yield* config.nodeConfigByName(name),
+    const nodeConfigs = yield* Effect.forEach(
+      nodeNames,
+      (name) => config.nodeConfigByName(name),
     );
+
     const nodeConfigLayers = nodeConfigs.map((conf) =>
       Layer.succeed(NodeConfig, {
         nodeConfig: Effect.succeed(conf),
@@ -37,7 +39,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
 
     const hydra_nodes = yield* Effect.forEach(nodeConfigLayers, (l) => {
       const hydraLayer = Layer.provide(HydraNode.Default, l)
-      const hydraNode = Effect.scoped(HydraNode.pipe(Effect.provide(hydraLayer)))
+      const hydraNode = HydraNode.pipe(Effect.provide(hydraLayer))
       return hydraNode
     });
 
@@ -56,7 +58,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
     });
 
     const node_lucid_L2 = (nodeName: String) =>
-      yield* Effect.gen(function* () {
+      Effect.gen(function* () {
         const mbNode = config.projectConfig.nodes.find(
           (node) => node.name === nodeName,
         );
