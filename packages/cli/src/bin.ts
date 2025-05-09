@@ -4,10 +4,25 @@ import * as NodeContext from "@effect/platform-node/NodeContext";
 import * as NodeRuntime from "@effect/platform-node/NodeRuntime";
 import * as Effect from "effect/Effect";
 import { runCommands } from "./Cli.js";
-import { Context, Layer } from "effect";
+import { Console, Context, Layer } from "effect";
 import { HydraHead } from "./HydraHead.js";
 import { ProviderEffect } from "./Provider.js";
 import { ProjectConfig } from "./ProjectConfig.js";
 
-const hydraHeadLayer = HydraHead.Default
+const hydraHeadLayer = Effect.gen(function* () {
+})
 
+const hydraHead = HydraHead.Default
+
+const program = Effect.gen(function* () {
+  yield* Effect.addFinalizer((exit) =>
+    Console.log(`Finalizer executed. Exit status: ${exit._tag}`)
+  )
+  return yield* Effect.fail("Uh oh!")
+})
+
+runCommands(process.argv).pipe(
+  Effect.provide(NodeContext.layer),
+  Effect.provide(HydraHead.Default),
+  NodeRuntime.runMain({ disableErrorReporting: false })
+)

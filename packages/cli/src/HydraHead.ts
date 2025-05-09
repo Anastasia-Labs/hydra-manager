@@ -37,7 +37,8 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
 
     const hydra_nodes = yield* Effect.forEach(nodeConfigLayers, (l) => {
       const hydraLayer = Layer.provide(HydraNode.Default, l)
-      return HydraNode.pipe(Effect.provide(hydraLayer))
+      const hydraNode = Effect.scoped(HydraNode.pipe(Effect.provide(hydraLayer)))
+      return hydraNode
     });
 
     const main_node = yield* Effect.gen(function* () {
