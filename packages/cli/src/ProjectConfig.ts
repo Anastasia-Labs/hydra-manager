@@ -14,7 +14,6 @@ const CardanoProvider = Schema.Union(
 
 const SKSchema = Schema.Struct({
   type: Schema.String,
-  description: Schema.String,
   cborHex: Schema.String,
 });
 
@@ -160,17 +159,14 @@ export const testLayer = Layer.succeed(
           url: "ws://localhost:4001",
           fundsWalletSK: {
             type: "PaymentSigningKeyShelley_ed25519",
-            description: "Payment Signing Key",
             cborHex: "5820...",
           },
           nodeWalletSK: {
             type: "PaymentSigningKeyShelley_ed25519",
-            description: "Payment Signing Key",
             cborHex: "5820...",
           },
           hydraSK: {
             type: "HydraSigningKey_ed25519",
-            description: "",
             cborHex: "5820...",
           },
         },

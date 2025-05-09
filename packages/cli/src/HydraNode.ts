@@ -98,6 +98,7 @@ type UTxOResponseType = typeof UTxOResponseSchema.Type;
 
 export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
   effect: Effect.gen(function* () {
+    yield* Effect.log("HydraNode was created")
     const nodeConfigEffect = yield* NodeConfig;
     const nodeConfig = yield* nodeConfigEffect.nodeConfig;
     const nodeName = nodeConfig.name;

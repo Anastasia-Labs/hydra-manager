@@ -16,6 +16,8 @@ type HydraHeadType = {
 
 export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
   effect: Effect.gen(function* () {
+    yield* Effect.log("HydraHead was created")
+
     const config = yield* ProjectConfig;
     const providerEffect = yield* ProviderEffect;
 
