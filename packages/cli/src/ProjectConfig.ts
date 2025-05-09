@@ -27,7 +27,7 @@ export class ProjectConfigService extends Context.Tag("ProjectConfigService")<
   {
     projectConfig: ProjectConfig;
     getNodeConfigByName: (
-      nodeName: String,
+      nodeName: string,
     ) => Effect.Effect<NodeConfig.NodeConfig, Error>;
   }
 >() {}
@@ -44,7 +44,7 @@ const fileSystemImpl = Effect.gen(function* () {
     Effect.flatMap((config) => validateConfig(config)),
   );
 
-  const getNodeConfigByName = (nodeName: String) =>
+  const getNodeConfigByName = (nodeName: string) =>
     Effect.gen(function* () {
       const maybeNode = projectConfig.nodes.find(
         (node) => node.name === nodeName,
@@ -93,7 +93,7 @@ const testImpl = Effect.gen(function* () {
       },
     ],
   };
-  const getNodeConfigByName = (nodeName: String) =>
+  const getNodeConfigByName = (nodeName: string) =>
     Effect.succeed({
       name: "Alice",
       url: "ws://localhost:4001",
