@@ -3,7 +3,7 @@ import * as SocketClient from "./Socket.js";
 import * as HydraMessage from "./HydraMessage.js";
 import { ParseError } from "effect/ParseResult";
 import { SocketError } from "@effect/platform/Socket";
-import { NodeConfig } from "./ProjectConfig.js";
+import * as NodeConfig from "./NodeConfig.js";
 import {
   FetchHttpClient,
   HttpClient,
@@ -23,12 +23,10 @@ type Status =
   | "FANOUT_POSSIBLE"
   | "FINAL";
 
-
 export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
   effect: Effect.gen(function* () {
     yield* Effect.log("HydraNode was created");
-    const nodeConfigEffect = yield* NodeConfig;
-    const nodeConfig = yield* nodeConfigEffect.nodeConfig;
+    const { nodeConfig } = yield* NodeConfig.NodeConfigService;
     const nodeName = nodeConfig.name;
 
     const connection = yield* SocketClient.createWebSocketConnection(
@@ -191,7 +189,9 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
 
       // Parse and validate response using schema
       const responseData: HydraMessage.UTxOResponseType =
-        yield* HttpClientResponse.schemaBodyJson(HydraMessage.UTxOResponseSchema)(response);
+        yield* HttpClientResponse.schemaBodyJson(
+          HydraMessage.UTxOResponseSchema,
+        )(response);
 
       // Transform response data to UTxO array format
       const utxos: Array<UTxO> = Object.entries(responseData).map(

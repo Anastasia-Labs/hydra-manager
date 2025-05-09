@@ -1,19 +1,17 @@
 import type { LucidEvolution, Provider } from "@lucid-evolution/lucid";
 import { Lucid, Network } from "@lucid-evolution/lucid";
-
 import { Context, Effect, Layer } from "effect";
-import { NodeConfig, NodeConfigType, ProjectConfig } from "./ProjectConfig.js";
+import { ProjectConfig } from "./ProjectConfig.js";
 import { ProviderEffect } from "./Provider.js";
 import { HydraNode } from "./HydraNode.js";
 import { HydraWrapper } from "./lucid/HydraWrapper.js";
+import * as NodeConfig from "./NodeConfig.js";
 
 type HydraHeadType = {
   // provider_lucid_L1: LucidEvolution;
-  main_node: HydraNode;
-  hydra_nodes: HydraNode[];
-  node_lucid_L2: (
-    nodeName: string,
-  ) => Effect.Effect<HydraWrapper, Error, never>;
+  mainNode: HydraNode;
+  hydraNodes: HydraNode[];
+  nodeLucidL2: (nodeName: string) => Effect.Effect<HydraWrapper, Error, never>;
 };
 
 export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
@@ -35,38 +33,49 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
     );
 
     const nodeConfigLayers = nodeConfigs.map((conf) =>
-      Layer.succeed(NodeConfig, {
-        nodeConfig: Effect.succeed(conf),
+      Layer.succeed(NodeConfig.NodeConfigService, {
+        nodeConfig: conf,
       }),
     );
 
-    const hydra_nodes = yield* Effect.forEach(nodeConfigLayers, (l) => {
-      const hydraLayer = Layer.provide(HydraNode.Default, l);
+    const hydraNodes = yield* Effect.forEach(nodeConfigLayers, (nodeConfig) => {
+      const hydraLayer = Layer.provide(HydraNode.Default, nodeConfig);
       const hydraNode = HydraNode.pipe(Effect.provide(hydraLayer));
       return hydraNode;
     });
 
-    const main_node = yield* Effect.gen(function* () {
-      const mainNodeName = config.projectConfig.mainNodeName;
-      const mbMainMode = hydra_nodes.find(
-        (node) => node.nodeName === mainNodeName,
-      );
-      if (mbMainMode !== undefined) {
-        const mainNode: HydraNode = mbMainMode;
-        return yield* Effect.succeed(mainNode);
-      }
+    const mainNode = hydraNodes.find(
+      (node) => node.nodeName === config.projectConfig.mainNodeName,
+    );
+    if (mainNode === undefined) {
       return yield* Effect.fail(
-        new Error(`Failed to find node with a name ${mainNodeName}`),
+        new Error(
+          `Failed to find node with a name ${config.projectConfig.mainNodeName}`,
+        ),
       );
-    });
+    }
 
-    const node_lucid_L2 = (nodeName: String) =>
+    // const main_node = yield* Effect.gen(function* () {
+    //   const mainNodeName = config.projectConfig.mainNodeName;
+    //   const mbMainMode = hydra_nodes.find(
+    //     (node) => node.nodeName === mainNodeName
+    //   );
+    //   if (mbMainMode !== undefined) {
+    //     const mainNode: HydraNode = mbMainMode;
+    //     return yield* Effect.succeed(mainNode);
+    //   }
+    //   return yield* Effect.fail(
+    //     new Error(`Failed to find node with a name ${mainNodeName}`)
+    //   );
+    // });
+
+    const nodeLucidL2 = (nodeName: String) =>
       Effect.gen(function* () {
         const mbNode = config.projectConfig.nodes.find(
           (node) => node.name === nodeName,
         );
         if (mbNode !== undefined) {
-          const nodeConf: NodeConfigType = mbNode;
+          const nodeConf: NodeConfig.NodeConfig = mbNode;
           const hydra = new HydraWrapper(
             nodeConf.url,
             config.projectConfig.network,
@@ -78,13 +87,13 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
         );
       });
 
-    const hydra_head: HydraHeadType = {
+    const hydraHead: HydraHeadType = {
       // provider_lucid_L1: provider_lucid_L1,
-      main_node,
-      hydra_nodes: hydra_nodes,
-      node_lucid_L2,
+      mainNode,
+      hydraNodes,
+      nodeLucidL2,
     };
-    return hydra_head;
+    return hydraHead;
   }),
 
   dependencies: [ProjectConfig.Default, ProviderEffect.Default],
