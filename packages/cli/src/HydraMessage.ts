@@ -173,3 +173,11 @@ export const UTxOResponseSchema = Schema.Record({
 export type ProtocolParametersResponse =
   typeof ProtocolParametersResponseSchema.Type;
 export type UTxOResponseType = typeof UTxOResponseSchema.Type;
+
+export const TransactionRequestSchema = Schema.Struct({
+  type: Schema.String,
+  description: Schema.String,
+  cborHex: Schema.String,
+  txId: Schema.optional(Schema.String),
+});
+export type TransactionRequestType = typeof TransactionRequestSchema.Type;

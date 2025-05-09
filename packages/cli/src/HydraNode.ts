@@ -23,79 +23,6 @@ type Status =
   | "FANOUT_POSSIBLE"
   | "FINAL";
 
-type TransactionRequest = {
-  type: string;
-  description: string;
-  cborHex: string;
-  txId?: string;
-};
-
-// Define schema for protocol parameters response
-const ProtocolParametersResponseSchema = Schema.Struct({
-  txFeePerByte: Schema.Number,
-  txFeeFixed: Schema.Number,
-  maxTxSize: Schema.Number,
-  maxValueSize: Schema.Number,
-  stakeAddressDeposit: Schema.String,
-  stakePoolDeposit: Schema.String,
-  dRepDeposit: Schema.String,
-  govActionDeposit: Schema.String,
-  executionUnitPrices: Schema.Struct({
-    priceMemory: Schema.Number,
-    priceSteps: Schema.Number,
-  }),
-  maxTxExecutionUnits: Schema.Struct({
-    memory: Schema.String,
-    steps: Schema.String,
-  }),
-  utxoCostPerByte: Schema.String,
-  collateralPercentage: Schema.Number,
-  maxCollateralInputs: Schema.Number,
-  minFeeRefScriptCostPerByte: Schema.Number,
-  costModels: Schema.Struct({
-    PlutusV1: Schema.Array(Schema.Number),
-    PlutusV2: Schema.Array(Schema.Number),
-    PlutusV3: Schema.Array(Schema.Number),
-  }),
-});
-
-const LovelaceSchema = Schema.Struct({
-  lovelace: Schema.Number,
-});
-
-const TokenSchema = Schema.Record({
-  key: Schema.String,
-  value: Schema.Number,
-});
-
-const AssetsSchema = Schema.Record({
-  key: Schema.String,
-  value: TokenSchema,
-});
-
-type AssetsSchema = typeof AssetsSchema.Type;
-
-const ValueSchema = Schema.Struct(LovelaceSchema.fields, AssetsSchema);
-
-type Value = typeof ValueSchema.Type;
-
-const UTxOItemSchema = Schema.Struct({
-  address: Schema.String,
-  datum: Schema.optional(Schema.String),
-  datumHash: Schema.optional(Schema.String),
-  inlineDatum: Schema.optional(Schema.String),
-  inlineDatumRaw: Schema.optional(Schema.String),
-  referenceScript: Schema.optional(Schema.String),
-  value: ValueSchema,
-});
-
-const UTxOResponseSchema = Schema.Record({
-  key: Schema.String,
-  value: UTxOItemSchema,
-});
-
-type ProtocolParametersResponse = typeof ProtocolParametersResponseSchema.Type;
-type UTxOResponseType = typeof UTxOResponseSchema.Type;
 
 export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
   effect: Effect.gen(function* () {
@@ -166,7 +93,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
     }).pipe(Effect.timeout(1000));
 
     const newTx = (
-      transaction: TransactionRequest,
+      transaction: HydraMessage.TransactionRequestType,
     ): Effect.Effect<string, SocketError | Error, Scope> =>
       Effect.gen(function* () {
         const newTxMessage = yield* PubSub.subscribe(connection.messages);
@@ -224,9 +151,9 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       );
 
       // Parse and validate response using schema
-      const responseData: ProtocolParametersResponse =
+      const responseData: HydraMessage.ProtocolParametersResponse =
         yield* HttpClientResponse.schemaBodyJson(
-          ProtocolParametersResponseSchema,
+          HydraMessage.ProtocolParametersResponseSchema,
         )(response);
 
       // Transform response data to ProtocolParameters format
@@ -271,8 +198,8 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       const response = yield* httpClient.get(`${httpServerUrl}/snapshot/utxo`);
 
       // Parse and validate response using schema
-      const responseData: UTxOResponseType =
-        yield* HttpClientResponse.schemaBodyJson(UTxOResponseSchema)(response);
+      const responseData: HydraMessage.UTxOResponseType =
+        yield* HttpClientResponse.schemaBodyJson(HydraMessage.UTxOResponseSchema)(response);
 
       // Transform response data to UTxO array format
       const utxos: Array<UTxO> = Object.entries(responseData).map(
