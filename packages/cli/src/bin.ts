@@ -13,5 +13,5 @@ runCommands(process.argv).pipe(
   Effect.provide(NodeContext.layer),
   Effect.provide(HydraHead.Default),
   Effect.scoped,
-  NodeRuntime.runMain()
-)
+  NodeRuntime.runMain(),
+);

@@ -98,7 +98,7 @@ type UTxOResponseType = typeof UTxOResponseSchema.Type;
 
 export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
   effect: Effect.gen(function* () {
-    yield* Effect.log("HydraNode was created")
+    yield* Effect.log("HydraNode was created");
     const nodeConfigEffect = yield* NodeConfig;
     const nodeConfig = yield* nodeConfigEffect.nodeConfig;
     const nodeName = nodeConfig.name;
@@ -107,10 +107,10 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       nodeConfig.url,
     );
     const initializeMessage = yield* PubSub.subscribe(connection.messages).pipe(
-      Effect.tap(() => Effect.log(`initializeMessage at: ${nodeConfig.name}`))
+      Effect.tap(() => Effect.log(`initializeMessage at: ${nodeConfig.name}`)),
     );
     const newTxMessage = yield* PubSub.subscribe(connection.messages).pipe(
-      Effect.tap(() => Effect.log(`newTxMessage at: ${nodeConfig.name}`))
+      Effect.tap(() => Effect.log(`newTxMessage at: ${nodeConfig.name}`)),
     );
     yield* connection.publishMessageFiber;
 

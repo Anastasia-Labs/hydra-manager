@@ -1,5 +1,3 @@
 import { HydraNode } from "../src/HydraNode.ts";
 
-
-
-const hydraNode = HydraNode.Default
+const hydraNode = HydraNode.Default;

@@ -76,10 +76,10 @@ export class ProjectConfig extends Effect.Service<ProjectConfig>()(
 
       return { projectConfig, nodeConfigByName };
       // TODO: add environment configuration lookups
-    })
-    ,
-      dependencies: [NodeContext.layer],
-    }) {}
+    }),
+    dependencies: [NodeContext.layer],
+  },
+) {}
 
 function checkConfig(
   effectConfig: Effect.Effect<ProjectConfigType, Error, never>,
