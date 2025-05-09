@@ -1,6 +1,6 @@
 import { Path, FileSystem } from "@effect/platform";
 import { NodeContext } from "@effect/platform-node";
-import { Context, Effect, Layer, Schema } from "effect";
+import { Config, Context, Effect, Layer, pipe, Schema } from "effect";
 import * as NodeConfig from "./NodeConfig.js";
 
 const CardanoProvider = Schema.Union(
@@ -12,7 +12,7 @@ const CardanoProvider = Schema.Union(
   }),
 );
 
-const ProjectConfigSchema = Schema.Struct({
+const ProjectConfig = Schema.Struct({
   network: Schema.Literal("Preprod", "Preview", "Mainnet", "Custom"),
   providerId: CardanoProvider,
   contractsReferenceTxIds: Schema.String,
@@ -20,52 +20,112 @@ const ProjectConfigSchema = Schema.Struct({
   nodes: Schema.Array(NodeConfig.NodeConfig),
 });
 
-export type ProjectConfigType = typeof ProjectConfigSchema.Type;
+export type ProjectConfig = typeof ProjectConfig.Type;
 
-export class ProjectConfig extends Effect.Service<ProjectConfig>()(
-  "ProjectConfig",
+export class ProjectConfigService extends Context.Tag("ProjectConfigService")<
+  ProjectConfigService,
   {
-    effect: Effect.gen(function* () {
-      const path = yield* Path.Path;
-      const fs = yield* FileSystem.FileSystem;
-      const configRaw = yield* fs.readFileString(
-        path.join(path.resolve(), "config.json"),
+    projectConfig: ProjectConfig;
+    getNodeConfigByName: (
+      nodeName: String,
+    ) => Effect.Effect<NodeConfig.NodeConfig, Error>;
+  }
+>() {}
+
+const fileSystemImpl = Effect.gen(function* () {
+  const path = yield* Path.Path;
+  const fs = yield* FileSystem.FileSystem;
+
+  const projectConfig: ProjectConfig = yield* pipe(
+    fs.readFileString(path.join(path.resolve(), "config.json")),
+    Effect.flatMap((configString) =>
+      Schema.decodeUnknown(Schema.parseJson(ProjectConfig))(configString),
+    ),
+    Effect.flatMap((config) => validateConfig(config)),
+  );
+
+  const getNodeConfigByName = (nodeName: String) =>
+    Effect.gen(function* () {
+      const maybeNode = projectConfig.nodes.find(
+        (node) => node.name === nodeName,
       );
-      const configJSON = Schema.decodeUnknownSync(Schema.parseJson())(
-        configRaw,
-      );
-      const configEffect =
-        Schema.decodeUnknown(ProjectConfigSchema)(configJSON);
-      const projectConfig: ProjectConfigType = yield* checkConfig(configEffect);
+      if (maybeNode === undefined) {
+        return yield* Effect.fail(
+          new Error(`Failed to find node with a name ${nodeName}`),
+        );
+      }
+      return maybeNode;
+    });
 
-      const nodeConfigByName = (nodeName: String) =>
-        Effect.gen(function* () {
-          const mbNode = projectConfig.nodes.find(
-            (node) => node.name === nodeName,
-          );
-          if (mbNode === undefined) {
-            return yield* Effect.fail(
-              new Error(`Failed to find node with a name ${nodeName}`),
-            );
-          }
-          return mbNode;
-        });
+  return { projectConfig, getNodeConfigByName };
+  // TODO: add environment configuration lookups
+});
 
-      return { projectConfig, nodeConfigByName };
-      // TODO: add environment configuration lookups
-    }),
-    dependencies: [NodeContext.layer],
-  },
-) {}
+export const ProjectConfigFSLayer = Layer.effect(
+  ProjectConfigService,
+  fileSystemImpl,
+).pipe(Layer.provide(NodeContext.layer));
 
-function checkConfig(
-  effectConfig: Effect.Effect<ProjectConfigType, Error, never>,
-): Effect.Effect<ProjectConfigType, Error, never> {
-  return Effect.gen(function* () {
-    const config = yield* effectConfig;
+const testImpl = Effect.gen(function* () {
+  const projectConfig: ProjectConfig = {
+    network: "Preprod",
+    providerId: {
+      blockfrostProjectId: "validID",
+    },
+    contractsReferenceTxIds: "",
+    mainNodeName: "Alice",
+    nodes: [
+      {
+        name: "Alice",
+        url: "ws://localhost:4001",
+        fundsWalletSK: {
+          type: "PaymentSigningKeyShelley_ed25519",
+          cborHex: "5820...",
+        },
+        nodeWalletSK: {
+          type: "PaymentSigningKeyShelley_ed25519",
+          cborHex: "5820...",
+        },
+        hydraSK: {
+          type: "HydraSigningKey_ed25519",
+          cborHex: "5820...",
+        },
+      },
+    ],
+  };
+  const getNodeConfigByName = (nodeName: String) =>
+    Effect.succeed({
+      name: "Alice",
+      url: "ws://localhost:4001",
+      fundsWalletSK: {
+        type: "PaymentSigningKeyShelley_ed25519",
+        description: "Payment Signing Key",
+        cborHex: "5820...",
+      },
+      nodeWalletSK: {
+        type: "PaymentSigningKeyShelley_ed25519",
+        description: "Payment Signing Key",
+        cborHex: "5820...",
+      },
+      hydraSK: {
+        type: "HydraSigningKey_ed25519",
+        description: "",
+        cborHex: "5820...",
+      },
+    });
+  return { projectConfig, getNodeConfigByName };
+});
+export const ProjectConfigTestLayer = Layer.effect(
+  ProjectConfigService,
+  testImpl,
+);
+
+const validateConfig = (projectConfig: ProjectConfig) =>
+  Effect.gen(function* () {
+    const config = projectConfig;
 
     if (!(config.network == "Preprod")) {
-      Error("The network is not Preprod");
+      yield* Effect.fail(new Error("The network is not Preprod"));
     }
 
     if ("blockfrostProjectId" in config.providerId) {
@@ -74,7 +134,9 @@ function checkConfig(
           config.network.toLowerCase(),
         )
       ) {
-        Error("The blockfrostProjectId is from a wrong network");
+        yield* Effect.fail(
+          new Error("The blockfrostProjectId is from a wrong network"),
+        );
       }
     }
 
@@ -87,16 +149,20 @@ function checkConfig(
     if (
       !walletSKs
         .map((sk) => sk.type)
-        .every((type) => type == "PaymentSigningKeyShelley_ed25519")
+        .every((type) => type === "PaymentSigningKeyShelley_ed25519")
     ) {
-      Error(
-        "One wallet secret key or more have non PaymentSigningKeyShelley_ed25519 type field",
+      yield* Effect.fail(
+        new Error(
+          "One wallet secret key or more have non PaymentSigningKeyShelley_ed25519 type field",
+        ),
       );
     }
     if (
       !walletSKs.map((sk) => sk.cborHex).every((hex) => hex.startsWith("5820"))
     ) {
-      Error("One wallet secret key or more starts not with 5820");
+      yield* Effect.fail(
+        new Error("One wallet secret key or more starts not with 5820"),
+      );
     }
 
     const hydraSKs = nodes.map((node) => node.hydraSK);
@@ -105,69 +171,72 @@ function checkConfig(
         .map((sk) => sk.type)
         .every((type) => type == "HydraSigningKey_ed25519")
     ) {
-      Error(
-        "One hydra secret key or more have non HydraSigningKey_ed25519 type field",
+      yield* Effect.fail(
+        new Error(
+          "One hydra secret key or more have non HydraSigningKey_ed25519 type field",
+        ),
       );
     }
     if (
       !hydraSKs.map((sk) => sk.cborHex).every((hex) => hex.startsWith("5820"))
     ) {
-      Error("One hydra secret key or more starts not with 5820");
+      yield* Effect.fail(
+        new Error("One hydra secret key or more starts not with 5820"),
+      );
     }
 
     return config;
   });
-}
 
-// Simulate a project config for testing purposes
-export const testLayer = Layer.succeed(
-  ProjectConfig,
-  ProjectConfig.make({
-    projectConfig: {
-      network: "Preprod",
-      providerId: {
-        blockfrostProjectId: "validID",
-      },
-      contractsReferenceTxIds: "",
-      mainNodeName: "Alice",
-      nodes: [
-        {
-          name: "Alice",
-          url: "ws://localhost:4001",
-          fundsWalletSK: {
-            type: "PaymentSigningKeyShelley_ed25519",
-            cborHex: "5820...",
-          },
-          nodeWalletSK: {
-            type: "PaymentSigningKeyShelley_ed25519",
-            cborHex: "5820...",
-          },
-          hydraSK: {
-            type: "HydraSigningKey_ed25519",
-            cborHex: "5820...",
-          },
-        },
-      ],
-    },
-    nodeConfigByName: (nodeName) =>
-      Effect.succeed({
-        name: "Alice",
-        url: "ws://localhost:4001",
-        fundsWalletSK: {
-          type: "PaymentSigningKeyShelley_ed25519",
-          description: "Payment Signing Key",
-          cborHex: "5820...",
-        },
-        nodeWalletSK: {
-          type: "PaymentSigningKeyShelley_ed25519",
-          description: "Payment Signing Key",
-          cborHex: "5820...",
-        },
-        hydraSK: {
-          type: "HydraSigningKey_ed25519",
-          description: "",
-          cborHex: "5820...",
-        },
-      }),
-  }),
-);
+// // Simulate a project config for testing purposes
+// export const testLayer = Layer.succeed(
+//   ProjectConfigService,
+//   ProjectConfigService.make({
+//     projectConfig: {
+//       network: "Preprod",
+//       providerId: {
+//         blockfrostProjectId: "validID",
+//       },
+//       contractsReferenceTxIds: "",
+//       mainNodeName: "Alice",
+//       nodes: [
+//         {
+//           name: "Alice",
+//           url: "ws://localhost:4001",
+//           fundsWalletSK: {
+//             type: "PaymentSigningKeyShelley_ed25519",
+//             cborHex: "5820...",
+//           },
+//           nodeWalletSK: {
+//             type: "PaymentSigningKeyShelley_ed25519",
+//             cborHex: "5820...",
+//           },
+//           hydraSK: {
+//             type: "HydraSigningKey_ed25519",
+//             cborHex: "5820...",
+//           },
+//         },
+//       ],
+//     },
+//     getNodeConfigByName: (nodeName) =>
+//       Effect.succeed({
+//         name: "Alice",
+//         url: "ws://localhost:4001",
+//         fundsWalletSK: {
+//           type: "PaymentSigningKeyShelley_ed25519",
+//           description: "Payment Signing Key",
+//           cborHex: "5820...",
+//         },
+//         nodeWalletSK: {
+//           type: "PaymentSigningKeyShelley_ed25519",
+//           description: "Payment Signing Key",
+//           cborHex: "5820...",
+//         },
+//         hydraSK: {
+//           type: "HydraSigningKey_ed25519",
+//           description: "",
+//           cborHex: "5820...",
+//         },
+//       }),
+//   })
+// );
