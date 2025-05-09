@@ -1,13 +1,14 @@
 import { expect, it } from "@effect/vitest";
 import * as HydraHead from "../src/HydraHead.js";
 import * as HydraNode from "../src/HydraNode.js";
-import { Effect, Layer } from "effect";
+import { Effect, Fiber, Layer } from "effect";
 import * as Provider from "../src/Provider.js";
 import * as ProjectConfig from "../src/ProjectConfig.js";
 import * as NodeConfig from "../src/NodeConfig.js";
 import WS from "vitest-websocket-mock";
 import { Scope } from "effect/Scope";
 import { sleep } from "effect/Clock";
+import { TimeoutException } from "effect/Cause";
 
 const url = `ws://localhost:4001`;
 
@@ -93,8 +94,8 @@ it.scopedLive(
           tag: "HeadIsInitializing",
         }),
       );
-      const result = yield* fiber.await;
-      expect(result._tag).toEqual("Failure");
+      const result = yield* Fiber.join(fiber).pipe(Effect.flip);
+      expect(result).toEqual(new TimeoutException());
     }).pipe(Effect.provide(HydraNodeTestLayer)),
 );
 
