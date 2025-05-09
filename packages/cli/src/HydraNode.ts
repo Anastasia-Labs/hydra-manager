@@ -110,6 +110,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
     yield* connection.publishMessageFiber;
 
     const httpClient = yield* HttpClient.HttpClient;
+    const httpServerUrl = nodeConfig.url.replace("ws://", "http://");
 
     //TODO: When constructing this service the status should be initialized by the server using the greetings websocket message.
     // For now, we will set it to "DISCONNECTED" until we receive a valid initializing message.
@@ -213,7 +214,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
     > = Effect.gen(function* () {
       // Make HTTP GET request to protocol-parameters endpoint
       const response = yield* httpClient.get(
-        `${httpClient}/protocol-parameters`,
+        `${httpServerUrl}/protocol-parameters`,
       );
 
       // Parse and validate response using schema
@@ -261,7 +262,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       ParseError | HttpClientError
     > = Effect.gen(function* () {
       // Make HTTP GET request to snapshot/utxo endpoint
-      const response = yield* httpClient.get(`${httpClient}/snapshot/utxo`);
+      const response = yield* httpClient.get(`${httpServerUrl}/snapshot/utxo`);
 
       // Parse and validate response using schema
       const responseData: UTxOResponseType =

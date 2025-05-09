@@ -35,9 +35,10 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       }),
     );
 
-    const hydra_nodes = yield* Effect.forEach(nodeConfigLayers, (l) =>
-      HydraNode.pipe(Effect.provide(l)),
-    );
+    const hydra_nodes = yield* Effect.forEach(nodeConfigLayers, (l) => {
+      const hydraLayer = Layer.provide(HydraNode.Default, l)
+      return HydraNode.pipe(Effect.provide(hydraLayer))
+    });
 
     const main_node = yield* Effect.gen(function* () {
       const mainNodeName = config.projectConfig.mainNodeName;
@@ -79,4 +80,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
     };
     return hydra_head;
   }),
+
+  dependencies: [ProjectConfig.Default, ProviderEffect.Default],
 }) {}
+

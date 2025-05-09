@@ -9,20 +9,5 @@ import { HydraHead } from "./HydraHead.js";
 import { ProviderEffect } from "./Provider.js";
 import { ProjectConfig } from "./ProjectConfig.js";
 
-const subLayer = Layer.provide(
-  ProviderEffect.DefaultWithoutDependencies,
-  ProjectConfig.Default.pipe(Layer.provide(NodeContext.layer)),
-);
+const hydraHeadLayer = HydraHead.Default
 
-const deb = HydraHead.Default.pipe(
-  Layer.provide(
-    // ProviderEffect.DefaultWithoutDependencies,
-    ProjectConfig.Default.pipe(Layer.provide(NodeContext.layer)),
-  )
-)
-
-const hydraHeadLayer = Layer.provide(
-  HydraHead.Default.pipe(
-    Layer.provide(ProviderEffect.DefaultWithoutDependencies),
-  ),
-);

@@ -1,4 +1,5 @@
 import { Path, FileSystem } from "@effect/platform";
+import { NodeContext } from "@effect/platform-node";
 import { Config, Context, Effect, JSONSchema, Layer, Schema } from "effect";
 import * as Option from "effect/Option";
 
@@ -76,9 +77,10 @@ export class ProjectConfig extends Effect.Service<ProjectConfig>()(
 
       return { projectConfig, nodeConfigByName };
       // TODO: add environment configuration lookups
-    }),
-  },
-) {}
+    })
+    ,
+      dependencies: [NodeContext.layer],
+    }) {}
 
 function checkConfig(
   effectConfig: Effect.Effect<ProjectConfigType, Error, never>,
