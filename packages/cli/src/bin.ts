@@ -26,8 +26,3 @@ const hydraHeadLayer = Layer.provide(
     Layer.provide(ProviderEffect.DefaultWithoutDependencies),
   ),
 );
-
-// runCommands(process.argv).pipe(
-//   Effect.provide(hydraHeadLayer),
-//   NodeRuntime.runMain({ disableErrorReporting: false })
-// )
