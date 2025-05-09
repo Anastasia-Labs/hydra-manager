@@ -34,14 +34,6 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
     const connection = yield* SocketClient.createWebSocketConnection(
       nodeConfig.url,
     );
-    const initializeMessage = yield* PubSub.subscribe(connection.messages).pipe(
-      Effect.tap(() => Effect.log(`initializeMessage at: ${nodeConfig.name}`)),
-    );
-    const newTxMessage = yield* PubSub.subscribe(connection.messages).pipe(
-      Effect.tap(() => Effect.log(`newTxMessage at: ${nodeConfig.name}`)),
-    );
-    yield* connection.publishMessageFiber;
-
     const httpClient = yield* HttpClient.HttpClient;
     const httpServerUrl = nodeConfig.url.replace("ws://", "http://");
 
