@@ -4,6 +4,12 @@ import { EventEmitter } from "node:events"
 import { HydraNode } from "./node.js"
 import { Hydra } from "./provider.js"
 import type { HydraStatus, NodeConfig } from "./types.js"
+import { Context, Effect } from "effect"
+
+export class HydraHeadService extends Context.Tag("HydraHeadService")<
+  HydraHeadService,
+  { readonly get: HydraHead }
+>() {}
 
 export class HydraHead extends EventEmitter {
   private _lucidL2: Record<string, LucidEvolution>

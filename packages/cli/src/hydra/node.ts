@@ -25,6 +25,10 @@ export class HydraNode extends EventEmitter {
     }
   }
 
+  disconnect() {
+    this._connection.disconnect()
+  }
+
   private async processStatus(data: string) {
     const message = JSON.parse(data)
     function getStatus(data: any): HydraStatus | null {
@@ -38,7 +42,7 @@ export class HydraNode extends EventEmitter {
         case "HeadIsClosed":
           return "CLOSED"
         case "ReadyToFanout":
-          return "FANOUT_POSSIBLE"
+          return "FANOUTPOSSIBLE"
         case "HeadIsFinalized":
           return "FINAL"
         default:

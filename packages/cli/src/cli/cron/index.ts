@@ -68,7 +68,6 @@ export const cronCommand = Command.make(
           txsCount,
           Option.isSome(utxosCount) ? utxosCount.value : undefined
         )
-
         await sleep(1000)
 
         await cronCommandImpl.loop()
@@ -139,6 +138,7 @@ class CronCommandImpl {
           this._utxosCount,
           this._monitor
         )
+        console.log(`action:${action}`)
 
         if (action == "wait") await sleep(1000)
         else if (action == "exit") return
@@ -188,7 +188,7 @@ const chooseAction = (
         return processNewLargeUTxOsIntervalAction.value(cronConfig)
       } else throw new Error("Invalid job")
     }
-    case "FANOUT_POSSIBLE":
+    case "FANOUTPOSSIBLE":
       console.log(`\nFanout Hydra Head Manually\n`)
       return "exit"
     default:

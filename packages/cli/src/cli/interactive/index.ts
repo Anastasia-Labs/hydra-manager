@@ -107,7 +107,7 @@ const selectActionSet = (hydraHead: HydraHead): Array<{ name: string; value: Act
       ]
     case "OPEN":
       return [mainMenuL1WalletActions, closeHeadAction, createDummyTransactionSendingAllFunds]
-    case "FANOUT_POSSIBLE":
+    case "FANOUTPOSSIBLE":
       return [mainMenuL1WalletActions, fanoutFundsAction]
     default:
       return [mainMenuL1WalletActions]
