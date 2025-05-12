@@ -1,6 +1,7 @@
-import { Effect, Either, pipe, PubSub, Option, Schema } from "effect";
+import { Effect, Either, pipe, PubSub, Option, Schema, Layer } from "effect";
 import * as SocketClient from "./Socket.js";
 import * as HydraMessage from "./HydraMessage.js";
+import { Status } from "./HydraMessage.js";
 import { ParseError } from "effect/ParseResult";
 import { SocketError } from "@effect/platform/Socket";
 import * as NodeConfig from "./NodeConfig.js";
@@ -13,15 +14,9 @@ import {
 import { Assets, ProtocolParameters, UTxO } from "@lucid-evolution/core-types";
 import { HttpClientError } from "@effect/platform/HttpClientError";
 import { Scope } from "effect/Scope";
-
-type Status =
-  | "DISCONNECTED"
-  | "CONNECTING"
-  | "INITIALIZING"
-  | "OPEN"
-  | "CLOSED"
-  | "FANOUT_POSSIBLE"
-  | "FINAL";
+import { WebSocketConstructor } from "@effect/platform/Socket";
+import { WebSocket } from "ws";
+import { Dequeue } from "effect/Queue";
 
 export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
   effect: Effect.gen(function* () {
@@ -35,12 +30,40 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
     const httpClient = yield* HttpClient.HttpClient;
     const httpServerUrl = nodeConfig.url.replace("ws://", "http://");
 
-    //TODO: When constructing this service the status should be initialized by the server using the greetings websocket message.
-    // For now, we will set it to "DISCONNECTED" until we receive a valid initializing message.
-    let status: Status = "DISCONNECTED";
+    let status = yield* Effect.gen(function* () {
+      const messageQueue: Dequeue<Uint8Array> = yield* PubSub.subscribe(
+        connection.messages,
+      );
+      const rawMessage: Uint8Array = yield* messageQueue.take; // pause
+      const messageText: string = new TextDecoder().decode(rawMessage);
+
+      yield* Effect.log(
+        `Received raw message during node initialization: ${messageText}`,
+      );
+
+      const maybe: Option.Option<HydraMessage.StatusMessage> =
+        yield* Effect.option(HydraMessage.decodeStatusMessage(messageText));
+
+      let status: Status = "DISCONNECTED";
+
+      if (Option.isSome(maybe)) {
+        const statusMessage: HydraMessage.StatusMessage = maybe.value;
+        yield* Effect.log(
+          `Valid status message received: ${statusMessage.headStatus}`,
+        );
+        status = HydraMessage.statusMessageToStatus(statusMessage);
+      } else {
+        yield* Effect.fail(new Error(`Failed to get status, got: ${maybe}`));
+      }
+
+      return status;
+    });
 
     const initialize = Effect.gen(function* () {
-      const initializeMessage = yield* PubSub.subscribe(connection.messages);
+      const messageQueue: Dequeue<Uint8Array> = yield* PubSub.subscribe(
+        connection.messages,
+      );
+
       // Send initialization message
       yield* connection.sendMessage(JSON.stringify({ tag: "Init" })).pipe(
         Effect.tap(() => Effect.log("Init message sent")),
@@ -50,11 +73,11 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       // Wait for a valid initializing message from the server
       while (status !== "INITIALIZING") {
         // Take next message from subscription
-        const rawMessage: Uint8Array = yield* initializeMessage.take; // pause
+        const rawMessage: Uint8Array = yield* messageQueue.take; // pause
         const messageText: string = new TextDecoder().decode(rawMessage);
 
         yield* Effect.log(
-          `Received raw message during initialization: ${messageText}`,
+          `Received raw message during initialization command: ${messageText}`,
         );
 
         // Try to decode and validate the message
@@ -80,13 +103,15 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       }
 
       yield* Effect.log("Initialization complete, status is now INITIALIZING");
-    }).pipe(Effect.timeout(1000));
+    });
 
     const newTx = (
       transaction: HydraMessage.TransactionRequestType,
     ): Effect.Effect<string, SocketError | Error, Scope> =>
       Effect.gen(function* () {
-        const newTxMessage = yield* PubSub.subscribe(connection.messages);
+        const newTxMessage: Dequeue<Uint8Array> = yield* PubSub.subscribe(
+          connection.messages,
+        );
         yield* connection.sendMessage(
           JSON.stringify({ tag: "NewTx", transaction }),
         );
@@ -264,5 +289,10 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
     };
   }),
 
-  dependencies: [Socket.layerWebSocketConstructorGlobal, FetchHttpClient.layer],
+  dependencies: [
+    Layer.succeed(WebSocketConstructor, (url, options) => {
+      return new WebSocket(url, options) as unknown as globalThis.WebSocket;
+    }),
+    FetchHttpClient.layer,
+  ],
 }) {}

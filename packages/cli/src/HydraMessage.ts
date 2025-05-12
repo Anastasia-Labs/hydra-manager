@@ -1,5 +1,54 @@
 import { Schema } from "effect";
 
+export type Status =
+  | "DISCONNECTED"
+  | "CONNECTING"
+  | "IDLE"
+  | "INITIALIZING"
+  | "OPEN"
+  | "CLOSED"
+  | "FANOUT_POSSIBLE"
+  | "FINAL";
+
+export const StatusMessageSchema = Schema.Struct({
+  headStatus: Schema.Literal(
+    "Disconnected",
+    "Connecting",
+    "Idle",
+    "Initializing",
+    "Open",
+    "Closed",
+    "FanoutPossible",
+    "Final",
+  ),
+});
+export type StatusMessage = typeof StatusMessageSchema.Type;
+
+export function statusMessageToStatus(message: StatusMessage): Status {
+  switch (message.headStatus) {
+    case "Disconnected":
+      return "DISCONNECTED";
+    case "Connecting":
+      return "CONNECTING";
+    case "Idle":
+      return "IDLE";
+    case "Initializing":
+      return "INITIALIZING";
+    case "Open":
+      return "OPEN";
+    case "Closed":
+      return "CLOSED";
+    case "FanoutPossible":
+      return "FANOUT_POSSIBLE";
+    case "Final":
+      return "FINAL";
+  }
+}
+
+export const decodeStatusMessage = Schema.decode(
+  Schema.parseJson(StatusMessageSchema),
+);
+
 export const InitializingMessageSchema = Schema.Struct({
   tag: Schema.Literal("HeadIsInitializing"),
 });
