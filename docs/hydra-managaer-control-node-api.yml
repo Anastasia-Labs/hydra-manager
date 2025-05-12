@@ -1,0 +1,112 @@
+openapi: '3.0.3'
+info:
+  title: Hydra Manager Control Node API
+  description: API for managing the Hydra Manager Control Node
+  version: '1.0'
+servers:
+  - url: https://api.server.test/v1
+
+paths:
+  /create:
+    post:
+      summary: Create new Hydra Head
+      description: Create a new Hydra Head. This endpoint is used to create a new Hydra Head instance. This method will return the full configuration of the new Hydra Head. The configuration inlcudes the hydra head ID and the node configurations which include the node IDs and the secret keys of each participant. 
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  headId:
+                    type: string
+                    description: The ID of the created Hydra Head
+                  nodes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NodeConfig'
+  
+  /dispose:
+    post:
+      summary: Dispose Hydra Head
+      description: Dispose the Hydra Head and clean up resources. This endpoint will terminate the head execution and return the result, including the start and stop timestamps.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                headId:
+                  type: string
+                  description: The ID of the Hydra Head to dispose
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  headId:
+                    type: string
+                    description: The ID of the disposed Hydra Head
+                  startTimestamp:
+                    type: string
+                    format: date-time
+                    description: The timestamp when the Hydra Head was created
+                  endTimestamp:
+                    type: string
+                    format: date-time
+                    description: The timestamp when the Hydra Head was disposed
+                  status:
+                    type: string
+                    description: The final status of the Hydra Head
+                    enum: [SUCCESS, FAILED, ABORTED]
+
+components:
+  schemas:
+    SKConfig:
+      type: object
+      properties:
+        type:
+          type: string
+          description: The type of key
+          example: "PaymentSigningKeyShelley_ed25519"
+        description:
+          type: string
+          description: Description of what this key is used for
+        cborHex:
+          type: string
+          description: The CBOR-encoded key in hexadecimal format
+          example: "5820..."
+          
+    NodeConfig:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The name of the node
+          example: "Alice"
+        url:
+          type: string
+          description: URL of the node
+          example: "ws://localhost:4001"
+        fundsWalletSK:
+          $ref: '#/components/schemas/SKConfig'
+          description: Secret key for the funding wallet
+        nodeWalletSK:
+          $ref: '#/components/schemas/SKConfig'
+          description: Secret key for the node wallet
+        hydraSK:
+          $ref: '#/components/schemas/SKConfig'
+          description: Hydra secret key
+    
