@@ -1,5 +1,4 @@
 import { Path, FileSystem } from "@effect/platform";
-import { NodeContext } from "@effect/platform-node";
 import { Config, Context, Effect, Layer, pipe, Schema } from "effect";
 import * as NodeConfig from "./NodeConfig.js";
 
@@ -64,7 +63,7 @@ const fileSystemImpl = Effect.gen(function* () {
 export const ProjectConfigFSLayer = Layer.effect(
   ProjectConfigService,
   fileSystemImpl,
-).pipe(Layer.provide(NodeContext.layer));
+);
 
 const testImpl = Effect.gen(function* () {
   const projectConfig: ProjectConfig = {
