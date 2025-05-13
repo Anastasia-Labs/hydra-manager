@@ -26,9 +26,6 @@ paths:
               schema:
                 type: object
                 properties:
-                  headId:
-                    type: string
-                    description: The ID of the created Hydra Head
                   nodes:
                     type: array
                     items:
@@ -44,10 +41,7 @@ paths:
           application/json:
             schema:
               type: object
-              properties:
-                headId:
-                  type: string
-                  description: The ID of the Hydra Head to dispose
+              properties: {}
       responses:
         '200':
           description: OK
@@ -56,17 +50,6 @@ paths:
               schema:
                 type: object
                 properties:
-                  headId:
-                    type: string
-                    description: The ID of the disposed Hydra Head
-                  startTimestamp:
-                    type: string
-                    format: date-time
-                    description: The timestamp when the Hydra Head was created
-                  endTimestamp:
-                    type: string
-                    format: date-time
-                    description: The timestamp when the Hydra Head was disposed
                   status:
                     type: string
                     description: The final status of the Hydra Head
@@ -100,9 +83,6 @@ components:
           type: string
           description: URL of the node
           example: "ws://localhost:4001"
-        fundsWalletSK:
-          $ref: '#/components/schemas/SKConfig'
-          description: Secret key for the funding wallet
         nodeWalletSK:
           $ref: '#/components/schemas/SKConfig'
           description: Secret key for the node wallet
