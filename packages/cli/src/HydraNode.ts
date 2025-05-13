@@ -1,4 +1,13 @@
-import { Effect, Either, pipe, PubSub, Option, Schema, Layer } from "effect";
+import {
+  Effect,
+  Either,
+  pipe,
+  PubSub,
+  Option,
+  Schema,
+  Layer,
+  Fiber,
+} from "effect";
 import * as SocketClient from "./Socket.js";
 import * as HydraMessage from "./HydraMessage.js";
 import { Status } from "./HydraMessage.js";
@@ -30,34 +39,31 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
     const httpClient = yield* HttpClient.HttpClient;
     const httpServerUrl = nodeConfig.url.replace("ws://", "http://");
 
-    let status = yield* Effect.gen(function* () {
-      const messageQueue: Dequeue<Uint8Array> = yield* PubSub.subscribe(
-        connection.messages,
-      );
-      const rawMessage: Uint8Array = yield* messageQueue.take; // pause
-      const messageText: string = new TextDecoder().decode(rawMessage);
+    const messageQueue: Dequeue<Uint8Array> = yield* PubSub.subscribe(
+      connection.messages,
+    );
 
-      yield* Effect.log(
-        `Received raw message during node initialization: ${messageText}`,
-      );
+    let status: Status = "DISCONNECTED";
 
-      const maybe: Option.Option<HydraMessage.StatusMessage> =
-        yield* Effect.option(HydraMessage.decodeStatusMessage(messageText));
+    const statusFiber = yield* Effect.fork(
+      Effect.gen(function* () {
+        let rawMessage: Uint8Array;
+        while ((rawMessage = yield* messageQueue.take)) {
+          const messageText: string = new TextDecoder().decode(rawMessage);
 
-      let status: Status = "DISCONNECTED";
+          const maybe: Option.Option<HydraMessage.StatusMessage> =
+            yield* Effect.option(HydraMessage.decodeStatusMessage(messageText));
 
-      if (Option.isSome(maybe)) {
-        const statusMessage: HydraMessage.StatusMessage = maybe.value;
-        yield* Effect.log(
-          `Valid status message received: ${statusMessage.headStatus}`,
-        );
-        status = HydraMessage.statusMessageToStatus(statusMessage);
-      } else {
-        yield* Effect.fail(new Error(`Failed to get status, got: ${maybe}`));
-      }
-
-      return status;
-    });
+          if (Option.isSome(maybe)) {
+            const statusMessage: HydraMessage.StatusMessage = maybe.value;
+            yield* Effect.log(
+              `Valid status message received: ${statusMessage.headStatus}`,
+            );
+            status = HydraMessage.statusMessageToStatus(statusMessage);
+          }
+        }
+      }),
+    );
 
     const initialize = Effect.gen(function* () {
       const messageQueue: Dequeue<Uint8Array> = yield* PubSub.subscribe(
@@ -73,7 +79,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       // Wait for a valid initializing message from the server
       while (status !== "INITIALIZING") {
         // Take next message from subscription
-        const rawMessage: Uint8Array = yield* messageQueue.take; // pause
+        const rawMessage: Uint8Array = yield* messageQueue.take;
         const messageText: string = new TextDecoder().decode(rawMessage);
 
         yield* Effect.log(
@@ -90,7 +96,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
           // Valid initializing message found
           const hydraMessage: HydraMessage.InitializingMessage = maybe.value;
           yield* Effect.log(
-            `Valid initializing message received: ${maybe.value.tag}`,
+            `Valid initializing message received: ${hydraMessage.tag}`,
           );
           status = "INITIALIZING";
           break;
