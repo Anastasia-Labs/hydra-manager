@@ -50,14 +50,19 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
         let rawMessage: Uint8Array;
         while ((rawMessage = yield* messageQueue.take)) {
           const messageText: string = new TextDecoder().decode(rawMessage);
-          const maybeStatus : Option.Option<HydraMessage.Status> = Option.firstSomeOf([
-            yield* Effect.option(HydraMessage.decodeStatusMessage(messageText)).pipe(
-              Effect.map(Option.flatMap(HydraMessage.statusMessageToStatus))
-            ),
-            yield* Effect.option(HydraMessage.decodeHydraMessage(messageText)).pipe(
-              Effect.map(Option.flatMap(HydraMessage.hydraMessageToStatus))
-            )
-          ]);
+          const maybeStatus: Option.Option<HydraMessage.Status> =
+            Option.firstSomeOf([
+              yield* Effect.option(
+                HydraMessage.decodeStatusMessage(messageText),
+              ).pipe(
+                Effect.map(Option.flatMap(HydraMessage.statusMessageToStatus)),
+              ),
+              yield* Effect.option(
+                HydraMessage.decodeHydraMessage(messageText),
+              ).pipe(
+                Effect.map(Option.flatMap(HydraMessage.hydraMessageToStatus)),
+              ),
+            ]);
 
           if (Option.isSome(maybeStatus)) {
             const statusRaw = yield* maybeStatus;
