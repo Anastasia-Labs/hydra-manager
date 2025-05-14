@@ -50,16 +50,21 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
         let rawMessage: Uint8Array;
         while ((rawMessage = yield* messageQueue.take)) {
           const messageText: string = new TextDecoder().decode(rawMessage);
+          const maybeStatus : Option.Option<HydraMessage.Status> = Option.firstSomeOf([
+            yield* Effect.option(HydraMessage.decodeStatusMessage(messageText)).pipe(
+              Effect.map(Option.flatMap(HydraMessage.statusMessageToStatus))
+            ),
+            yield* Effect.option(HydraMessage.decodeHydraMessage(messageText)).pipe(
+              Effect.map(Option.flatMap(HydraMessage.hydraMessageToStatus))
+            )
+          ]);
 
-          const maybe: Option.Option<HydraMessage.StatusMessage> =
-            yield* Effect.option(HydraMessage.decodeStatusMessage(messageText));
-
-          if (Option.isSome(maybe)) {
-            const statusMessage: HydraMessage.StatusMessage = maybe.value;
+          if (Option.isSome(maybeStatus)) {
+            const statusRaw = yield* maybeStatus;
             yield* Effect.log(
-              `Valid status message received: ${statusMessage.headStatus}`,
+              `Valid status received [${statusRaw}] from message: ${messageText}`,
             );
-            status = HydraMessage.statusMessageToStatus(statusMessage);
+            status = statusRaw;
           }
         }
       }),
@@ -98,7 +103,6 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
           yield* Effect.log(
             `Valid initializing message received: ${hydraMessage.tag}`,
           );
-          status = "INITIALIZING";
           break;
         } else {
           // Log failure but continue waiting
@@ -108,7 +112,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
         }
       }
 
-      yield* Effect.log("Initialization complete, status is now INITIALIZING");
+      yield* Effect.log(`Initialization complete, status is now ${status}`);
     });
 
     const newTx = (

@@ -1,4 +1,5 @@
-import { Schema } from "effect";
+import { Option, Schema } from "effect";
+import { Hydra } from "./lucid/Hydra.js";
 
 export type Status =
   | "DISCONNECTED"
@@ -24,30 +25,51 @@ export const StatusMessageSchema = Schema.Struct({
 });
 export type StatusMessage = typeof StatusMessageSchema.Type;
 
-export function statusMessageToStatus(message: StatusMessage): Status {
+export function statusMessageToStatus(
+  message: StatusMessage,
+): Option.Option<Status> {
   switch (message.headStatus) {
     case "Disconnected":
-      return "DISCONNECTED";
+      return Option.some("DISCONNECTED");
     case "Connecting":
-      return "CONNECTING";
+      return Option.some("CONNECTING");
     case "Idle":
-      return "IDLE";
+      return Option.some("IDLE");
     case "Initializing":
-      return "INITIALIZING";
+      return Option.some("INITIALIZING");
     case "Open":
-      return "OPEN";
+      return Option.some("OPEN");
     case "Closed":
-      return "CLOSED";
+      return Option.some("CLOSED");
     case "FanoutPossible":
-      return "FANOUT_POSSIBLE";
+      return Option.some("FANOUT_POSSIBLE");
     case "Final":
-      return "FINAL";
+      return Option.some("FINAL");
   }
 }
 
 export const decodeStatusMessage = Schema.decode(
   Schema.parseJson(StatusMessageSchema),
 );
+
+export function hydraMessageToStatus(
+  message: HydraMessage,
+): Option.Option<Status> {
+  switch (message.tag) {
+    case "HeadIsInitializing":
+      return Option.some("INITIALIZING");
+    case "HeadIsOpen":
+      return Option.some("OPEN");
+    case "HeadIsClosed":
+      return Option.some("CLOSED");
+    case "ReadyToFanout":
+      return Option.some("FANOUT_POSSIBLE");
+    case "HeadIsFinalized":
+      return Option.some("FINAL");
+    default:
+      return Option.none();
+  }
+}
 
 export const InitializingMessageSchema = Schema.Struct({
   tag: Schema.Literal("HeadIsInitializing"),
@@ -154,6 +176,10 @@ export const HydraMessageSchema = Schema.Union(
   SnapshotConfirmedMessageSchema,
 );
 export type HydraMessage = typeof HydraMessageSchema.Type;
+
+export const decodeHydraMessage = Schema.decode(
+  Schema.parseJson(HydraMessageSchema),
+);
 
 // Define schema for protocol parameters response
 export const ProtocolParametersResponseSchema = Schema.Struct({
