@@ -70,7 +70,7 @@ const testImpl = Effect.gen(function* () {
   const projectConfig: ProjectConfig = {
     network: "Preprod",
     providerId: {
-      blockfrostProjectId: "validID",
+      blockfrostProjectId: "invalidID",
     },
     contractsReferenceTxIds: "",
     mainNodeName: "Alice",
