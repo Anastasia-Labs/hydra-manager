@@ -71,20 +71,20 @@ importers:
     dependencies:
       '@effect/cli':
         specifier: latest
-        version: 0.61.0(@effect/platform@0.80.14(effect@3.14.14))(@effect/printer-ansi@0.42.21(@effect/typeclass@0.33.21(effect@3.14.14))(effect@3.14.14))(@effect/printer@0.42.21(@effect/typeclass@0.33.21(effect@3.14.14))(effect@3.14.14))(effect@3.14.14)
+        version: 0.61.2(@effect/platform@0.80.21(effect@3.15.0))(@effect/printer-ansi@0.42.21(@effect/typeclass@0.33.21(effect@3.15.0))(effect@3.15.0))(@effect/printer@0.42.21(@effect/typeclass@0.33.21(effect@3.15.0))(effect@3.15.0))(effect@3.15.0)
       '@effect/platform':
         specifier: ^0.80.14
-        version: 0.80.14(effect@3.14.14)
+        version: 0.80.21(effect@3.15.0)
       '@effect/platform-node':
         specifier: ^0.77.2
-        version: 0.77.2(@effect/cluster@0.30.2(@effect/platform@0.80.14(effect@3.14.14))(@effect/rpc@0.56.2(@effect/platform@0.80.14(effect@3.14.14))(effect@3.14.14))(@effect/sql@0.33.14(@effect/experimental@0.44.14(@effect/platform@0.80.14(effect@3.14.14))(effect@3.14.14))(@effect/platform@0.80.14(effect@3.14.14))(effect@3.14.14))(effect@3.14.14))(@effect/platform@0.80.14(effect@3.14.14))(@effect/rpc@0.56.2(@effect/platform@0.80.14(effect@3.14.14))(effect@3.14.14))(@effect/sql@0.33.14(@effect/experimental@0.44.14(@effect/platform@0.80.14(effect@3.14.14))(effect@3.14.14))(@effect/platform@0.80.14(effect@3.14.14))(effect@3.14.14))(effect@3.14.14)
+        version: 0.77.11(@effect/cluster@0.33.1(@effect/platform@0.80.21(effect@3.15.0))(@effect/rpc@0.59.1(@effect/platform@0.80.21(effect@3.15.0))(effect@3.15.0))(@effect/sql@0.35.0(@effect/experimental@0.46.0(@effect/platform@0.80.21(effect@3.15.0))(effect@3.15.0))(@effect/platform@0.80.21(effect@3.15.0))(effect@3.15.0))(effect@3.15.0))(@effect/platform@0.80.21(effect@3.15.0))(@effect/rpc@0.59.1(@effect/platform@0.80.21(effect@3.15.0))(effect@3.15.0))(@effect/sql@0.35.0(@effect/experimental@0.46.0(@effect/platform@0.80.21(effect@3.15.0))(effect@3.15.0))(@effect/platform@0.80.21(effect@3.15.0))(effect@3.15.0))(effect@3.15.0)
       effect:
         specifier: ^3.14.14
-        version: 3.14.14
+        version: 3.15.0
     devDependencies:
       '@effect/vitest':
         specifier: ^0.20.16
-        version: 0.20.16(effect@3.14.14)(vitest@3.1.2(@types/node@22.15.3)(yaml@2.7.1))
+        version: 0.20.17(effect@3.15.0)(vitest@3.1.3(@types/node@22.15.17)(yaml@2.7.1))
       '@hydra-manager/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
@@ -95,33 +95,33 @@ importers:
         specifier: ^0.5.0
         version: 0.5.0(vitest@3.1.3(@types/node@22.15.17)(yaml@2.7.1))
 
-  packages/control-node:
+  packages/pod-node:
     dependencies:
       '@effect/cli':
         specifier: latest
-        version: 0.61.0(@effect/platform@0.80.14(effect@3.14.14))(@effect/printer-ansi@0.42.21(@effect/typeclass@0.33.21(effect@3.14.14))(effect@3.14.14))(@effect/printer@0.42.21(@effect/typeclass@0.33.21(effect@3.14.14))(effect@3.14.14))(effect@3.14.14)
+        version: 0.61.2(@effect/platform@0.80.21(effect@3.15.0))(@effect/printer-ansi@0.42.21(@effect/typeclass@0.33.21(effect@3.15.0))(effect@3.15.0))(@effect/printer@0.42.21(@effect/typeclass@0.33.21(effect@3.15.0))(effect@3.15.0))(effect@3.15.0)
       '@effect/platform':
         specifier: ^0.80.14
-        version: 0.80.14(effect@3.14.14)
+        version: 0.80.21(effect@3.15.0)
       '@effect/platform-node':
         specifier: ^0.77.2
-        version: 0.77.2(@effect/cluster@0.30.2(@effect/platform@0.80.14(effect@3.14.14))(@effect/rpc@0.56.2(@effect/platform@0.80.14(effect@3.14.14))(effect@3.14.14))(@effect/sql@0.33.14(@effect/experimental@0.44.14(@effect/platform@0.80.14(effect@3.14.14))(effect@3.14.14))(@effect/platform@0.80.14(effect@3.14.14))(effect@3.14.14))(effect@3.14.14))(@effect/platform@0.80.14(effect@3.14.14))(@effect/rpc@0.56.2(@effect/platform@0.80.14(effect@3.14.14))(effect@3.14.14))(@effect/sql@0.33.14(@effect/experimental@0.44.14(@effect/platform@0.80.14(effect@3.14.14))(effect@3.14.14))(@effect/platform@0.80.14(effect@3.14.14))(effect@3.14.14))(effect@3.14.14)
+        version: 0.77.11(@effect/cluster@0.33.1(@effect/platform@0.80.21(effect@3.15.0))(@effect/rpc@0.59.1(@effect/platform@0.80.21(effect@3.15.0))(effect@3.15.0))(@effect/sql@0.35.0(@effect/experimental@0.46.0(@effect/platform@0.80.21(effect@3.15.0))(effect@3.15.0))(@effect/platform@0.80.21(effect@3.15.0))(effect@3.15.0))(effect@3.15.0))(@effect/platform@0.80.21(effect@3.15.0))(@effect/rpc@0.59.1(@effect/platform@0.80.21(effect@3.15.0))(effect@3.15.0))(@effect/sql@0.35.0(@effect/experimental@0.46.0(@effect/platform@0.80.21(effect@3.15.0))(effect@3.15.0))(@effect/platform@0.80.21(effect@3.15.0))(effect@3.15.0))(effect@3.15.0)
       effect:
         specifier: ^3.14.14
-        version: 3.14.14
+        version: 3.15.0
     devDependencies:
       '@effect/vitest':
         specifier: ^0.20.16
-        version: 0.20.16(effect@3.14.14)(vitest@3.1.2(@types/node@22.15.3)(yaml@2.7.1))
+        version: 0.20.17(effect@3.15.0)(vitest@3.1.3(@types/node@22.15.17)(yaml@2.7.1))
       '@hydra-manager/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       vitest:
         specifier: ^3.1.2
-        version: 3.1.2(@types/node@22.15.3)(yaml@2.7.1)
+        version: 3.1.3(@types/node@22.15.17)(yaml@2.7.1)
       vitest-websocket-mock:
         specifier: ^0.5.0
-        version: 0.5.0(vitest@3.1.2(@types/node@22.15.3)(yaml@2.7.1))
+        version: 0.5.0(vitest@3.1.3(@types/node@22.15.17)(yaml@2.7.1))
 
   packages/typescript-config: {}
 
@@ -225,6 +225,14 @@ packages:
       '@effect/printer': ^0.43.0
       '@effect/printer-ansi': ^0.43.0
       effect: ^3.15.0
+
+  '@effect/cli@0.61.2':
+    resolution: {integrity: sha512-abw7w6PcWtpatjkqfUfunjEN6ZQoj7beoeQfjbqxCC4r3bsHunIh7PJ48yGybxGHiSHVNfKPM0+twSlQ+muKVg==}
+    peerDependencies:
+      '@effect/platform': ^0.82.2
+      '@effect/printer': ^0.43.1
+      '@effect/printer-ansi': ^0.43.1
+      effect: ^3.15.1
 
   '@effect/cluster@0.33.1':
     resolution: {integrity: sha512-lEzaE8vRPy7ip4h/XqBrL0jWU9nOX60VH+YkiTlx0kHM9eJMAZdXn89CopjEZkqpByxTDEuViDaSu1jfMcs5rQ==}
@@ -1810,6 +1818,16 @@ snapshots:
       '@chainsafe/is-ip': 2.1.0
 
   '@effect/cli@0.61.0(@effect/platform@0.80.21(effect@3.15.0))(@effect/printer-ansi@0.42.21(@effect/typeclass@0.33.21(effect@3.15.0))(effect@3.15.0))(@effect/printer@0.42.21(@effect/typeclass@0.33.21(effect@3.15.0))(effect@3.15.0))(effect@3.15.0)':
+    dependencies:
+      '@effect/platform': 0.80.21(effect@3.15.0)
+      '@effect/printer': 0.42.21(@effect/typeclass@0.33.21(effect@3.15.0))(effect@3.15.0)
+      '@effect/printer-ansi': 0.42.21(@effect/typeclass@0.33.21(effect@3.15.0))(effect@3.15.0)
+      effect: 3.15.0
+      ini: 4.1.3
+      toml: 3.0.0
+      yaml: 2.7.1
+
+  '@effect/cli@0.61.2(@effect/platform@0.80.21(effect@3.15.0))(@effect/printer-ansi@0.42.21(@effect/typeclass@0.33.21(effect@3.15.0))(effect@3.15.0))(@effect/printer@0.42.21(@effect/typeclass@0.33.21(effect@3.15.0))(effect@3.15.0))(effect@3.15.0)':
     dependencies:
       '@effect/platform': 0.80.21(effect@3.15.0)
       '@effect/printer': 0.42.21(@effect/typeclass@0.33.21(effect@3.15.0))(effect@3.15.0)
