@@ -93,7 +93,8 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
             return Effect.succeedNone;
           } else {
             return Effect.fail(new Error(`Status is ${status}, espected IDLE`));
-          }}),
+          }
+        }),
         retryPolicy,
       );
 
@@ -142,7 +143,8 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
             return Effect.succeedNone;
           } else {
             return Effect.fail(new Error(`Status is ${status}, espected OPEN`));
-          }}),
+          }
+        }),
         retryPolicy,
       );
 
@@ -160,9 +162,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
         );
 
         const maybe: Option.Option<HydraMessage.ClosedMessage> =
-          yield* Effect.option(
-            HydraMessage.decodeClosedMessage(messageText),
-          );
+          yield* Effect.option(HydraMessage.decodeClosedMessage(messageText));
 
         if (Option.isSome(maybe)) {
           const hydraMessage: HydraMessage.ClosedMessage = maybe.value;
@@ -171,9 +171,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
           );
           break;
         } else {
-          yield* Effect.log(
-            `Received non-closing message: ${messageText}`,
-          );
+          yield* Effect.log(`Received non-closing message: ${messageText}`);
         }
       }
 
@@ -190,8 +188,11 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
           if (status == "FANOUT_POSSIBLE") {
             return Effect.succeedNone;
           } else {
-            return Effect.fail(new Error(`Status is ${status}, espected FANOUT_POSSIBLE`));
-          }}),
+            return Effect.fail(
+              new Error(`Status is ${status}, espected FANOUT_POSSIBLE`),
+            );
+          }
+        }),
         retryPolicy,
       );
 
@@ -220,9 +221,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
           );
           break;
         } else {
-          yield* Effect.log(
-            `Received non-finalized message: ${messageText}`,
-          );
+          yield* Effect.log(`Received non-finalized message: ${messageText}`);
         }
       }
 

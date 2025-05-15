@@ -13,7 +13,7 @@ import { Effect, Layer, Schema } from "effect";
 import { createServer } from "node:https";
 
 const managementGroup = HttpApiGroup.make("Management").add(
-  HttpApiEndpoint.get("start", "/start").addSuccess(Schema.String)
+  HttpApiEndpoint.get("start", "/start").addSuccess(Schema.String),
 );
 
 const Api = HttpApi.make("hydra-manager-pod-node").add(managementGroup);
@@ -21,7 +21,7 @@ const Api = HttpApi.make("hydra-manager-pod-node").add(managementGroup);
 const ManagementGroupLive = HttpApiBuilder.group(
   Api,
   "Management",
-  (handlers) => handlers.handle("start", () => Effect.succeed("Hello Start"))
+  (handlers) => handlers.handle("start", () => Effect.succeed("Hello Start")),
 );
 // Set up the application server with logging
 
@@ -43,22 +43,22 @@ const ServerEffectfullLive = Layer.mergeAll(
     getFiles.pipe(
       Effect.flatMap(
         ({ key, cert }) =>
-          NodeHttpServer.make(() => createServer({ key, cert }), { port })
+          NodeHttpServer.make(() => createServer({ key, cert }), { port }),
         // NodeHttpServer.make(() => createServer(), { port })
-      )
-    )
+      ),
+    ),
   ),
-  NodeHttpServer.layerContext
+  NodeHttpServer.layerContext,
 );
 
 const ApiLive = HttpApiBuilder.api(Api).pipe(
-  Layer.provide(ManagementGroupLive)
+  Layer.provide(ManagementGroupLive),
 );
 
 const ServerLive = HttpApiBuilder.serve().pipe(
   Layer.provide(HttpApiSwagger.layer()),
   Layer.provide(ApiLive),
-  Layer.provide(ServerEffectfullLive)
+  Layer.provide(ServerEffectfullLive),
 );
 
 /*
@@ -66,5 +66,5 @@ Output:
 timestamp=... level=INFO fiber=#0 message="Listening on https://localhost:3000"
 */
 export const serveCommand = Command.make("serve", {}, () =>
-  Layer.launch(ServerLive)
+  Layer.launch(ServerLive),
 );

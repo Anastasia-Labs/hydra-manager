@@ -117,7 +117,6 @@ export const decodeReadyToFanoutMessage = Schema.decode(
   Schema.parseJson(ReadyToFanoutMessageSchema),
 );
 
-
 export const TxValidMessageSchema = Schema.Struct({
   tag: Schema.Literal("TxValid"),
   transaction: Schema.Struct({
