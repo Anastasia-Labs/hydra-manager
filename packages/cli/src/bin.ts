@@ -13,7 +13,7 @@ const HydraHeadTestLayer = Layer.provide(
   HydraHead.Default,
   Layer.provideMerge(
     ProviderEffect.Default,
-    ProjectConfig.ProjectConfigFSLayer,
+    ProjectConfig.ProjectConfigFSLayer.pipe(Layer.provide(NodeContext.layer)),
   ),
 );
 const AppLayerTest = Layer.merge(HydraHeadTestLayer, NodeContext.layer);
