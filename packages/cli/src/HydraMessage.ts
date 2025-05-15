@@ -98,6 +98,10 @@ export const FinalizedMessageSchema = Schema.Struct({
 });
 export type FinalizedMessage = typeof FinalizedMessageSchema.Type;
 
+export const decodeFinalizedMessage = Schema.decode(
+  Schema.parseJson(FinalizedMessageSchema),
+);
+
 export const GreetingsMessageSchema = Schema.Struct({
   tag: Schema.Literal("Greetings"),
   headStatus: Schema.String,

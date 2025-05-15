@@ -7,6 +7,8 @@ import {
   Schema,
   Layer,
   Fiber,
+  Schedule,
+  Equal,
 } from "effect";
 import * as SocketClient from "./Socket.js";
 import * as HydraMessage from "./HydraMessage.js";
@@ -41,6 +43,11 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
 
     const messageQueue: Dequeue<Uint8Array> = yield* PubSub.subscribe(
       connection.messages,
+    );
+
+    const retryPolicy = Schedule.addDelay(
+      Schedule.recurs(10),
+      () => "100 millis",
     );
 
     let status: Status = "DISCONNECTED";
@@ -80,13 +87,21 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
         connection.messages,
       );
 
-      // Send initialization message
+      yield* Effect.retry(
+        Effect.gen(function* () {
+          if (status == "IDLE") {
+            return Effect.succeedNone;
+          } else {
+            return Effect.fail(new Error(`Status is ${status}, espected IDLE`));
+          }}),
+        retryPolicy,
+      );
+
       yield* connection.sendMessage(JSON.stringify({ tag: "Init" })).pipe(
         Effect.tap(() => Effect.log("Init message sent")),
         Effect.scoped,
       );
 
-      // Wait for a valid initializing message from the server
       while (status !== "INITIALIZING") {
         const rawMessage: Uint8Array = yield* messageQueue.take;
         const messageText: string = new TextDecoder().decode(rawMessage);
@@ -114,6 +129,104 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       }
 
       yield* Effect.log(`Initialization complete, status is now ${status}`);
+    });
+
+    const close = Effect.gen(function* () {
+      const messageQueue: Dequeue<Uint8Array> = yield* PubSub.subscribe(
+        connection.messages,
+      );
+
+      yield* Effect.retry(
+        Effect.gen(function* () {
+          if (status == "OPEN") {
+            return Effect.succeedNone;
+          } else {
+            return Effect.fail(new Error(`Status is ${status}, espected OPEN`));
+          }}),
+        retryPolicy,
+      );
+
+      yield* connection.sendMessage(JSON.stringify({ tag: "Close" })).pipe(
+        Effect.tap(() => Effect.log("Close message sent")),
+        Effect.scoped,
+      );
+
+      while (status !== "CLOSED") {
+        const rawMessage: Uint8Array = yield* messageQueue.take;
+        const messageText: string = new TextDecoder().decode(rawMessage);
+
+        yield* Effect.log(
+          `Received raw message during closing command: ${messageText}`,
+        );
+
+        const maybe: Option.Option<HydraMessage.ClosedMessage> =
+          yield* Effect.option(
+            HydraMessage.decodeClosedMessage(messageText),
+          );
+
+        if (Option.isSome(maybe)) {
+          const hydraMessage: HydraMessage.ClosedMessage = maybe.value;
+          yield* Effect.log(
+            `Valid closeing message received: ${hydraMessage.tag}`,
+          );
+          break;
+        } else {
+          yield* Effect.log(
+            `Received non-closing message: ${messageText}`,
+          );
+        }
+      }
+
+      yield* Effect.log(`Closing complete, status is now ${status}`);
+    });
+
+    const fanout = Effect.gen(function* () {
+      const messageQueue: Dequeue<Uint8Array> = yield* PubSub.subscribe(
+        connection.messages,
+      );
+
+      yield* Effect.retry(
+        Effect.gen(function* () {
+          if (status == "FANOUT_POSSIBLE") {
+            return Effect.succeedNone;
+          } else {
+            return Effect.fail(new Error(`Status is ${status}, espected FANOUT_POSSIBLE`));
+          }}),
+        retryPolicy,
+      );
+
+      yield* connection.sendMessage(JSON.stringify({ tag: "Fanout" })).pipe(
+        Effect.tap(() => Effect.log("Close message sent")),
+        Effect.scoped,
+      );
+
+      while (status !== "FINAL") {
+        const rawMessage: Uint8Array = yield* messageQueue.take;
+        const messageText: string = new TextDecoder().decode(rawMessage);
+
+        yield* Effect.log(
+          `Received raw message during initialization command: ${messageText}`,
+        );
+
+        const maybe: Option.Option<HydraMessage.FinalizedMessage> =
+          yield* Effect.option(
+            HydraMessage.decodeFinalizedMessage(messageText),
+          );
+
+        if (Option.isSome(maybe)) {
+          const hydraMessage: HydraMessage.FinalizedMessage = maybe.value;
+          yield* Effect.log(
+            `Valid finalized message received: ${hydraMessage.tag}`,
+          );
+          break;
+        } else {
+          yield* Effect.log(
+            `Received non-finalized message: ${messageText}`,
+          );
+        }
+      }
+
+      yield* Effect.log(`Fanout complete, status is now ${status}`);
     });
 
     const newTx = (
@@ -289,85 +402,6 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       return utxos;
     });
 
-    const close = Effect.gen(function* () {
-      const messageQueue: Dequeue<Uint8Array> = yield* PubSub.subscribe(
-        connection.messages,
-      );
-      // TODO: Change statuses to proper ones
-      yield* connection.sendMessage(JSON.stringify({ tag: "Close" })).pipe(
-        Effect.tap(() => Effect.log("Close message sent")),
-        Effect.scoped,
-      );
-
-      while (status !== "CLOSED") {
-        const rawMessage: Uint8Array = yield* messageQueue.take;
-        const messageText: string = new TextDecoder().decode(rawMessage);
-
-        yield* Effect.log(
-          `Received raw message during initialization command: ${messageText}`,
-        );
-
-        const maybe: Option.Option<HydraMessage.ClosedMessage> =
-          yield* Effect.option(
-            HydraMessage.decodeClosedMessage(messageText),
-          );
-
-        if (Option.isSome(maybe)) {
-          const hydraMessage: HydraMessage.ClosedMessage = maybe.value;
-          yield* Effect.log(
-            `Valid closeing message received: ${hydraMessage.tag}`,
-          );
-          break;
-        } else {
-          yield* Effect.log(
-            `Received non-closing message: ${messageText}`,
-          );
-        }
-      }
-
-      yield* Effect.log(`Closing complete, status is now ${status}`);
-    });
-
-    const fanout = Effect.gen(function* () {
-      const messageQueue: Dequeue<Uint8Array> = yield* PubSub.subscribe(
-        connection.messages,
-      );
-
-      yield* connection.sendMessage(JSON.stringify({ tag: "Close" })).pipe(
-        Effect.tap(() => Effect.log("Close message sent")),
-        Effect.scoped,
-      );
-
-      while (status !== "CLOSED") {
-        const rawMessage: Uint8Array = yield* messageQueue.take;
-        const messageText: string = new TextDecoder().decode(rawMessage);
-
-        yield* Effect.log(
-          `Received raw message during initialization command: ${messageText}`,
-        );
-
-        const maybe: Option.Option<HydraMessage.ClosedMessage> =
-          yield* Effect.option(
-            HydraMessage.decodeClosedMessage(messageText),
-          );
-
-        if (Option.isSome(maybe)) {
-          const hydraMessage: HydraMessage.ClosedMessage = maybe.value;
-          yield* Effect.log(
-            `Valid closeing message received: ${hydraMessage.tag}`,
-          );
-          break;
-        } else {
-          yield* Effect.log(
-            `Received non-closing message: ${messageText}`,
-          );
-        }
-      }
-
-      yield* Effect.log(`Closing complete, status is now ${status}`);
-    });
-
-
     const commit(utxos: Array<UTxO> = []) {
       let bodyRequest: string;
 
@@ -418,6 +452,8 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
     return {
       nodeName,
       initialize,
+      close,
+      fanout,
       newTx,
       protocolParameters,
       snapshotUTxO,
