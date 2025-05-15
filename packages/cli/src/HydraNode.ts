@@ -402,53 +402,6 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       return utxos;
     });
 
-    const commit(utxos: Array<UTxO> = []) {
-      let bodyRequest: string;
-
-      bodyRequest = JSON.stringify(
-        utxos.reduce(
-          (acc, u) => {
-            acc[u.txHash + "#" + u.outputIndex] = {
-              address: u.address,
-              datum: u.datum,
-              datumHash: u.datumHash,
-              inlineDatum: u.datum,
-              value: Object.keys(u.assets).reduce(
-                (acc, key) => {
-                  if (key == "lovelace")
-                    acc[key] = Number(u.assets[key].valueOf());
-                  else {
-                    const policyId = key.slice(0, 56);
-                    const assetName = key.slice(56);
-                    if (!acc[policyId]) acc[policyId] = {};
-                    (acc[policyId] as Record<string, number>)[assetName] =
-                      Number(u.assets[key].valueOf());
-                  }
-                  return acc;
-                },
-                {} as Record<string, number | Record<string, number>>,
-              ),
-            };
-            return acc;
-          },
-          {} as Record<string, any>,
-        ),
-      );
-
-      const body = await fetch(this._url.replace("ws", "http") + "/commit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: bodyRequest,
-      });
-
-      const txRequest = (await this.handleHttpResponse(
-        body,
-      )) as TransactionRequest;
-
-      return txRequest.cborHex as Transaction;
-    }
-
-
     return {
       nodeName,
       initialize,
