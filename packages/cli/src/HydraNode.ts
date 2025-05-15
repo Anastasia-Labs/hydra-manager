@@ -88,7 +88,6 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
 
       // Wait for a valid initializing message from the server
       while (status !== "INITIALIZING") {
-        // Take next message from subscription
         const rawMessage: Uint8Array = yield* messageQueue.take;
         const messageText: string = new TextDecoder().decode(rawMessage);
 
@@ -96,21 +95,18 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
           `Received raw message during initialization command: ${messageText}`,
         );
 
-        // Try to decode and validate the message
         const maybe: Option.Option<HydraMessage.InitializingMessage> =
           yield* Effect.option(
             HydraMessage.decodeInitializingMessage(messageText),
           );
 
         if (Option.isSome(maybe)) {
-          // Valid initializing message found
           const hydraMessage: HydraMessage.InitializingMessage = maybe.value;
           yield* Effect.log(
             `Valid initializing message received: ${hydraMessage.tag}`,
           );
           break;
         } else {
-          // Log failure but continue waiting
           yield* Effect.log(
             `Received non-initializing message: ${messageText}`,
           );
@@ -135,7 +131,6 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
           yield* newTxMessage.take,
         );
 
-        // Try to decode as a TxValidMessage
         const validMessage: Either.Either<
           HydraMessage.TxValidMessage,
           ParseError
@@ -293,6 +288,132 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
 
       return utxos;
     });
+
+    const close = Effect.gen(function* () {
+      const messageQueue: Dequeue<Uint8Array> = yield* PubSub.subscribe(
+        connection.messages,
+      );
+      // TODO: Change statuses to proper ones
+      yield* connection.sendMessage(JSON.stringify({ tag: "Close" })).pipe(
+        Effect.tap(() => Effect.log("Close message sent")),
+        Effect.scoped,
+      );
+
+      while (status !== "CLOSED") {
+        const rawMessage: Uint8Array = yield* messageQueue.take;
+        const messageText: string = new TextDecoder().decode(rawMessage);
+
+        yield* Effect.log(
+          `Received raw message during initialization command: ${messageText}`,
+        );
+
+        const maybe: Option.Option<HydraMessage.ClosedMessage> =
+          yield* Effect.option(
+            HydraMessage.decodeClosedMessage(messageText),
+          );
+
+        if (Option.isSome(maybe)) {
+          const hydraMessage: HydraMessage.ClosedMessage = maybe.value;
+          yield* Effect.log(
+            `Valid closeing message received: ${hydraMessage.tag}`,
+          );
+          break;
+        } else {
+          yield* Effect.log(
+            `Received non-closing message: ${messageText}`,
+          );
+        }
+      }
+
+      yield* Effect.log(`Closing complete, status is now ${status}`);
+    });
+
+    const fanout = Effect.gen(function* () {
+      const messageQueue: Dequeue<Uint8Array> = yield* PubSub.subscribe(
+        connection.messages,
+      );
+
+      yield* connection.sendMessage(JSON.stringify({ tag: "Close" })).pipe(
+        Effect.tap(() => Effect.log("Close message sent")),
+        Effect.scoped,
+      );
+
+      while (status !== "CLOSED") {
+        const rawMessage: Uint8Array = yield* messageQueue.take;
+        const messageText: string = new TextDecoder().decode(rawMessage);
+
+        yield* Effect.log(
+          `Received raw message during initialization command: ${messageText}`,
+        );
+
+        const maybe: Option.Option<HydraMessage.ClosedMessage> =
+          yield* Effect.option(
+            HydraMessage.decodeClosedMessage(messageText),
+          );
+
+        if (Option.isSome(maybe)) {
+          const hydraMessage: HydraMessage.ClosedMessage = maybe.value;
+          yield* Effect.log(
+            `Valid closeing message received: ${hydraMessage.tag}`,
+          );
+          break;
+        } else {
+          yield* Effect.log(
+            `Received non-closing message: ${messageText}`,
+          );
+        }
+      }
+
+      yield* Effect.log(`Closing complete, status is now ${status}`);
+    });
+
+
+    const commit(utxos: Array<UTxO> = []) {
+      let bodyRequest: string;
+
+      bodyRequest = JSON.stringify(
+        utxos.reduce(
+          (acc, u) => {
+            acc[u.txHash + "#" + u.outputIndex] = {
+              address: u.address,
+              datum: u.datum,
+              datumHash: u.datumHash,
+              inlineDatum: u.datum,
+              value: Object.keys(u.assets).reduce(
+                (acc, key) => {
+                  if (key == "lovelace")
+                    acc[key] = Number(u.assets[key].valueOf());
+                  else {
+                    const policyId = key.slice(0, 56);
+                    const assetName = key.slice(56);
+                    if (!acc[policyId]) acc[policyId] = {};
+                    (acc[policyId] as Record<string, number>)[assetName] =
+                      Number(u.assets[key].valueOf());
+                  }
+                  return acc;
+                },
+                {} as Record<string, number | Record<string, number>>,
+              ),
+            };
+            return acc;
+          },
+          {} as Record<string, any>,
+        ),
+      );
+
+      const body = await fetch(this._url.replace("ws", "http") + "/commit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: bodyRequest,
+      });
+
+      const txRequest = (await this.handleHttpResponse(
+        body,
+      )) as TransactionRequest;
+
+      return txRequest.cborHex as Transaction;
+    }
+
 
     return {
       nodeName,

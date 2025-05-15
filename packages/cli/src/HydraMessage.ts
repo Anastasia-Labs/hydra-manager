@@ -89,6 +89,10 @@ export const ClosedMessageSchema = Schema.Struct({
 });
 export type ClosedMessage = typeof ClosedMessageSchema.Type;
 
+export const decodeClosedMessage = Schema.decode(
+  Schema.parseJson(ClosedMessageSchema),
+);
+
 export const FinalizedMessageSchema = Schema.Struct({
   tag: Schema.Literal("HeadIsFinalized"),
 });
@@ -104,6 +108,11 @@ export const ReadyToFanoutMessageSchema = Schema.Struct({
   tag: Schema.Literal("ReadyToFanout"),
 });
 export type ReadyToFanoutMessage = typeof ReadyToFanoutMessageSchema.Type;
+
+export const decodeReadyToFanoutMessage = Schema.decode(
+  Schema.parseJson(ReadyToFanoutMessageSchema),
+);
+
 
 export const TxValidMessageSchema = Schema.Struct({
   tag: Schema.Literal("TxValid"),
