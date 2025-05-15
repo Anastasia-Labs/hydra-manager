@@ -1,7 +1,6 @@
 import type { LucidEvolution, Provider } from "@lucid-evolution/lucid";
 import { Lucid, Network } from "@lucid-evolution/lucid";
-import { Context, Effect, Layer } from "effect";
-// import { ProjectConfigService } from "./ProjectConfig.js";
+import { Context, Effect, Layer, Schedule } from "effect";
 import * as ProjectConfig from "./ProjectConfig.js";
 import { ProviderEffect } from "./Provider.js";
 import { HydraNode } from "./HydraNode.js";
@@ -15,11 +14,17 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
     const config = yield* ProjectConfig.ProjectConfigService;
     const providerEffect = yield* ProviderEffect;
 
-    // const provider_lucid_L1: LucidEvolution = yield* Effect.tryPromise({
-    //   try: () => Lucid(providerEffect.provider, config.projectConfig.network),
-    //   catch: (e) =>
-    //     new Error(`Failed to get LucidEvolution object for provider: ${e}`),
-    // });
+    const providerLucidRetryPolicy = Schedule.addDelay(
+      Schedule.recurs(10),
+      () => "100 millis",
+    );
+    const providerLucidL1: LucidEvolution = yield* Effect.retry(
+      Effect.tryPromise({
+        try: () => Lucid(providerEffect.provider, config.projectConfig.network),
+        catch: (e) => new Error(`Failed to get LucidEvolution object: ${e}`),
+      }),
+      providerLucidRetryPolicy,
+    );
 
     const nodeNames = config.projectConfig.nodes.map((node) => node.name);
     const nodeConfigs = yield* Effect.forEach(nodeNames, (name) =>
@@ -68,7 +73,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       });
 
     return {
-      // provider_lucid_L1: provider_lucid_L1,
+      providerLucidL1,
       mainNode,
       hydraNodes,
       nodeLucidL2,

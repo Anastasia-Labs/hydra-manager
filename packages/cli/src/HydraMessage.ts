@@ -1,4 +1,74 @@
-import { Schema } from "effect";
+import { Option, Schema } from "effect";
+
+export type Status =
+  | "DISCONNECTED"
+  | "CONNECTING"
+  | "IDLE"
+  | "INITIALIZING"
+  | "OPEN"
+  | "CLOSED"
+  | "FANOUT_POSSIBLE"
+  | "FINAL";
+
+export const StatusMessageSchema = Schema.Struct({
+  headStatus: Schema.Literal(
+    "Disconnected",
+    "Connecting",
+    "Idle",
+    "Initializing",
+    "Open",
+    "Closed",
+    "FanoutPossible",
+    "Final",
+  ),
+});
+export type StatusMessage = typeof StatusMessageSchema.Type;
+
+export function statusMessageToStatus(
+  message: StatusMessage,
+): Option.Option<Status> {
+  switch (message.headStatus) {
+    case "Disconnected":
+      return Option.some("DISCONNECTED");
+    case "Connecting":
+      return Option.some("CONNECTING");
+    case "Idle":
+      return Option.some("IDLE");
+    case "Initializing":
+      return Option.some("INITIALIZING");
+    case "Open":
+      return Option.some("OPEN");
+    case "Closed":
+      return Option.some("CLOSED");
+    case "FanoutPossible":
+      return Option.some("FANOUT_POSSIBLE");
+    case "Final":
+      return Option.some("FINAL");
+  }
+}
+
+export const decodeStatusMessage = Schema.decode(
+  Schema.parseJson(StatusMessageSchema),
+);
+
+export function hydraMessageToStatus(
+  message: HydraMessage,
+): Option.Option<Status> {
+  switch (message.tag) {
+    case "HeadIsInitializing":
+      return Option.some("INITIALIZING");
+    case "HeadIsOpen":
+      return Option.some("OPEN");
+    case "HeadIsClosed":
+      return Option.some("CLOSED");
+    case "ReadyToFanout":
+      return Option.some("FANOUT_POSSIBLE");
+    case "HeadIsFinalized":
+      return Option.some("FINAL");
+    default:
+      return Option.none();
+  }
+}
 
 export const InitializingMessageSchema = Schema.Struct({
   tag: Schema.Literal("HeadIsInitializing"),
@@ -19,10 +89,18 @@ export const ClosedMessageSchema = Schema.Struct({
 });
 export type ClosedMessage = typeof ClosedMessageSchema.Type;
 
+export const decodeClosedMessage = Schema.decode(
+  Schema.parseJson(ClosedMessageSchema),
+);
+
 export const FinalizedMessageSchema = Schema.Struct({
   tag: Schema.Literal("HeadIsFinalized"),
 });
 export type FinalizedMessage = typeof FinalizedMessageSchema.Type;
+
+export const decodeFinalizedMessage = Schema.decode(
+  Schema.parseJson(FinalizedMessageSchema),
+);
 
 export const GreetingsMessageSchema = Schema.Struct({
   tag: Schema.Literal("Greetings"),
@@ -34,6 +112,11 @@ export const ReadyToFanoutMessageSchema = Schema.Struct({
   tag: Schema.Literal("ReadyToFanout"),
 });
 export type ReadyToFanoutMessage = typeof ReadyToFanoutMessageSchema.Type;
+
+export const decodeReadyToFanoutMessage = Schema.decode(
+  Schema.parseJson(ReadyToFanoutMessageSchema),
+);
+
 
 export const TxValidMessageSchema = Schema.Struct({
   tag: Schema.Literal("TxValid"),
@@ -105,6 +188,10 @@ export const HydraMessageSchema = Schema.Union(
   SnapshotConfirmedMessageSchema,
 );
 export type HydraMessage = typeof HydraMessageSchema.Type;
+
+export const decodeHydraMessage = Schema.decode(
+  Schema.parseJson(HydraMessageSchema),
+);
 
 // Define schema for protocol parameters response
 export const ProtocolParametersResponseSchema = Schema.Struct({
