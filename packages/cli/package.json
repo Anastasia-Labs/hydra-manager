@@ -4,6 +4,9 @@
   "private": true,
   "license": "MIT",
   "type": "module",
+  "scripts": {
+    "build": "bun build.ts"
+  },
   "devDependencies": {
     "@effect/vitest": "^0.20.16",
     "@hydra-manager/typescript-config": "workspace:*",
