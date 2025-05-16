@@ -17,7 +17,7 @@ const ProjectConfig = Schema.Struct({
   providerId: CardanoProvider,
   contractsReferenceTxIds: Schema.String,
   mainNodeName: Schema.String,
-  nodes: Schema.Array(NodeConfig.NodeConfig),
+  nodes: Schema.Array(NodeConfig.NodeConfigSchema),
 });
 
 export type ProjectConfig = typeof ProjectConfig.Type;
@@ -58,7 +58,6 @@ const fileSystemImpl = Effect.gen(function* () {
     });
 
   return { projectConfig, getNodeConfigByName };
-  // TODO: add environment configuration lookups
 });
 
 export const ProjectConfigFSLayer = Layer.effect(
@@ -99,17 +98,14 @@ const testImpl = Effect.gen(function* () {
       url: "ws://localhost:4001",
       fundsWalletSK: {
         type: "PaymentSigningKeyShelley_ed25519",
-        description: "Payment Signing Key",
         cborHex: "5820...",
       },
       nodeWalletSK: {
         type: "PaymentSigningKeyShelley_ed25519",
-        description: "Payment Signing Key",
         cborHex: "5820...",
       },
       hydraSK: {
         type: "HydraSigningKey_ed25519",
-        description: "",
         cborHex: "5820...",
       },
     });

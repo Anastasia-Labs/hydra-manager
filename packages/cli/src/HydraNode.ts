@@ -348,19 +348,28 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
 
     const commit = (
       utxos: Array<UTxO>,
-    ) : Effect.Effect<HydraMessage.TransactionRequestType, ParseError | HttpClientError | HttpBodyError> =>
+    ): Effect.Effect<
+      HydraMessage.TransactionRequestType,
+      ParseError | HttpClientError | HttpBodyError
+    > =>
       Effect.gen(function* () {
-        const body = JSON.stringify(HydraMessage.utxoArrayToUTxOResponse(utxos))
-        const response : HydraMessage.TransactionRequestType = yield* HttpClientRequest.post(`${httpServerUrl}/commit`)
-        .pipe(
-          HttpClientRequest.bodyJson(body),
-          Effect.flatMap(httpClient.execute),
-          Effect.flatMap(filterStatusOk),
-          Effect.flatMap(HttpClientResponse.schemaBodyJson(HydraMessage.TransactionRequestSchema)),
-          Effect.scoped,
+        const body = JSON.stringify(
+          HydraMessage.utxoArrayToUTxOResponse(utxos),
         );
+        const response: HydraMessage.TransactionRequestType =
+          yield* HttpClientRequest.post(`${httpServerUrl}/commit`).pipe(
+            HttpClientRequest.bodyJson(body),
+            Effect.flatMap(httpClient.execute),
+            Effect.flatMap(filterStatusOk),
+            Effect.flatMap(
+              HttpClientResponse.schemaBodyJson(
+                HydraMessage.TransactionRequestSchema,
+              ),
+            ),
+            Effect.scoped,
+          );
         return response;
-  });
+      });
 
     return {
       nodeName,
