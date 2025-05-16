@@ -1,4 +1,5 @@
-import { Option, Schema } from "effect";
+import { Assets, UTxO } from "@lucid-evolution/core-types";
+import { Option, Record, Schema } from "effect";
 
 export type Status =
   | "DISCONNECTED"
@@ -116,7 +117,6 @@ export type ReadyToFanoutMessage = typeof ReadyToFanoutMessageSchema.Type;
 export const decodeReadyToFanoutMessage = Schema.decode(
   Schema.parseJson(ReadyToFanoutMessageSchema),
 );
-
 
 export const TxValidMessageSchema = Schema.Struct({
   tag: Schema.Literal("TxValid"),
@@ -260,6 +260,96 @@ export const UTxOResponseSchema = Schema.Record({
 export type ProtocolParametersResponse =
   typeof ProtocolParametersResponseSchema.Type;
 export type UTxOResponseType = typeof UTxOResponseSchema.Type;
+
+export function utxoResponseToUTxOArray(
+  utxoResponse: UTxOResponseType,
+): Array<UTxO> {
+  return Object.entries(utxoResponse).map(([utxoKey, utxoData]) => {
+    const [txHash, outputIndexStr] = utxoKey.split("#");
+    const outputIndex = Number(outputIndexStr);
+
+    const assets: Assets = {};
+
+    if (utxoData.value.lovelace) {
+      assets["lovelace"] = BigInt(utxoData.value.lovelace);
+    }
+    // Process other assets if they exist
+    // Iterate through all entries in value object except lovelace
+    Object.entries(utxoData.value).forEach(([key, value]) => {
+      if (key !== "lovelace") {
+        // Narrow down to assets
+        if (typeof value === "object") {
+          Object.entries(value).forEach(([assetName, amount]) => {
+            const fullAssetId = key + assetName;
+            assets[fullAssetId] = BigInt(amount);
+          });
+        }
+      }
+    });
+
+    const utxo: UTxO = {
+      txHash,
+      outputIndex,
+      address: utxoData.address,
+      assets,
+      datum: utxoData.datum,
+      datumHash: utxoData.datumHash,
+    };
+
+    if (utxoData.inlineDatum !== undefined) {
+      //TODO: Decode inline datum
+      //NOTE: Double check the hydra api docs
+      const inline = utxoData.inlineDatum;
+    }
+
+    if (utxoData.referenceScript !== undefined) {
+      //TODO: Decode reference script
+      utxo.scriptRef = undefined;
+    }
+
+    return utxo;
+  });
+}
+
+function joinValueRecords(
+  records: Record<string, number | Record<string, number>>[],
+): Record<string, number | Record<string, number>> {
+  return records.reduce((acc, record) => {
+    return Object.assign(acc, record);
+  });
+}
+
+export function utxoArrayToUTxOResponse(utxos: Array<UTxO>): UTxOResponseType {
+  return utxos.reduce(
+    (acc, utxo: UTxO) => {
+      acc[utxo.txHash + "#" + utxo.outputIndex] = {
+        address: utxo.address,
+        datum: utxo.datum,
+        datumHash: utxo.datumHash,
+        inlineDatum: utxo.datum,
+        value: joinValueRecords(
+          Object.keys(utxo.assets).map((assetKey) => {
+            let res: Record<string, number | Record<string, number>>;
+            if (assetKey == "lovelace") {
+              res = { [assetKey]: Number(utxo.assets[assetKey].valueOf()) };
+            } else {
+              const policyId = assetKey.slice(0, 56);
+              const assetName = assetKey.slice(56);
+              res = {
+                [policyId]: {
+                  [assetName]: Number(utxo.assets[assetKey].valueOf()),
+                },
+              };
+            }
+            return res;
+          }),
+        ),
+      };
+      return acc;
+    },
+    {} as Record<string, any>,
+  );
+}
 
 export const TransactionRequestSchema = Schema.Struct({
   type: Schema.String,
