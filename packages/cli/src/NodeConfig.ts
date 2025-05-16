@@ -24,7 +24,7 @@ export class NodeConfigService extends Context.Tag("NodeConfig")<
   { readonly nodeConfig: NodeConfig }
 >() {}
 
-function skToAddress(nodeSK: SK): Effect.Effect<string, Error> {
+export function skToAddress(nodeSK: SK): Effect.Effect<string, Error> {
   if (nodeSK.cborHex.startsWith("5820")) {
     const privateKey = CML.PrivateKey.from_normal_bytes(
       Buffer.from(nodeSK.cborHex.substring(4), "hex"),

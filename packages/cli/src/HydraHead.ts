@@ -1,4 +1,4 @@
-import type { LucidEvolution, Provider } from "@lucid-evolution/lucid";
+import type { LucidEvolution, Provider, UTxO } from "@lucid-evolution/lucid";
 import { Lucid, Network } from "@lucid-evolution/lucid";
 import { Context, Effect, Layer, Schedule } from "effect";
 import * as ProjectConfig from "./ProjectConfig.js";
@@ -25,6 +25,10 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       }),
       providerLucidRetryPolicy,
     );
+
+    const getNodeUTxOs = (nodeName: string) : Effect.Effect<Array<UTxO>, Error> => {
+      const nodeConfig = config.getNodeConfigByName(nodeName)
+    }
 
     const nodeNames = config.projectConfig.nodes.map((node) => node.name);
     const nodeConfigs = yield* Effect.forEach(nodeNames, (name) =>
@@ -54,7 +58,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       );
     }
 
-    const nodeLucidL2 = (nodeName: String) =>
+    const nodesL2 = (nodeName: String) =>
       Effect.gen(function* () {
         const mbNode = config.projectConfig.nodes.find(
           (node) => node.name === nodeName,
@@ -76,7 +80,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       providerLucidL1,
       mainNode,
       hydraNodes,
-      nodeLucidL2,
+      nodesL2,
     };
   }),
 }) {}
