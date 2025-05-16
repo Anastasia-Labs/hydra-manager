@@ -26,8 +26,15 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       providerLucidRetryPolicy,
     );
 
-    const getNodeUTxOs = (nodeName: string) : Effect.Effect<Array<UTxO>, Error> => {
-      const nodeConfig = config.getNodeConfigByName(nodeName)
+    const getNodeFundsUTxOs = (nodeName: string) : Effect.Effect<Array<UTxO>, Error> => {
+      return Effect.gen(function* () {
+        const nodeConfig = yield* config.getNodeConfigByName(nodeName)
+        const address = yield* NodeConfig.skToAddress(nodeConfig.fundsWalletSK)
+        return yield* Effect.tryPromise({
+          try: () => providerLucidL1.utxosAt(address),
+          catch: (e) =>  new Error(`Failed to get UTxOs at ${address}: ${e}`),
+        })
+      })
     }
 
     const nodeNames = config.projectConfig.nodes.map((node) => node.name);
