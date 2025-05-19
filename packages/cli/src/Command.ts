@@ -32,42 +32,29 @@ export const fanoutHead = Effect.gen(function* () {
 
 const nodeNameOption = Options.text("node-name").pipe(
   Options.withDescription("Name of the node you wish to interact with")
-)
+).pipe(Options.optional)
 
 export const utxosCommand = Command.make("utxos", {nodeNameOption}).pipe(
-  Command.withHandler((options) => balanceHead(options.nodeNameOption))
+  Command.withHandler((options) => utxosHead(options.nodeNameOption))
 )
 
-export const utxosHead = (nodeName: string) => Effect.gen(function* () {
+export const utxosHead = (nodeName: Option.Option<string>) => Effect.gen(function* () {
   const hydraHead = yield* HydraHead;
-  yield* hydraHead.logUTxOs(nodeName);
+  yield* Option.match( nodeName, {
+    onNone: () => hydraHead.logAllUTxOs,
+    onSome: (nodeName) => hydraHead.logUTxOs(nodeName)
+  })
 });
 
-export const utxosAllCommand = Command.make("utxos-all", {}).pipe(
-  Command.withHandler(() => utxosAllHead),
-);
-
-export const utxosAllHead = Effect.gen(function* () {
-  const hydraHead = yield* HydraHead;
-  yield* hydraHead.logAllUTxOs;
-});
-
-
-export const balanceCommand = Command.make("balance", {nodeNameOption}).pipe(
-  Command.withHandler((options) => balanceHead(options.nodeNameOption))
+export const balanceCommand = Command.make("balance", { nodeNameOption }).pipe(
+  Command.withHandler((options) => { return balancesHead(options.nodeNameOption) })
 )
 
-export const balanceHead = (nodeName: string) => Effect.gen(function* () {
+export const balancesHead = (nodeName: Option.Option<string>) => Effect.gen(function* () {
   const hydraHead = yield* HydraHead;
-  yield* hydraHead.logBalance(nodeName);
-});
-
-export const balancesCommand = Command.make("balances", {}).pipe(
-  Command.withHandler(() => balancesHead),
-);
-
-export const balancesHead = Effect.gen(function* () {
-  const hydraHead = yield* HydraHead;
-  yield* hydraHead.logBalances;
+  yield* Option.match( nodeName, {
+    onNone: () => hydraHead.logBalances,
+    onSome: (nodeName) => hydraHead.logBalance(nodeName)
+  })
 });
 

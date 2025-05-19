@@ -101,8 +101,6 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
     };
 
     const logUTxOs = (nodeName: string) => Effect.gen(function* () {
-      yield* Effect.log(`nodeName: ${nodeName}`)
-
       const fundsUTxOs : Array<UTxO> = yield* getFundsUTxOs(nodeName)
       const nodeUTxOs : Array<UTxO> = yield* getNodeUTxOs(nodeName)
 
@@ -132,8 +130,6 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
     );
 
     const logBalance = (nodeName: string) => Effect.gen(function* () {
-      yield* Effect.log(`nodeName: ${nodeName}`)
-
       const fundsUTxOs : Array<UTxO> = yield* getFundsUTxOs(nodeName)
       const nodeUTxOs : Array<UTxO> = yield* getNodeUTxOs(nodeName)
 
