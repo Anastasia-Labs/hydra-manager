@@ -100,68 +100,73 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       });
     };
 
-    const logUTxOs = (nodeName: string) => Effect.gen(function* () {
-      const fundsUTxOs : Array<UTxO> = yield* getFundsUTxOs(nodeName)
-      const nodeUTxOs : Array<UTxO> = yield* getNodeUTxOs(nodeName)
+    const logUTxOs = (nodeName: string) =>
+      Effect.gen(function* () {
+        const fundsUTxOs: Array<UTxO> = yield* getFundsUTxOs(nodeName);
+        const nodeUTxOs: Array<UTxO> = yield* getNodeUTxOs(nodeName);
 
-      const nodeConfig = yield* config.getNodeConfigByName(nodeName);
-      const fundsAddress = yield* NodeConfig.skToAddress(
-        nodeConfig.fundsWalletSK,
-      );
-      const nodeAddress = yield* NodeConfig.skToAddress(
-        nodeConfig.nodeWalletSK,
-      );
+        const nodeConfig = yield* config.getNodeConfigByName(nodeName);
+        const fundsAddress = yield* NodeConfig.skToAddress(
+          nodeConfig.fundsWalletSK,
+        );
+        const nodeAddress = yield* NodeConfig.skToAddress(
+          nodeConfig.nodeWalletSK,
+        );
 
-      yield* Effect.log(`${nodeName} UTxOs:`);
-      yield* Effect.log(
-        `  - funds address ${fundsAddress} UTxOs are:`,
-      );
-      yield* Effect.log(yield* Effect.log(JSON.stringify(fundsUTxOs, (_, v) => typeof v === 'bigint' ? v.toString() + 'n' : v)));
+        yield* Effect.log(`${nodeName} UTxOs:`);
+        yield* Effect.log(`  - funds address ${fundsAddress} UTxOs are:`);
+        const strFundsUTxOs = JSON.stringify(fundsUTxOs, (_, v) =>
+          typeof v === "bigint" ? v.toString() : v,
+        );
+        yield* Effect.log(strFundsUTxOs);
 
-      yield* Effect.log(
-        `  - node address ${nodeAddress} UTxOs are:`,
-      );
-      yield* Effect.log(JSON.stringify(nodeUTxOs, (_, v) => typeof v === 'bigint' ? v.toString() + 'n' : v));
-    })
+        yield* Effect.log(`  - node address ${nodeAddress} UTxOs are:`);
+
+        const strNodeUTxOs = JSON.stringify(nodeUTxOs, (_, v) =>
+          typeof v === "bigint" ? v.toString() : v,
+        );
+        yield* Effect.log(strNodeUTxOs);
+      });
 
     const logAllUTxOs = Effect.forEach(nodeNames, (nodeName) =>
-      logUTxOs(nodeName)
+      logUTxOs(nodeName),
     );
 
-    const logBalance = (nodeName: string) => Effect.gen(function* () {
-      const fundsUTxOs : Array<UTxO> = yield* getFundsUTxOs(nodeName)
-      const nodeUTxOs : Array<UTxO> = yield* getNodeUTxOs(nodeName)
+    const logBalance = (nodeName: string) =>
+      Effect.gen(function* () {
+        const fundsUTxOs: Array<UTxO> = yield* getFundsUTxOs(nodeName);
+        const nodeUTxOs: Array<UTxO> = yield* getNodeUTxOs(nodeName);
 
-      const fundsBalance : bigint =
-        fundsUTxOs.reduce(
-          (acc, utxo) => acc + utxo.assets["lovelace"].valueOf(),
-          0n,
-        ) / 1000000n;
-      const nodeBalance : bigint =
-        nodeUTxOs.reduce(
-          (acc, utxo) => acc + utxo.assets["lovelace"].valueOf(),
-          0n,
-        ) / 1000000n;
+        const fundsBalance: bigint =
+          fundsUTxOs.reduce(
+            (acc, utxo) => acc + utxo.assets["lovelace"].valueOf(),
+            0n,
+          ) / 1000000n;
+        const nodeBalance: bigint =
+          nodeUTxOs.reduce(
+            (acc, utxo) => acc + utxo.assets["lovelace"].valueOf(),
+            0n,
+          ) / 1000000n;
 
-      const nodeConfig = yield* config.getNodeConfigByName(nodeName);
-      const fundsAddress = yield* NodeConfig.skToAddress(
-        nodeConfig.fundsWalletSK,
-      );
-      const nodeAddress = yield* NodeConfig.skToAddress(
-        nodeConfig.nodeWalletSK,
-      );
+        const nodeConfig = yield* config.getNodeConfigByName(nodeName);
+        const fundsAddress = yield* NodeConfig.skToAddress(
+          nodeConfig.fundsWalletSK,
+        );
+        const nodeAddress = yield* NodeConfig.skToAddress(
+          nodeConfig.nodeWalletSK,
+        );
 
-      yield* Effect.log(`${nodeName} balances:`);
-      yield* Effect.log(
-        `  - funds address ${fundsAddress} balance is ${fundsBalance}`,
-      );
-      yield* Effect.log(
-        `  - node address ${nodeAddress} balance is ${nodeBalance}`,
-      );
-    });
+        yield* Effect.log(`${nodeName} balances:`);
+        yield* Effect.log(
+          `  - funds address ${fundsAddress} balance is ${fundsBalance}`,
+        );
+        yield* Effect.log(
+          `  - node address ${nodeAddress} balance is ${nodeBalance}`,
+        );
+      });
 
     const logBalances = Effect.forEach(nodeNames, (nodeName) =>
-      logBalance(nodeName)
+      logBalance(nodeName),
     );
 
     return {

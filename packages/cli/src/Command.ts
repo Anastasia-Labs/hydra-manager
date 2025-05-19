@@ -30,31 +30,34 @@ export const fanoutHead = Effect.gen(function* () {
   yield* hydraHead.mainNode.fanout;
 });
 
-const nodeNameOption = Options.text("node-name").pipe(
-  Options.withDescription("Name of the node you wish to interact with")
-).pipe(Options.optional)
+const nodeNameOption = Options.text("node-name")
+  .pipe(Options.withDescription("Name of the node you wish to interact with"))
+  .pipe(Options.optional);
 
-export const utxosCommand = Command.make("utxos", {nodeNameOption}).pipe(
-  Command.withHandler((options) => utxosHead(options.nodeNameOption))
-)
+export const utxosCommand = Command.make("utxos", { nodeNameOption }).pipe(
+  Command.withHandler((options) => utxosHead(options.nodeNameOption)),
+);
 
-export const utxosHead = (nodeName: Option.Option<string>) => Effect.gen(function* () {
-  const hydraHead = yield* HydraHead;
-  yield* Option.match( nodeName, {
-    onNone: () => hydraHead.logAllUTxOs,
-    onSome: (nodeName) => hydraHead.logUTxOs(nodeName)
-  })
-});
+export const utxosHead = (nodeName: Option.Option<string>) =>
+  Effect.gen(function* () {
+    const hydraHead = yield* HydraHead;
+    yield* Option.match(nodeName, {
+      onNone: () => hydraHead.logAllUTxOs,
+      onSome: (nodeName) => hydraHead.logUTxOs(nodeName),
+    });
+  });
 
 export const balanceCommand = Command.make("balance", { nodeNameOption }).pipe(
-  Command.withHandler((options) => { return balancesHead(options.nodeNameOption) })
-)
+  Command.withHandler((options) => {
+    return balancesHead(options.nodeNameOption);
+  }),
+);
 
-export const balancesHead = (nodeName: Option.Option<string>) => Effect.gen(function* () {
-  const hydraHead = yield* HydraHead;
-  yield* Option.match( nodeName, {
-    onNone: () => hydraHead.logBalances,
-    onSome: (nodeName) => hydraHead.logBalance(nodeName)
-  })
-});
-
+export const balancesHead = (nodeName: Option.Option<string>) =>
+  Effect.gen(function* () {
+    const hydraHead = yield* HydraHead;
+    yield* Option.match(nodeName, {
+      onNone: () => hydraHead.logBalances,
+      onSome: (nodeName) => hydraHead.logBalance(nodeName),
+    });
+  });
