@@ -30,11 +30,32 @@ export const fanoutHead = Effect.gen(function* () {
   yield* hydraHead.mainNode.fanout;
 });
 
-const nodeNameArgs = Args.text({name: "nodeName"})
+const nodeNameOption = Options.text("node-name").pipe(
+  Options.withDescription("Name of the node you wish to interact with")
+)
 
-export const balanceCommand = Command.make("balance", { nodeNameArgs }).pipe(
-  Command.withHandler((args) => balanceHead(args.nodeNameArgs)),
+export const utxosCommand = Command.make("utxos", {nodeNameOption}).pipe(
+  Command.withHandler((options) => balanceHead(options.nodeNameOption))
+)
+
+export const utxosHead = (nodeName: string) => Effect.gen(function* () {
+  const hydraHead = yield* HydraHead;
+  yield* hydraHead.logUTxOs(nodeName);
+});
+
+export const utxosAllCommand = Command.make("utxos-all", {}).pipe(
+  Command.withHandler(() => utxosAllHead),
 );
+
+export const utxosAllHead = Effect.gen(function* () {
+  const hydraHead = yield* HydraHead;
+  yield* hydraHead.logAllUTxOs;
+});
+
+
+export const balanceCommand = Command.make("balance", {nodeNameOption}).pipe(
+  Command.withHandler((options) => balanceHead(options.nodeNameOption))
+)
 
 export const balanceHead = (nodeName: string) => Effect.gen(function* () {
   const hydraHead = yield* HydraHead;

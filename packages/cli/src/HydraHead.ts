@@ -74,7 +74,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
         );
       });
 
-    const getNodeFundsUTxOs = (
+    const getFundsUTxOs = (
       nodeName: string,
     ): Effect.Effect<Array<UTxO>, Error> => {
       return Effect.gen(function* () {
@@ -87,8 +87,25 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       });
     };
 
-    const logBalance = (nodeName: string) => Effect.gen(function* () {
+    const getNodeUTxOs = (
+      nodeName: string,
+    ): Effect.Effect<Array<UTxO>, Error> => {
+      return Effect.gen(function* () {
+        const nodeConfig = yield* config.getNodeConfigByName(nodeName);
+        const address = yield* NodeConfig.skToAddress(nodeConfig.nodeWalletSK);
+        return yield* Effect.tryPromise({
+          try: () => providerLucidL1.utxosAt(address),
+          catch: (e) => new Error(`Failed to get UTxOs at ${address}: ${e}`),
+        });
+      });
+    };
+
+    const logUTxOs = (nodeName: string) => Effect.gen(function* () {
       yield* Effect.log(`nodeName: ${nodeName}`)
+
+      const fundsUTxOs : Array<UTxO> = yield* getFundsUTxOs(nodeName)
+      const nodeUTxOs : Array<UTxO> = yield* getNodeUTxOs(nodeName)
+
       const nodeConfig = yield* config.getNodeConfigByName(nodeName);
       const fundsAddress = yield* NodeConfig.skToAddress(
         nodeConfig.fundsWalletSK,
@@ -97,16 +114,28 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
         nodeConfig.nodeWalletSK,
       );
 
-      const fundsUTxOs : Array<UTxO> = yield* Effect.tryPromise({
-        try: () => providerLucidL1.utxosAt(fundsAddress),
-        catch: (e) =>
-          new Error(`Failed to get UTxOs at ${fundsAddress}: ${e}`),
-      });
-      const nodeUTxOs : Array<UTxO> = yield* Effect.tryPromise({
-        try: () => providerLucidL1.utxosAt(nodeAddress),
-        catch: (e) =>
-          new Error(`Failed to get UTxOs at ${nodeAddress}: ${e}`),
-      });
+      yield* Effect.log(`${nodeName} UTxOs:`);
+      yield* Effect.log(
+        `  - funds address ${fundsAddress} UTxOs are:`,
+      );
+      yield* Effect.log(JSON.stringify(fundsUTxOs));
+
+      yield* Effect.log(
+        `  - node address ${nodeAddress} UTxOs are:`,
+      );
+      yield* Effect.log(nodeUTxOs);
+
+    })
+
+    const logAllUTxOs = Effect.forEach(nodeNames, (nodeName) =>
+      logUTxOs(nodeName)
+    );
+
+    const logBalance = (nodeName: string) => Effect.gen(function* () {
+      yield* Effect.log(`nodeName: ${nodeName}`)
+
+      const fundsUTxOs : Array<UTxO> = yield* getFundsUTxOs(nodeName)
+      const nodeUTxOs : Array<UTxO> = yield* getNodeUTxOs(nodeName)
 
       const fundsBalance : bigint =
         fundsUTxOs.reduce(
@@ -118,6 +147,14 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
           (acc, utxo) => acc + utxo.assets["lovelace"].valueOf(),
           0n,
         ) / 1000000n;
+
+      const nodeConfig = yield* config.getNodeConfigByName(nodeName);
+      const fundsAddress = yield* NodeConfig.skToAddress(
+        nodeConfig.fundsWalletSK,
+      );
+      const nodeAddress = yield* NodeConfig.skToAddress(
+        nodeConfig.nodeWalletSK,
+      );
 
       yield* Effect.log(`${nodeName} balances:`);
       yield* Effect.log(
@@ -137,6 +174,8 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       mainNode,
       hydraNodes,
       nodesL2,
+      logUTxOs,
+      logAllUTxOs,
       logBalance,
       logBalances,
     };
