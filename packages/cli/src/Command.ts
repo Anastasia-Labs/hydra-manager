@@ -1,6 +1,6 @@
 import { HydraHead } from "./HydraHead.js";
 
-import { Command, Options } from "@effect/cli";
+import { Args, Command, Options } from "@effect/cli";
 import { Effect, Option, Schedule, pipe } from "effect";
 
 export const initCommand = Command.make("init", {}).pipe(
@@ -28,6 +28,17 @@ export const fanoutCommand = Command.make("fanout", {}).pipe(
 export const fanoutHead = Effect.gen(function* () {
   const hydraHead = yield* HydraHead;
   yield* hydraHead.mainNode.fanout;
+});
+
+const nodeNameArgs = Args.text({name: "nodeName"})
+
+export const balanceCommand = Command.make("balance", { nodeNameArgs }).pipe(
+  Command.withHandler((args) => balanceHead(args.nodeNameArgs)),
+);
+
+export const balanceHead = (nodeName: string) => Effect.gen(function* () {
+  const hydraHead = yield* HydraHead;
+  yield* hydraHead.logBalance(nodeName);
 });
 
 export const balancesCommand = Command.make("balances", {}).pipe(
