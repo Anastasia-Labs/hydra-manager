@@ -6,6 +6,7 @@ import { ProviderEffect } from "./Provider.js";
 import { HydraNode } from "./HydraNode.js";
 import { HydraWrapper } from "./lucid/HydraWrapper.js";
 import * as NodeConfig from "./NodeConfig.js";
+import { Option } from "effect";
 
 export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
   effect: Effect.gen(function* () {
@@ -39,22 +40,29 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       }),
     );
 
-    const hydraNodes = yield* Effect.forEach(nodeConfigLayers, (nodeConfig) => {
+    const hydraNodes : Array<HydraNode> = yield* Effect.forEach(nodeConfigLayers, (nodeConfig) => {
       const hydraLayer = Layer.provide(HydraNode.Default, nodeConfig);
       const hydraNode = HydraNode.pipe(Effect.provide(hydraLayer));
       return hydraNode;
     });
 
-    const mainNode = hydraNodes.find(
-      (node) => node.nodeName === config.projectConfig.mainNodeName,
-    );
-    if (mainNode === undefined) {
-      return yield* Effect.fail(
-        new Error(
-          `Failed to find node with a name ${config.projectConfig.mainNodeName}`,
-        ),
-      );
-    }
+    const findHydraNode = (nodeName: string) =>
+      Effect.gen(function* () {
+        const node : (HydraNode | undefined) = hydraNodes.find(
+          (node) => node.nodeName === nodeName,
+        );
+        if (node !== undefined) {
+          return node
+        } else {
+          return yield* Effect.fail(
+            new Error(
+              `Failed to find node with a name ${nodeName}`,
+            ),
+          );
+        }
+      })
+
+    const mainNode = yield* findHydraNode(config.projectConfig.mainNodeName);
 
     const nodesL2 = (nodeName: String) =>
       Effect.gen(function* () {
@@ -168,6 +176,12 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
     const logBalances = Effect.forEach(nodeNames, (nodeName) =>
       logBalance(nodeName),
     );
+
+    const commit = (nodeName: string, utxos: Array<UTxO>, commiterName: Option.Option<string>) =>
+      Effect.gen(function* () {
+        const node = yield* findHydraNode(nodeName)
+        const response = yield* node.commit(utxos)
+      })
 
     return {
       providerLucidL1,

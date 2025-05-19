@@ -61,3 +61,9 @@ export const balancesHead = (nodeName: Option.Option<string>) =>
       onSome: (nodeName) => hydraHead.logBalance(nodeName),
     });
   });
+
+export const commitHead = (nodeName: string, utxosString: string, committerName: Option.Option<string>) =>
+  Effect.gen(function* () {
+    const hydraHead = yield* HydraHead;
+
+  })
