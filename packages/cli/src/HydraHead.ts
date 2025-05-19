@@ -116,13 +116,12 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       yield* Effect.log(
         `  - funds address ${fundsAddress} UTxOs are:`,
       );
-      yield* Effect.log(JSON.stringify(fundsUTxOs));
+      yield* Effect.log(yield* Effect.log(JSON.stringify(fundsUTxOs, (_, v) => typeof v === 'bigint' ? v.toString() + 'n' : v)));
 
       yield* Effect.log(
         `  - node address ${nodeAddress} UTxOs are:`,
       );
-      yield* Effect.log(nodeUTxOs);
-
+      yield* Effect.log(JSON.stringify(nodeUTxOs, (_, v) => typeof v === 'bigint' ? v.toString() + 'n' : v));
     })
 
     const logAllUTxOs = Effect.forEach(nodeNames, (nodeName) =>
