@@ -232,7 +232,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
     });
 
     const newTx = (
-      transaction: HydraMessage.TransactionRequestType,
+      transaction: HydraMessage.DraftCommitTxResponseType,
     ): Effect.Effect<string, SocketError | Error, Scope> =>
       Effect.gen(function* () {
         const newTxMessage: Dequeue<Uint8Array> = yield* PubSub.subscribe(
@@ -346,30 +346,57 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       return HydraMessage.utxoResponseToUTxOArray(responseData);
     });
 
-    const commit = (
+    const commitHTTPHandle = (
       utxos: Array<UTxO>,
     ): Effect.Effect<
-      HydraMessage.TransactionRequestType,
+      HydraMessage.DraftCommitTxResponseType,
       ParseError | HttpClientError | HttpBodyError
     > =>
       Effect.gen(function* () {
         const body = JSON.stringify(
           HydraMessage.utxoArrayToUTxOResponse(utxos),
         );
-        const response: HydraMessage.TransactionRequestType =
+        const response: HydraMessage.DraftCommitTxResponseType =
           yield* HttpClientRequest.post(`${httpServerUrl}/commit`).pipe(
             HttpClientRequest.bodyJson(body),
             Effect.flatMap(httpClient.execute),
             Effect.flatMap(filterStatusOk),
             Effect.flatMap(
               HttpClientResponse.schemaBodyJson(
-                HydraMessage.TransactionRequestSchema,
+                HydraMessage.DraftCommitTxResponseSchema,
               ),
             ),
             Effect.scoped,
           );
         return response;
       });
+
+      const cardanoTransactionHTTPHandle = (
+        transaction: HydraMessage.DraftCommitTxResponseType,
+      ): Effect.Effect<
+        void,
+        Error | ParseError | HttpClientError | HttpBodyError
+      > => Effect.gen(function* () {
+          const body = JSON.stringify(
+            transaction,
+          );
+          const response: HydraMessage.cardanoTransactionResponseType =
+            yield* HttpClientRequest.post(`${httpServerUrl}/cardano-transaction`).pipe(
+              HttpClientRequest.bodyJson(body),
+              Effect.flatMap(httpClient.execute),
+              Effect.flatMap(filterStatusOk),
+              Effect.flatMap(
+                HttpClientResponse.schemaBodyJson(
+                  HydraMessage.cardanoTransactionResponseSchema,
+                ),
+              ),
+              Effect.scoped,
+            );
+
+          if (response.tag === "ScriptFailedInWallet"){
+            yield* Effect.fail(new Error(`Failed to submit the transaction ${transaction}`))
+          }
+        });
 
     return {
       nodeName,
@@ -379,7 +406,8 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       newTx,
       protocolParameters,
       snapshotUTxO,
-      commit,
+      commitHTTPHandle,
+      cardanoTransactionHTTPHandle,
       getStatus: () => status,
     };
   }),

@@ -351,10 +351,28 @@ export function utxoArrayToUTxOResponse(utxos: Array<UTxO>): UTxOResponseType {
   );
 }
 
-export const TransactionRequestSchema = Schema.Struct({
+export const DraftCommitTxResponseSchema = Schema.Struct({
   type: Schema.String,
   description: Schema.String,
   cborHex: Schema.String,
   txId: Schema.optional(Schema.String),
 });
-export type TransactionRequestType = typeof TransactionRequestSchema.Type;
+export type DraftCommitTxResponseType = typeof DraftCommitTxResponseSchema.Type;
+
+export const TransactionSubmittedSchema = Schema.Struct({
+  tag: Schema.Literal("TransactionSubmitted")
+});
+export type TransactionSubmittedType = typeof TransactionSubmittedSchema.Type;
+
+export const PostTxErrorSchema = Schema.Struct({
+    tag: Schema.Literal("ScriptFailedInWallet"),
+    redeemerPtr: Schema.String,
+    failureReason: Schema.String,
+});
+export type PostTxErrorType = typeof PostTxErrorSchema.Type;
+
+export const cardanoTransactionResponseSchema = Schema.Union(
+  TransactionSubmittedSchema,
+  PostTxErrorSchema,
+)
+export type cardanoTransactionResponseType = typeof cardanoTransactionResponseSchema.Type;

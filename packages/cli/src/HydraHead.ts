@@ -1,5 +1,5 @@
 import type { LucidEvolution, Provider, UTxO } from "@lucid-evolution/lucid";
-import { Lucid, Network } from "@lucid-evolution/lucid";
+import { CML, Lucid, Network } from "@lucid-evolution/lucid";
 import { Context, Effect, Layer, Schedule } from "effect";
 import * as ProjectConfig from "./ProjectConfig.js";
 import { ProviderEffect } from "./Provider.js";
@@ -180,7 +180,25 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
     const commit = (nodeName: string, utxos: Array<UTxO>, commiterName: Option.Option<string>) =>
       Effect.gen(function* () {
         const node = yield* findHydraNode(nodeName)
-        const response = yield* node.commit(utxos)
+        const unwitnessedTransaction = yield* node.commitHTTPHandle(utxos)
+
+        const unsignedTx = CML.Transaction.from_cbor_hex(unwitnessedTransaction.cborHex)
+        const witnessSet = unsignedTx.witness_set()
+        const signedSet = yield* Effect.tryPromise({
+          try: () => providerLucidL1.wallet().signTx(unsignedTx),
+          catch: (e) => new Error(`Failed to sign transaxction object: ${e}`),
+        })
+
+        witnessSet.add_all_witnesses(signedSet)
+
+        const signedTx = CML.Transaction.new(
+          unsignedTx.body(),
+          witnessSet,
+          true,
+          unsignedTx.auxiliary_data()
+        )
+
+        yield* node.cardanoTransactionHTTPHandle(signedTx)
       })
 
     return {
