@@ -358,6 +358,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
         const body = JSON.stringify(
           HydraMessage.utxoArrayToUTxOResponse(utxos),
         );
+        yield* Effect.log(`commitHTTPHandle body is: ${body}`)
         const response: HydraMessage.DraftCommitTxResponseType =
           yield* HttpClientRequest.post(`${httpServerUrl}/commit`).pipe(
             HttpClientRequest.bodyJson(body),

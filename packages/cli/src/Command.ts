@@ -80,5 +80,6 @@ export const commitHead = (nodeName: string, utxosString: string, committerName:
   Effect.gen(function* () {
     const hydraHead = yield* HydraHead;
     const utxos : Array<UTxO> = JSON.parse(utxosString)
+    yield* Effect.log(`utxos type is: ${typeof utxos}`)
     yield* hydraHead.commit(nodeName, utxos, committerName)
   })
