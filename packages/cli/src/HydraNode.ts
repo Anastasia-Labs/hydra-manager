@@ -362,7 +362,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
           yield* HttpClientRequest.post(`${httpServerUrl}/commit`).pipe(
             HttpClientRequest.bodyJson(body),
             Effect.flatMap(httpClient.execute),
-            Effect.flatMap(filterStatusOk),
+            // Effect.flatMap(filterStatusOk),
             Effect.flatMap(
               HttpClientResponse.schemaBodyJson(
                 HydraMessage.DraftCommitTxResponseSchema,
@@ -388,7 +388,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
             yield* HttpClientRequest.post(`${httpServerUrl}/cardano-transaction`).pipe(
               HttpClientRequest.bodyJson(body),
               Effect.flatMap(httpClient.execute),
-              Effect.flatMap(filterStatusOk),
+              // Effect.flatMap(filterStatusOk),
               Effect.flatMap(
                 HttpClientResponse.schemaBodyJson(
                   HydraMessage.cardanoTransactionResponseSchema,
