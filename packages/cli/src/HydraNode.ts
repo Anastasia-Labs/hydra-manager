@@ -31,6 +31,7 @@ import { WebSocket } from "ws";
 import { Dequeue } from "effect/Queue";
 import { HttpBodyError } from "@effect/platform/HttpBody";
 import { filterStatusOk } from "@effect/platform/HttpClientResponse";
+import { CML } from "@lucid-evolution/lucid";
 
 export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
   effect: Effect.gen(function* () {
@@ -372,7 +373,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       });
 
       const cardanoTransactionHTTPHandle = (
-        transaction: HydraMessage.DraftCommitTxResponseType,
+        transaction: CML.Transaction,
       ): Effect.Effect<
         void,
         Error | ParseError | HttpClientError | HttpBodyError

@@ -179,6 +179,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
 
     const commit = (nodeName: string, utxos: Array<UTxO>, commiterName: Option.Option<string>) =>
       Effect.gen(function* () {
+        // TODO: add commiterName functionality
         const node = yield* findHydraNode(nodeName)
         const unwitnessedTransaction = yield* node.commitHTTPHandle(utxos)
 
@@ -188,7 +189,6 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
           try: () => providerLucidL1.wallet().signTx(unsignedTx),
           catch: (e) => new Error(`Failed to sign transaxction object: ${e}`),
         })
-
         witnessSet.add_all_witnesses(signedSet)
 
         const signedTx = CML.Transaction.new(
@@ -206,6 +206,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       mainNode,
       hydraNodes,
       nodesL2,
+      commit,
       logUTxOs,
       logAllUTxOs,
       logBalance,

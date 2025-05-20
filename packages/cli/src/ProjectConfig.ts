@@ -12,7 +12,7 @@ const CardanoProvider = Schema.Union(
   }),
 );
 
-const ProjectConfig = Schema.Struct({
+const ProjectConfigSchema = Schema.Struct({
   network: Schema.Literal("Preprod", "Preview", "Mainnet", "Custom"),
   providerId: CardanoProvider,
   contractsReferenceTxIds: Schema.String,
@@ -20,7 +20,7 @@ const ProjectConfig = Schema.Struct({
   nodes: Schema.Array(NodeConfig.NodeConfigSchema),
 });
 
-export type ProjectConfig = typeof ProjectConfig.Type;
+export type ProjectConfig = typeof ProjectConfigSchema.Type;
 
 export class ProjectConfigService extends Context.Tag("ProjectConfigService")<
   ProjectConfigService,
@@ -39,7 +39,7 @@ const fileSystemImpl = Effect.gen(function* () {
   const projectConfig: ProjectConfig = yield* pipe(
     fs.readFileString(path.join(path.resolve(), "config.json")),
     Effect.flatMap((configString) =>
-      Schema.decodeUnknown(Schema.parseJson(ProjectConfig))(configString),
+      Schema.decodeUnknown(Schema.parseJson(ProjectConfigSchema))(configString),
     ),
     Effect.flatMap((config) => validateConfig(config)),
   );

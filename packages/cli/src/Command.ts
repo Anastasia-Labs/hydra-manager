@@ -1,7 +1,9 @@
 import { HydraHead } from "./HydraHead.js";
 
 import { Args, Command, Options } from "@effect/cli";
-import { Effect, Option, Schedule, pipe } from "effect";
+import { Effect, Option, Schedule, pipe, Schema } from "effect";
+import * as HydraMessage from "./HydraMessage.js";
+import { UTxO } from "@lucid-evolution/lucid";
 
 export const initCommand = Command.make("init", {}).pipe(
   Command.withHandler(() => initHead),
@@ -30,40 +32,53 @@ export const fanoutHead = Effect.gen(function* () {
   yield* hydraHead.mainNode.fanout;
 });
 
-const nodeNameOption = Options.text("node-name")
+const nodeName = Options.text("node-name")
   .pipe(Options.withDescription("Name of the node you wish to interact with"))
+
+const nodeNameOptional = Options.text("node-name-opt")
+  .pipe(Options.withDescription("Name of the node you wish to interact with, optional"))
   .pipe(Options.optional);
 
-export const utxosCommand = Command.make("utxos", { nodeNameOption }).pipe(
-  Command.withHandler((options) => utxosHead(options.nodeNameOption)),
+const utxos = Options.text("utxos")
+  .pipe(Options.withDescription("Array of UTxOs you wish to interact with"))
+
+export const utxosCommand = Command.make("utxos", { nodeNameOptional }).pipe(
+  Command.withHandler((options) => utxosHead(options.nodeNameOptional)),
 );
 
-export const utxosHead = (nodeName: Option.Option<string>) =>
+export const utxosHead = (nodeNameOpt: Option.Option<string>) =>
   Effect.gen(function* () {
     const hydraHead = yield* HydraHead;
-    yield* Option.match(nodeName, {
+    yield* Option.match(nodeNameOpt, {
       onNone: () => hydraHead.logAllUTxOs,
-      onSome: (nodeName) => hydraHead.logUTxOs(nodeName),
+      onSome: (nodeNameOpt) => hydraHead.logUTxOs(nodeNameOpt),
     });
   });
 
-export const balanceCommand = Command.make("balance", { nodeNameOption }).pipe(
+export const balanceCommand = Command.make("balance", { nodeNameOptional }).pipe(
   Command.withHandler((options) => {
-    return balancesHead(options.nodeNameOption);
+    return balancesHead(options.nodeNameOptional);
   }),
 );
 
-export const balancesHead = (nodeName: Option.Option<string>) =>
+export const balancesHead = (nodeNameOpt: Option.Option<string>) =>
   Effect.gen(function* () {
     const hydraHead = yield* HydraHead;
-    yield* Option.match(nodeName, {
+    yield* Option.match(nodeNameOpt, {
       onNone: () => hydraHead.logBalances,
-      onSome: (nodeName) => hydraHead.logBalance(nodeName),
+      onSome: (nodeNameOpt) => hydraHead.logBalance(nodeNameOpt),
     });
   });
+
+export const commitCommand = Command.make("commit", { nodeName, utxos, nodeNameOptional }).pipe(
+  Command.withHandler((options) => {
+    return balancesHead(options.nodeNameOptional);
+  }),
+);
 
 export const commitHead = (nodeName: string, utxosString: string, committerName: Option.Option<string>) =>
   Effect.gen(function* () {
     const hydraHead = yield* HydraHead;
-
+    const utxos : Array<UTxO> = JSON.parse(utxosString)
+    yield* hydraHead.commit(nodeName, utxos, committerName)
   })

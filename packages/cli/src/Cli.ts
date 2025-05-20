@@ -5,6 +5,7 @@ import {
   fanoutCommand,
   initCommand,
   utxosCommand,
+  commitCommand,
 } from "./Command.js";
 
 const command = Command.make("hydra-manager");
@@ -15,6 +16,7 @@ export const runCommands = Command.run(
       initCommand,
       closeCommand,
       fanoutCommand,
+      commitCommand,
       utxosCommand,
       balanceCommand,
     ]),
