@@ -1,5 +1,15 @@
 {
   "extends": "@hydra-manager/typescript-config/base.json",
-  "include": ["."],
-  "exclude": ["dist", "node_modules", "test", "temp"]
+  "include": [
+    "."
+  ],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "test",
+    "temp"
+  ],
+  "compilerOptions": {
+    "outDir": "./dist"
+  }
 }
