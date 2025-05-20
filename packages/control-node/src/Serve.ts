@@ -11,9 +11,13 @@ import {
 import { NodeHttpServer } from "@effect/platform-node";
 import { Effect, Layer, Schema } from "effect";
 import { createServer } from "node:https";
+import * as CreateService from "./service/Create.js";
+import * as StateService from "./service/State.js";
 
 const managementGroup = HttpApiGroup.make("Management").add(
-  HttpApiEndpoint.get("create", "/create").addSuccess(Schema.String)
+  HttpApiEndpoint.get("create", "/create")
+    .addSuccess(Schema.String)
+    .addError(CreateService.HeadCreationError, { status: 400 })
 );
 
 const Api = HttpApi.make("hydra-manager-control-node").add(managementGroup);
@@ -21,7 +25,7 @@ const Api = HttpApi.make("hydra-manager-control-node").add(managementGroup);
 const ManagementGroupLive = HttpApiBuilder.group(
   Api,
   "Management",
-  (handlers) => handlers.handle("create", () => Effect.succeed("Hello Create"))
+  (handlers) => handlers.handle("create", CreateService.handle)
 );
 // Set up the application server with logging
 
@@ -58,7 +62,8 @@ const ApiLive = HttpApiBuilder.api(Api).pipe(
 const ServerLive = HttpApiBuilder.serve().pipe(
   Layer.provide(HttpApiSwagger.layer()),
   Layer.provide(ApiLive),
-  Layer.provide(ServerEffectfullLive)
+  Layer.provide(ServerEffectfullLive),
+  Layer.provide(StateService.State.Default)
 );
 
 /*
