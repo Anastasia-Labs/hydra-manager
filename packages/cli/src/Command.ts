@@ -72,7 +72,7 @@ export const balancesHead = (nodeNameOpt: Option.Option<string>) =>
 
 export const commitCommand = Command.make("commit", { nodeName, utxos, nodeNameOptional }).pipe(
   Command.withHandler((options) => {
-    return balancesHead(options.nodeNameOptional);
+    return commitHead(options.nodeName, options.utxos, options.nodeNameOptional);
   }),
 );
 

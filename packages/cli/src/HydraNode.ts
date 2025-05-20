@@ -354,6 +354,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       ParseError | HttpClientError | HttpBodyError
     > =>
       Effect.gen(function* () {
+        yield* Effect.log(`Running commitHTTPHandle`)
         const body = JSON.stringify(
           HydraMessage.utxoArrayToUTxOResponse(utxos),
         );
@@ -369,6 +370,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
             ),
             Effect.scoped,
           );
+        yield* Effect.log(`Received response at commitHTTPHandle: ${response}`)
         return response;
       });
 
@@ -378,6 +380,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
         void,
         Error | ParseError | HttpClientError | HttpBodyError
       > => Effect.gen(function* () {
+          yield* Effect.log(`Running cardanoTransactionHTTPHandle`)
           const body = JSON.stringify(
             transaction,
           );
@@ -393,7 +396,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
               ),
               Effect.scoped,
             );
-
+          yield* Effect.log(`Received response at cardanoTransactionHTTPHandle: ${response}`)
           if (response.tag === "ScriptFailedInWallet"){
             yield* Effect.fail(new Error(`Failed to submit the transaction ${transaction}`))
           }

@@ -7,6 +7,7 @@ import { HydraNode } from "./HydraNode.js";
 import { HydraWrapper } from "./lucid/HydraWrapper.js";
 import * as NodeConfig from "./NodeConfig.js";
 import { Option } from "effect";
+import * as HydraMessage from "./HydraMessage.js";
 
 export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
   effect: Effect.gen(function* () {
@@ -123,17 +124,10 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
 
         yield* Effect.log(`${nodeName} UTxOs:`);
         yield* Effect.log(`  - funds address ${fundsAddress} UTxOs are:`);
-        const strFundsUTxOs = JSON.stringify(fundsUTxOs, (_, v) =>
-          typeof v === "bigint" ? v.toString() : v,
-        );
-        yield* Effect.log(strFundsUTxOs);
+        yield* Effect.log(HydraMessage.utxosToString(fundsUTxOs));
 
         yield* Effect.log(`  - node address ${nodeAddress} UTxOs are:`);
-
-        const strNodeUTxOs = JSON.stringify(nodeUTxOs, (_, v) =>
-          typeof v === "bigint" ? v.toString() : v,
-        );
-        yield* Effect.log(strNodeUTxOs);
+        yield* Effect.log(HydraMessage.utxosToString(nodeUTxOs));
       });
 
     const logAllUTxOs = Effect.forEach(nodeNames, (nodeName) =>
@@ -179,8 +173,12 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
 
     const commit = (nodeName: string, utxos: Array<UTxO>, commiterName: Option.Option<string>) =>
       Effect.gen(function* () {
+        yield* Effect.log(`Called commit action for ${nodeName}, commiterName is ${commiterName}`);
+        yield* Effect.log(`Provided utxos are:`);
+        yield* Effect.log(`${HydraMessage.utxosToString(utxos)}`);
+
         // TODO: add commiterName functionality
-        const node = yield* findHydraNode(nodeName)
+        const node = yield* findHydraNode(nodeName);
         const unwitnessedTransaction = yield* node.commitHTTPHandle(utxos)
 
         const unsignedTx = CML.Transaction.from_cbor_hex(unwitnessedTransaction.cborHex)

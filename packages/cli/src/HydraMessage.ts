@@ -351,6 +351,12 @@ export function utxoArrayToUTxOResponse(utxos: Array<UTxO>): UTxOResponseType {
   );
 }
 
+export function utxosToString(nodeUTxOs: Array<UTxO>): string {
+ return JSON.stringify(nodeUTxOs, (_, v) =>
+          typeof v === "bigint" ? v.toString() : v,
+        );
+}
+
 export const DraftCommitTxResponseSchema = Schema.Struct({
   type: Schema.String,
   description: Schema.String,
