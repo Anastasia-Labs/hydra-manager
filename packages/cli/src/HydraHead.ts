@@ -1,6 +1,6 @@
 import type { LucidEvolution, Provider, UTxO } from "@lucid-evolution/lucid";
 import { CML, Lucid, Network } from "@lucid-evolution/lucid";
-import { Context, Effect, Layer, Schedule } from "effect";
+import { Console, Context, Effect, Layer, Schedule } from "effect";
 import * as ProjectConfig from "./ProjectConfig.js";
 import { ProviderEffect } from "./Provider.js";
 import { HydraNode } from "./HydraNode.js";
