@@ -11,15 +11,15 @@ const CardanoProvider = Schema.Union(
   }),
 );
 
-const ProjectConfig = Schema.Struct({
+const ProjectConfigSchema = Schema.Struct({
   network: Schema.Literal("Preprod", "Preview", "Mainnet", "Custom"),
   providerId: CardanoProvider,
   contractsReferenceTxIds: Schema.String,
   mainNodeName: Schema.String,
-  nodes: Schema.Array(NodeConfig.NodeConfig),
+  nodes: Schema.Array(NodeConfig.NodeConfigSchema),
 });
 
-export type ProjectConfig = typeof ProjectConfig.Type;
+export type ProjectConfig = typeof ProjectConfigSchema.Type;
 
 export class ProjectConfigService extends Context.Tag("ProjectConfigService")<
   ProjectConfigService,
@@ -38,7 +38,7 @@ const fileSystemImpl = Effect.gen(function* () {
   const projectConfig: ProjectConfig = yield* pipe(
     fs.readFileString(path.join(path.resolve(), "config.json")),
     Effect.flatMap((configString) =>
-      Schema.decodeUnknown(Schema.parseJson(ProjectConfig))(configString),
+      Schema.decodeUnknown(Schema.parseJson(ProjectConfigSchema))(configString),
     ),
     Effect.flatMap((config) => validateConfig(config)),
   );
@@ -57,7 +57,6 @@ const fileSystemImpl = Effect.gen(function* () {
     });
 
   return { projectConfig, getNodeConfigByName };
-  // TODO: add environment configuration lookups
 });
 
 export const ProjectConfigFSLayer = Layer.effect(
@@ -98,17 +97,14 @@ const testImpl = Effect.gen(function* () {
       url: "ws://localhost:4001",
       fundsWalletSK: {
         type: "PaymentSigningKeyShelley_ed25519",
-        description: "Payment Signing Key",
         cborHex: "5820...",
       },
       nodeWalletSK: {
         type: "PaymentSigningKeyShelley_ed25519",
-        description: "Payment Signing Key",
         cborHex: "5820...",
       },
       hydraSK: {
         type: "HydraSigningKey_ed25519",
-        description: "",
         cborHex: "5820...",
       },
     });

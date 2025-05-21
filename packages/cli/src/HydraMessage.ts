@@ -1,4 +1,6 @@
-import { Option, Schema } from "effect";
+import { Assets, UTxO } from "@lucid-evolution/core-types";
+import { CML, LucidEvolution } from "@lucid-evolution/lucid";
+import { Effect, Option, Record, Schema } from "effect";
 
 export type Status =
   | "DISCONNECTED"
@@ -260,10 +262,131 @@ export type ProtocolParametersResponse =
   typeof ProtocolParametersResponseSchema.Type;
 export type UTxOResponseType = typeof UTxOResponseSchema.Type;
 
-export const TransactionRequestSchema = Schema.Struct({
+export function utxoResponseToUTxOArray(
+  utxoResponse: UTxOResponseType,
+): Array<UTxO> {
+  return Object.entries(utxoResponse).map(([utxoKey, utxoData]) => {
+    const [txHash, outputIndexStr] = utxoKey.split("#");
+    const outputIndex = Number(outputIndexStr);
+
+    const assets: Assets = {};
+
+    if (utxoData.value.lovelace) {
+      assets["lovelace"] = BigInt(utxoData.value.lovelace);
+    }
+    // Process other assets if they exist
+    // Iterate through all entries in value object except lovelace
+    Object.entries(utxoData.value).forEach(([key, value]) => {
+      if (key !== "lovelace") {
+        // Narrow down to assets
+        if (typeof value === "object") {
+          Object.entries(value).forEach(([assetName, amount]) => {
+            const fullAssetId = key + assetName;
+            assets[fullAssetId] = BigInt(amount);
+          });
+        }
+      }
+    });
+
+    const utxo: UTxO = {
+      txHash,
+      outputIndex,
+      address: utxoData.address,
+      assets,
+      datum: utxoData.datum,
+      datumHash: utxoData.datumHash,
+    };
+
+    if (utxoData.inlineDatum !== undefined) {
+      //TODO: Decode inline datum
+      //NOTE: Double check the hydra api docs
+      const inline = utxoData.inlineDatum;
+    }
+
+    if (utxoData.referenceScript !== undefined) {
+      //TODO: Decode reference script
+      utxo.scriptRef = undefined;
+    }
+
+    return utxo;
+  });
+}
+
+function joinValueRecords(
+  records: Record<string, number | Record<string, number>>[],
+): Record<string, number | Record<string, number>> {
+  return records.reduce((acc, record) => {
+    return Object.assign(acc, record);
+  });
+}
+
+export function utxoArrayToUTxOResponse(utxos: Array<UTxO>): UTxOResponseType {
+  return utxos.reduce(
+    (acc, utxo: UTxO) => {
+      acc[utxo.txHash + "#" + utxo.outputIndex] = {
+        address: utxo.address,
+        datum: utxo.datum,
+        datumHash: utxo.datumHash,
+        inlineDatum: utxo.datum,
+        value: joinValueRecords(
+          Object.keys(utxo.assets).map((assetKey) => {
+            let res: Record<string, number | Record<string, number>>;
+            if (assetKey == "lovelace") {
+              res = { [assetKey]: Number(utxo.assets[assetKey].valueOf()) };
+            } else {
+              const policyId = assetKey.slice(0, 56);
+              const assetName = assetKey.slice(56);
+              res = {
+                [policyId]: {
+                  [assetName]: Number(utxo.assets[assetKey].valueOf()),
+                },
+              };
+            }
+            return res;
+          }),
+        ),
+      };
+      return acc;
+    },
+    {} as Record<string, any>,
+  );
+}
+
+export function utxosToString(nodeUTxOs: Array<UTxO>): string {
+  return JSON.stringify(nodeUTxOs, (_, v) =>
+    typeof v === "bigint" ? v.toString() : v,
+  );
+}
+
+export function cborHexToPrivateKey(cborHex: string): string {
+  return CML.PrivateKey.from_normal_bytes(
+    Buffer.from((cborHex as string).substring(4), "hex"),
+  ).to_bech32();
+}
+
+export const DraftCommitTxResponseSchema = Schema.Struct({
   type: Schema.String,
   description: Schema.String,
   cborHex: Schema.String,
   txId: Schema.optional(Schema.String),
 });
-export type TransactionRequestType = typeof TransactionRequestSchema.Type;
+export type DraftCommitTxResponseType = typeof DraftCommitTxResponseSchema.Type;
+
+export const TransactionSubmittedSchema = Schema.Struct({
+  tag: Schema.Literal("TransactionSubmitted"),
+});
+export type TransactionSubmittedType = typeof TransactionSubmittedSchema.Type;
+
+export const PostTxErrorSchema = Schema.Struct({
+  tag: Schema.Literal("ScriptFailedInWallet"),
+  redeemerPtr: Schema.String,
+  failureReason: Schema.String,
+});
+export type PostTxErrorType = typeof PostTxErrorSchema.Type;
+
+export const cardanoTransactionResponseSchema = Schema.Union(
+  TransactionSubmittedSchema,
+  PostTxErrorSchema,
+);
+export type cardanoTransactionResponseType =
+  typeof cardanoTransactionResponseSchema.Type;

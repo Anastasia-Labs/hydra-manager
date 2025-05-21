@@ -19,6 +19,7 @@ import * as NodeConfig from "./NodeConfig.js";
 import {
   FetchHttpClient,
   HttpClient,
+  HttpClientRequest,
   HttpClientResponse,
   Socket,
 } from "@effect/platform";
@@ -28,6 +29,9 @@ import { Scope } from "effect/Scope";
 import { WebSocketConstructor } from "@effect/platform/Socket";
 import { WebSocket } from "ws";
 import { Dequeue } from "effect/Queue";
+import { HttpBodyError } from "@effect/platform/HttpBody";
+import { filterStatusOk } from "@effect/platform/HttpClientResponse";
+import { CML } from "@lucid-evolution/lucid";
 
 export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
   effect: Effect.gen(function* () {
@@ -229,7 +233,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
     });
 
     const newTx = (
-      transaction: HydraMessage.TransactionRequestType,
+      transaction: HydraMessage.DraftCommitTxResponseType,
     ): Effect.Effect<string, SocketError | Error, Scope> =>
       Effect.gen(function* () {
         const newTxMessage: Dequeue<Uint8Array> = yield* PubSub.subscribe(
@@ -340,66 +344,64 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
           HydraMessage.UTxOResponseSchema,
         )(response);
 
-      // Transform response data to UTxO array format
-      const utxos: Array<UTxO> = Object.entries(responseData).map(
-        ([utxoKey, utxoData]) => {
-          const [txHash, outputIndexStr] = utxoKey.split("#");
-          const outputIndex = Number(outputIndexStr);
-
-          // Convert value to assets type
-          const assets: Assets = {};
-
-          if (utxoData.value.lovelace) {
-            assets["lovelace"] = BigInt(utxoData.value.lovelace);
-          }
-          // Process other assets if they exist
-          // Iterate through all entries in value object except lovelace
-          Object.entries(utxoData.value).forEach(([key, value]) => {
-            if (key !== "lovelace") {
-              // Narrow down to assets
-              if (typeof value === "object") {
-                Object.entries(value).forEach(([assetName, amount]) => {
-                  const fullAssetId = key + assetName;
-                  assets[fullAssetId] = BigInt(amount);
-                });
-              }
-            }
-          });
-
-          // Create UTxO object with required fields
-          const utxo: UTxO = {
-            txHash,
-            outputIndex,
-            address: utxoData.address,
-            assets,
-          };
-
-          // Add optional fields if they exist
-          if (utxoData.datum !== undefined) {
-            utxo.datum = utxoData.datum;
-          }
-
-          if (utxoData.datumHash !== undefined) {
-            utxo.datumHash = utxoData.datumHash;
-          }
-
-          if (utxoData.inlineDatum !== undefined) {
-            //TODO: Decode inline datum
-            //NOTE: Double check the hydra api docs
-            const inline = utxoData.inlineDatum;
-          }
-
-          if (utxoData.referenceScript !== undefined) {
-            //TODO: Decode reference script
-            utxo.scriptRef = undefined;
-          }
-
-          return utxo;
-        },
-      );
-
-      return utxos;
+      return HydraMessage.utxoResponseToUTxOArray(responseData);
     });
+
+    const commitHTTPHandle = (
+      utxos: Array<UTxO>,
+    ): Effect.Effect<
+      HydraMessage.DraftCommitTxResponseType,
+      ParseError | HttpClientError | HttpBodyError
+    > =>
+      Effect.gen(function* () {
+        yield* Effect.log(`Running commitHTTPHandle`);
+        const response: HydraMessage.DraftCommitTxResponseType =
+          yield* HttpClientRequest.post(`${httpServerUrl}/commit`).pipe(
+            HttpClientRequest.bodyJson(
+              HydraMessage.utxoArrayToUTxOResponse(utxos),
+            ),
+            Effect.flatMap(httpClient.execute),
+            Effect.flatMap(
+              HttpClientResponse.schemaBodyJson(
+                HydraMessage.DraftCommitTxResponseSchema,
+              ),
+            ),
+            Effect.scoped,
+          );
+        yield* Effect.log(`Received expected response at commitHTTPHandle`);
+        return response;
+      });
+
+    const cardanoTransactionHTTPHandle = (
+      transaction: HydraMessage.DraftCommitTxResponseType,
+    ): Effect.Effect<
+      void,
+      Error | ParseError | HttpClientError | HttpBodyError
+    > =>
+      Effect.gen(function* () {
+        yield* Effect.log(`Running cardanoTransactionHTTPHandle`);
+        const response: HydraMessage.cardanoTransactionResponseType =
+          yield* HttpClientRequest.post(
+            `${httpServerUrl}/cardano-transaction`,
+          ).pipe(
+            HttpClientRequest.bodyJson(transaction),
+            Effect.flatMap(httpClient.execute),
+            Effect.flatMap(
+              HttpClientResponse.schemaBodyJson(
+                HydraMessage.cardanoTransactionResponseSchema,
+              ),
+            ),
+            Effect.scoped,
+          );
+        if (response.tag === "ScriptFailedInWallet") {
+          yield* Effect.fail(
+            new Error(`Failed to submit the transaction ${transaction}`),
+          );
+        }
+        yield* Effect.log(
+          `successfully commited utxos at cardanoTransactionHTTPHandle`,
+        );
+      });
 
     return {
       nodeName,
@@ -409,6 +411,8 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       newTx,
       protocolParameters,
       snapshotUTxO,
+      commitHTTPHandle,
+      cardanoTransactionHTTPHandle,
       getStatus: () => status,
     };
   }),
