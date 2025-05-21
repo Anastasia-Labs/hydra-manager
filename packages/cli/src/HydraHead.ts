@@ -41,27 +41,28 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       }),
     );
 
-    const hydraNodes : Array<HydraNode> = yield* Effect.forEach(nodeConfigLayers, (nodeConfig) => {
-      const hydraLayer = Layer.provide(HydraNode.Default, nodeConfig);
-      const hydraNode = HydraNode.pipe(Effect.provide(hydraLayer));
-      return hydraNode;
-    });
+    const hydraNodes: Array<HydraNode> = yield* Effect.forEach(
+      nodeConfigLayers,
+      (nodeConfig) => {
+        const hydraLayer = Layer.provide(HydraNode.Default, nodeConfig);
+        const hydraNode = HydraNode.pipe(Effect.provide(hydraLayer));
+        return hydraNode;
+      },
+    );
 
     const findHydraNode = (nodeName: string) =>
       Effect.gen(function* () {
-        const node : (HydraNode | undefined) = hydraNodes.find(
+        const node: HydraNode | undefined = hydraNodes.find(
           (node) => node.nodeName === nodeName,
         );
         if (node !== undefined) {
-          return node
+          return node;
         } else {
           return yield* Effect.fail(
-            new Error(
-              `Failed to find node with a name ${nodeName}`,
-            ),
+            new Error(`Failed to find node with a name ${nodeName}`),
           );
         }
-      })
+      });
 
     const mainNode = yield* findHydraNode(config.projectConfig.mainNodeName);
 
@@ -171,65 +172,86 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       logBalance(nodeName),
     );
 
-    const getUnwitnessedTransaction = (nodeName: string, utxos: Array<UTxO>, commiterName: Option.Option<string>) =>
+    const getUnwitnessedTransaction = (
+      nodeName: string,
+      utxos: Array<UTxO>,
+      commiterName: Option.Option<string>,
+    ) => Effect.gen(function* () {});
+
+    const signAndCommitTransaction = (
+      nodeName: string,
+      utxos: Array<UTxO>,
+      commiterName: Option.Option<string>,
+    ) => Effect.gen(function* () {});
+
+    const commit = (
+      nodeName: string,
+      utxos: Array<UTxO>,
+      commiterNameOption: Option.Option<string>,
+    ) =>
       Effect.gen(function* () {
-
-      })
-
-    const signAndCommitTransaction = (nodeName: string, utxos: Array<UTxO>, commiterName: Option.Option<string>) =>
-      Effect.gen(function* () {
-
-      })
-
-    const commit = (nodeName: string, utxos: Array<UTxO>, commiterNameOption: Option.Option<string>) =>
-      Effect.gen(function* () {
-        yield* Effect.log(`Called commit action for ${nodeName}, commiterNameOption is ${commiterNameOption}`);
+        yield* Effect.log(
+          `Called commit action for ${nodeName}, commiterNameOption is ${commiterNameOption}`,
+        );
         yield* Effect.log(`Provided utxos are:`);
         yield* Effect.log(`${HydraMessage.utxosToString(utxos)}`);
 
-        // TODO: add commiterNameOption functionality
         const node = yield* findHydraNode(nodeName);
-        const unwitnessedTransaction = yield* node.commitHTTPHandle(utxos)
+        const unwitnessedTransaction = yield* node.commitHTTPHandle(utxos);
 
-        yield* Effect.log(`unwitnessedTransaction is: ${JSON.stringify(unwitnessedTransaction)}`)
+        yield* Effect.log(
+          `unwitnessedTransaction is: ${JSON.stringify(unwitnessedTransaction)}`,
+        );
 
-        const unsignedTx = CML.Transaction.from_cbor_hex(unwitnessedTransaction.cborHex)
-        const witnessSet = unsignedTx.witness_set()
+        const unsignedTx = CML.Transaction.from_cbor_hex(
+          unwitnessedTransaction.cborHex,
+        );
+        const witnessSet = unsignedTx.witness_set();
 
-        yield* Effect.log(`unsignedTx is: ${JSON.stringify(unsignedTx)}`)
-        yield* Effect.log(`witnessSet is: ${JSON.stringify(witnessSet)}`)
+        yield* Effect.log(`unsignedTx is: ${JSON.stringify(unsignedTx)}`);
+        yield* Effect.log(`witnessSet is: ${JSON.stringify(witnessSet)}`);
 
+        const commiterName = Option.getOrElse(
+          commiterNameOption,
+          () => nodeName,
+        );
+        const commiterNodeConfig =
+          yield* config.getNodeConfigByName(commiterName);
 
-        const commiterName = Option.getOrElse(commiterNameOption, () => nodeName);
-        const commiterNodeConfig = yield* config.getNodeConfigByName(commiterName);
+        yield* Effect.log(
+          `Selected commiterNodeConfig for ${commiterName}: ${JSON.stringify(commiterNodeConfig)}`,
+        );
 
-        yield* Effect.log(`Selected commiterNodeConfig for ${commiterName}: ${JSON.stringify(commiterNodeConfig)}`)
+        const privateKey = HydraMessage.cborHexToPrivateKey(
+          commiterNodeConfig.fundsWalletSK.cborHex,
+        );
+        yield* Effect.log(`Selected privateKey: ${privateKey}`);
 
-        const privateKey = HydraMessage.cborHexToPrivateKey(commiterNodeConfig.fundsWalletSK.cborHex)
-        yield* Effect.log(`Selected privateKey: ${privateKey}`)
-
-        providerLucidL1.selectWallet.fromPrivateKey(privateKey)
+        providerLucidL1.selectWallet.fromPrivateKey(privateKey);
 
         const signedSet = yield* Effect.tryPromise({
           try: () => providerLucidL1.wallet().signTx(unsignedTx),
           catch: (e) => new Error(`Failed to sign transaxction object: ${e}`),
-        })
-        witnessSet.add_all_witnesses(signedSet)
+        });
+        witnessSet.add_all_witnesses(signedSet);
 
         const signedTx = CML.Transaction.new(
           unsignedTx.body(),
           witnessSet,
           true,
-          unsignedTx.auxiliary_data()
-        )
+          unsignedTx.auxiliary_data(),
+        );
 
-        const witnessedTransaction = { ...unwitnessedTransaction,
-          cborHex: signedTx.to_cbor_hex()
-        }
-        yield* Effect.log(`witnessedTransaction is: ${JSON.stringify(witnessedTransaction)}`)
+        const witnessedTransaction = {
+          ...unwitnessedTransaction,
+          cborHex: signedTx.to_cbor_hex(),
+        };
+        yield* Effect.log(
+          `witnessedTransaction is: ${JSON.stringify(witnessedTransaction)}`,
+        );
 
-        yield* node.cardanoTransactionHTTPHandle(witnessedTransaction)
-      })
+        yield* node.cardanoTransactionHTTPHandle(witnessedTransaction);
+      });
 
     return {
       providerLucidL1,

@@ -353,15 +353,15 @@ export function utxoArrayToUTxOResponse(utxos: Array<UTxO>): UTxOResponseType {
 }
 
 export function utxosToString(nodeUTxOs: Array<UTxO>): string {
- return JSON.stringify(nodeUTxOs, (_, v) =>
-          typeof v === "bigint" ? v.toString() : v,
-        );
+  return JSON.stringify(nodeUTxOs, (_, v) =>
+    typeof v === "bigint" ? v.toString() : v,
+  );
 }
 
 export function cborHexToPrivateKey(cborHex: string): string {
   return CML.PrivateKey.from_normal_bytes(
-    Buffer.from((cborHex as string).substring(4), "hex")
-  ).to_bech32()
+    Buffer.from((cborHex as string).substring(4), "hex"),
+  ).to_bech32();
 }
 
 export const DraftCommitTxResponseSchema = Schema.Struct({
@@ -373,19 +373,20 @@ export const DraftCommitTxResponseSchema = Schema.Struct({
 export type DraftCommitTxResponseType = typeof DraftCommitTxResponseSchema.Type;
 
 export const TransactionSubmittedSchema = Schema.Struct({
-  tag: Schema.Literal("TransactionSubmitted")
+  tag: Schema.Literal("TransactionSubmitted"),
 });
 export type TransactionSubmittedType = typeof TransactionSubmittedSchema.Type;
 
 export const PostTxErrorSchema = Schema.Struct({
-    tag: Schema.Literal("ScriptFailedInWallet"),
-    redeemerPtr: Schema.String,
-    failureReason: Schema.String,
+  tag: Schema.Literal("ScriptFailedInWallet"),
+  redeemerPtr: Schema.String,
+  failureReason: Schema.String,
 });
 export type PostTxErrorType = typeof PostTxErrorSchema.Type;
 
 export const cardanoTransactionResponseSchema = Schema.Union(
   TransactionSubmittedSchema,
   PostTxErrorSchema,
-)
-export type cardanoTransactionResponseType = typeof cardanoTransactionResponseSchema.Type;
+);
+export type cardanoTransactionResponseType =
+  typeof cardanoTransactionResponseSchema.Type;
