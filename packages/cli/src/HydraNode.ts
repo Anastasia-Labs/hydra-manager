@@ -361,7 +361,6 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
               HydraMessage.utxoArrayToUTxOResponse(utxos),
             ),
             Effect.flatMap(httpClient.execute),
-            Effect.flatMap(filterStatusOk),
             Effect.flatMap(
               HttpClientResponse.schemaBodyJson(
                 HydraMessage.DraftCommitTxResponseSchema,
@@ -369,9 +368,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
             ),
             Effect.scoped,
           );
-        yield* Effect.log(
-          `Received response at commitHTTPHandle: ${JSON.stringify(response)}`,
-        );
+        yield* Effect.log(`Received expected response at commitHTTPHandle`);
         return response;
       });
 
@@ -382,17 +379,13 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       Error | ParseError | HttpClientError | HttpBodyError
     > =>
       Effect.gen(function* () {
-        yield* Effect.log(
-          `Running cardanoTransactionHTTPHandle for transaction:`,
-        );
-        yield* Effect.log(`${JSON.stringify(transaction)}`);
+        yield* Effect.log(`Running cardanoTransactionHTTPHandle`);
         const response: HydraMessage.cardanoTransactionResponseType =
           yield* HttpClientRequest.post(
             `${httpServerUrl}/cardano-transaction`,
           ).pipe(
             HttpClientRequest.bodyJson(transaction),
             Effect.flatMap(httpClient.execute),
-            // Effect.flatMap(filterStatusOk),
             Effect.flatMap(
               HttpClientResponse.schemaBodyJson(
                 HydraMessage.cardanoTransactionResponseSchema,
@@ -400,14 +393,14 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
             ),
             Effect.scoped,
           );
-        yield* Effect.log(
-          `Received response at cardanoTransactionHTTPHandle: ${JSON.stringify(response)}`,
-        );
         if (response.tag === "ScriptFailedInWallet") {
           yield* Effect.fail(
             new Error(`Failed to submit the transaction ${transaction}`),
           );
         }
+        yield* Effect.log(
+          `successfully commited utxos at cardanoTransactionHTTPHandle`,
+        );
       });
 
     return {

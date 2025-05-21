@@ -1,6 +1,6 @@
 import { Assets, UTxO } from "@lucid-evolution/core-types";
-import { CML } from "@lucid-evolution/lucid";
-import { Option, Record, Schema } from "effect";
+import { CML, LucidEvolution } from "@lucid-evolution/lucid";
+import { Effect, Option, Record, Schema } from "effect";
 
 export type Status =
   | "DISCONNECTED"
