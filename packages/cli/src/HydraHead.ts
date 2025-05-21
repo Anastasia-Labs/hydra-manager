@@ -2,7 +2,7 @@ import type { LucidEvolution, Provider, UTxO } from "@lucid-evolution/lucid";
 import { CML, Lucid, Network } from "@lucid-evolution/lucid";
 import { Console, Context, Effect, Layer, Schedule } from "effect";
 import * as ProjectConfig from "./ProjectConfig.js";
-import { ProviderEffect } from "./Provider.js";
+import { ProviderContext } from "./Provider.js";
 import { HydraNode } from "./HydraNode.js";
 import { HydraWrapper } from "./lucid/HydraWrapper.js";
 import * as NodeConfig from "./NodeConfig.js";
@@ -14,7 +14,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
     yield* Effect.log("HydraHead was created");
 
     const config = yield* ProjectConfig.ProjectConfigService;
-    const providerEffect = yield* ProviderEffect;
+    const providerContext = yield* ProviderContext;
 
     const providerLucidRetryPolicy = Schedule.addDelay(
       Schedule.recurs(10),
@@ -22,7 +22,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
     );
     const providerLucidL1: LucidEvolution = yield* Effect.retry(
       Effect.tryPromise({
-        try: () => Lucid(providerEffect.provider, config.projectConfig.network),
+        try: () => Lucid(providerContext.provider, config.projectConfig.network),
         catch: (e) => new Error(`Failed to get LucidEvolution object: ${e}`),
       }),
       providerLucidRetryPolicy,
