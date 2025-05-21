@@ -171,6 +171,16 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       logBalance(nodeName),
     );
 
+    const getUnwitnessedTransaction = (nodeName: string, utxos: Array<UTxO>, commiterName: Option.Option<string>) =>
+      Effect.gen(function* () {
+
+      })
+
+    const signAndCommitTransaction = (nodeName: string, utxos: Array<UTxO>, commiterName: Option.Option<string>) =>
+      Effect.gen(function* () {
+
+      })
+
     const commit = (nodeName: string, utxos: Array<UTxO>, commiterName: Option.Option<string>) =>
       Effect.gen(function* () {
         yield* Effect.log(`Called commit action for ${nodeName}, commiterName is ${commiterName}`);
