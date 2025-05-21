@@ -215,13 +215,17 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       nodeName: string,
       utxos: Array<UTxO>,
       commiterName: Option.Option<string>,
-    ) => Effect.gen(function* () {});
+    ) => Effect.gen(function* () {
+      // TODO
+    });
 
     const signAndCommitTransaction = (
       nodeName: string,
       utxos: Array<UTxO>,
       commiterName: Option.Option<string>,
-    ) => Effect.gen(function* () {});
+    ) => Effect.gen(function* () {
+      // TODO
+    });
 
     const commit = (
       nodeName: string,
