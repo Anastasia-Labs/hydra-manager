@@ -222,9 +222,13 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
           true,
           unsignedTx.auxiliary_data()
         )
-        yield* Effect.log(`signedTx is: ${JSON.stringify(signedTx)}`)
 
-        yield* node.cardanoTransactionHTTPHandle(signedTx)
+        const witnessedTransaction = { ...unwitnessedTransaction,
+          cborHex: signedTx.to_cbor_hex()
+        }
+        yield* Effect.log(`witnessedTransaction is: ${JSON.stringify(witnessedTransaction)}`)
+
+        yield* node.cardanoTransactionHTTPHandle(witnessedTransaction)
       })
 
     return {

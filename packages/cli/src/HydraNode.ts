@@ -372,7 +372,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       });
 
       const cardanoTransactionHTTPHandle = (
-        transaction: CML.Transaction,
+        transaction: HydraMessage.DraftCommitTxResponseType,
       ): Effect.Effect<
         void,
         Error | ParseError | HttpClientError | HttpBodyError
