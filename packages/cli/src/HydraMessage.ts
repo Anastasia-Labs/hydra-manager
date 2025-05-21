@@ -1,4 +1,5 @@
 import { Assets, UTxO } from "@lucid-evolution/core-types";
+import { CML } from "@lucid-evolution/lucid";
 import { Option, Record, Schema } from "effect";
 
 export type Status =
@@ -355,6 +356,12 @@ export function utxosToString(nodeUTxOs: Array<UTxO>): string {
  return JSON.stringify(nodeUTxOs, (_, v) =>
           typeof v === "bigint" ? v.toString() : v,
         );
+}
+
+export function cborHexToPrivateKey(cborHex: string): string {
+  return CML.PrivateKey.from_normal_bytes(
+    Buffer.from((cborHex as string).substring(4), "hex")
+  ).to_bech32()
 }
 
 export const DraftCommitTxResponseSchema = Schema.Struct({

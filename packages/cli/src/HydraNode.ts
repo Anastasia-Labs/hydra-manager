@@ -377,7 +377,8 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
         void,
         Error | ParseError | HttpClientError | HttpBodyError
       > => Effect.gen(function* () {
-          yield* Effect.log(`Running cardanoTransactionHTTPHandle`)
+          yield* Effect.log(`Running cardanoTransactionHTTPHandle for transaction:`)
+          yield* Effect.log(`${JSON.stringify(transaction)}`)
           const response: HydraMessage.cardanoTransactionResponseType =
             yield* HttpClientRequest.post(`${httpServerUrl}/cardano-transaction`).pipe(
               HttpClientRequest.bodyJson(transaction),

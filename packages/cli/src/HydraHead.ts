@@ -181,18 +181,35 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
 
       })
 
-    const commit = (nodeName: string, utxos: Array<UTxO>, commiterName: Option.Option<string>) =>
+    const commit = (nodeName: string, utxos: Array<UTxO>, commiterNameOption: Option.Option<string>) =>
       Effect.gen(function* () {
-        yield* Effect.log(`Called commit action for ${nodeName}, commiterName is ${commiterName}`);
+        yield* Effect.log(`Called commit action for ${nodeName}, commiterNameOption is ${commiterNameOption}`);
         yield* Effect.log(`Provided utxos are:`);
         yield* Effect.log(`${HydraMessage.utxosToString(utxos)}`);
 
-        // TODO: add commiterName functionality
+        // TODO: add commiterNameOption functionality
         const node = yield* findHydraNode(nodeName);
         const unwitnessedTransaction = yield* node.commitHTTPHandle(utxos)
 
+        yield* Effect.log(`unwitnessedTransaction is: ${JSON.stringify(unwitnessedTransaction)}`)
+
         const unsignedTx = CML.Transaction.from_cbor_hex(unwitnessedTransaction.cborHex)
         const witnessSet = unsignedTx.witness_set()
+
+        yield* Effect.log(`unsignedTx is: ${JSON.stringify(unsignedTx)}`)
+        yield* Effect.log(`witnessSet is: ${JSON.stringify(witnessSet)}`)
+
+
+        const commiterName = Option.getOrElse(commiterNameOption, () => nodeName);
+        const commiterNodeConfig = yield* config.getNodeConfigByName(commiterName);
+
+        yield* Effect.log(`Selected commiterNodeConfig for ${commiterName}: ${JSON.stringify(commiterNodeConfig)}`)
+
+        const privateKey = HydraMessage.cborHexToPrivateKey(commiterNodeConfig.fundsWalletSK.cborHex)
+        yield* Effect.log(`Selected privateKey: ${privateKey}`)
+
+        providerLucidL1.selectWallet.fromPrivateKey(privateKey)
+
         const signedSet = yield* Effect.tryPromise({
           try: () => providerLucidL1.wallet().signTx(unsignedTx),
           catch: (e) => new Error(`Failed to sign transaxction object: ${e}`),
@@ -205,6 +222,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
           true,
           unsignedTx.auxiliary_data()
         )
+        yield* Effect.log(`signedTx is: ${JSON.stringify(signedTx)}`)
 
         yield* node.cardanoTransactionHTTPHandle(signedTx)
       })
