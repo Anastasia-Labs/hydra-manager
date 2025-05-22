@@ -1,11 +1,13 @@
 import * as Command from "@effect/cli/Command";
 import {
-  balanceCommand,
+  nodeBalanceCommand,
   closeCommand,
   fanoutCommand,
   initCommand,
-  utxosCommand,
+  nodeUtxosCommand,
   commitCommand,
+  faucetWalletBalanceCommand,
+  faucetWalletUtxosCommand,
 } from "./Command.js";
 
 const command = Command.make("hydra-manager");
@@ -17,8 +19,10 @@ export const runCommands = Command.run(
       closeCommand,
       fanoutCommand,
       commitCommand,
-      utxosCommand,
-      balanceCommand,
+      nodeUtxosCommand,
+      nodeBalanceCommand,
+      faucetWalletUtxosCommand,
+      faucetWalletBalanceCommand,
     ]),
   ),
   {

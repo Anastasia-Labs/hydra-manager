@@ -6,21 +6,21 @@ import * as Effect from "effect/Effect";
 import { runCommands } from "./Cli.js";
 import { Layer } from "effect";
 import { HydraHead } from "./HydraHead.js";
-import { ProviderEffect } from "./Provider.js";
+import { ProviderContext } from "./Provider.js";
 import * as ProjectConfig from "./ProjectConfig.js";
 
-const HydraHeadTestLayer = Layer.provide(
+const HydraHeadLayer = Layer.provide(
   HydraHead.Default,
   Layer.provideMerge(
-    ProviderEffect.Default,
-    ProjectConfig.ProjectConfigFSLayer.pipe(Layer.provide(NodeContext.layer)),
+    ProviderContext.Default,
+    ProjectConfig.ProjectConfigFSLayer,
   ),
 );
-const AppLayerTest = Layer.merge(HydraHeadTestLayer, NodeContext.layer);
+const AppLayer = Layer.merge(HydraHeadLayer, NodeContext.layer);
 
 // pnpx tsx packages/cli/src/bin.ts init
 runCommands(process.argv).pipe(
-  Effect.provide(AppLayerTest),
+  Effect.provide(AppLayer),
   Effect.scoped,
   NodeRuntime.runMain(),
 );
