@@ -1,27 +1,19 @@
 {
-  "name": "@hydra-manager/cli",
+  "name": "@hydra-manager/control-node",
   "version": "0.0.0",
   "private": true,
   "license": "MIT",
   "type": "module",
-  "scripts": {
-    "build": "bun build.ts"
-  },
   "devDependencies": {
     "@effect/vitest": "^0.20.16",
     "@hydra-manager/typescript-config": "workspace:*",
-    "@types/ws": "^8.18.1",
     "vitest": "^3.1.2",
     "vitest-websocket-mock": "^0.5.0"
   },
   "dependencies": {
     "@effect/platform": "^0.80.14",
     "@effect/platform-node": "^0.77.2",
-    "@lucid-evolution/core-types": "^0.1.22",
-    "@lucid-evolution/lucid": "^0.4.27",
-    "@lucid-evolution/utils": "^0.1.65",
     "@effect/cli": "latest",
-    "effect": "^3.14.14",
-    "ws": "^8.18.1"
+    "effect": "^3.14.14"
   }
 }
