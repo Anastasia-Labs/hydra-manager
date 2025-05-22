@@ -6,15 +6,20 @@ export const SKSchema = Schema.Struct({
   cborHex: Schema.String,
 });
 
-type SK = typeof SKSchema.Type;
+export type SK = typeof SKSchema.Type;
+
+export const FaucetWalletSchema = Schema.Struct({
+  name: Schema.String,
+  sk: SKSchema,
+})
+
+export type FaucetWallet = typeof FaucetWalletSchema.Type;
 
 export const NodeConfigSchema = Schema.Struct({
   name: Schema.String,
   url: Schema.String,
-  fundsWalletSK: SKSchema,
   nodeWalletSK: SKSchema,
   hydraSK: SKSchema,
-  // TODO: add other SKs
 });
 
 export type NodeConfig = typeof NodeConfigSchema.Type;
@@ -37,6 +42,12 @@ export function skToAddress(nodeSK: SK): Effect.Effect<string, Error> {
   } else {
     return Effect.fail(new Error(`Wrong SK format provided for: ${nodeSK}`));
   }
+}
+
+export function cborHexToPrivateKey(cborHex: string): string {
+  return CML.PrivateKey.from_normal_bytes(
+    Buffer.from((cborHex as string).substring(4), "hex"),
+  ).to_bech32();
 }
 
 // TODO: add PKs to config and a converter

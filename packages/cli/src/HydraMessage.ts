@@ -358,12 +358,6 @@ export function utxosToString(nodeUTxOs: Array<UTxO>): string {
   );
 }
 
-export function cborHexToPrivateKey(cborHex: string): string {
-  return CML.PrivateKey.from_normal_bytes(
-    Buffer.from((cborHex as string).substring(4), "hex"),
-  ).to_bech32();
-}
-
 export const DraftCommitTxResponseSchema = Schema.Struct({
   type: Schema.String,
   description: Schema.String,

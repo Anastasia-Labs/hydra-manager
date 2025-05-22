@@ -3,7 +3,7 @@ import { NodeContext } from "@effect/platform-node";
 import { Config, Context, Effect, Layer, pipe, Schema } from "effect";
 import * as NodeConfig from "./NodeConfig.js";
 
-const CardanoProvider = Schema.Union(
+const CardanoProviderSchema = Schema.Union(
   Schema.Struct({
     blockfrostProjectId: Schema.String,
   }),
@@ -14,9 +14,10 @@ const CardanoProvider = Schema.Union(
 
 const ProjectConfigSchema = Schema.Struct({
   network: Schema.Literal("Preprod", "Preview", "Mainnet", "Custom"),
-  providerId: CardanoProvider,
+  providerId: CardanoProviderSchema,
   contractsReferenceTxIds: Schema.String,
   mainNodeName: Schema.String,
+  faucetWallets: Schema.Array(NodeConfig.FaucetWalletSchema),
   nodes: Schema.Array(NodeConfig.NodeConfigSchema),
 });
 
@@ -29,6 +30,9 @@ export class ProjectConfigService extends Context.Tag("ProjectConfigService")<
     getNodeConfigByName: (
       nodeName: string,
     ) => Effect.Effect<NodeConfig.NodeConfig, Error>;
+    getFaucetWalletByName: (
+      faucetWalletName: string,
+    ) => Effect.Effect<NodeConfig.FaucetWallet, Error>;
   }
 >() {}
 
@@ -57,7 +61,20 @@ const fileSystemImpl = Effect.gen(function* () {
       return maybeNode;
     });
 
-  return { projectConfig, getNodeConfigByName };
+  const getFaucetWalletByName = (walletName: string) =>
+    Effect.gen(function* () {
+      const maybeWallets = projectConfig.faucetWallets.find(
+        (node) => node.name === walletName,
+      );
+      if (maybeWallets === undefined) {
+        return yield* Effect.fail(
+          new Error(`Failed to find faucet wallet with a name ${walletName}`),
+        );
+      }
+      return maybeWallets;
+    });
+
+  return { projectConfig, getNodeConfigByName, getFaucetWalletByName };
 });
 
 export const ProjectConfigFSLayer = Layer.effect(
@@ -73,14 +90,19 @@ const testImpl = Effect.gen(function* () {
     },
     contractsReferenceTxIds: "",
     mainNodeName: "Alice",
+    faucetWallets: [
+      {
+        name: "FaucetWallet",
+        sk: {
+          type: "PaymentSigningKeyShelley_ed25519",
+          cborHex: "5820...",
+        }
+      },
+    ],
     nodes: [
       {
         name: "Alice",
         url: "ws://localhost:4001",
-        fundsWalletSK: {
-          type: "PaymentSigningKeyShelley_ed25519",
-          cborHex: "5820...",
-        },
         nodeWalletSK: {
           type: "PaymentSigningKeyShelley_ed25519",
           cborHex: "5820...",
@@ -96,10 +118,6 @@ const testImpl = Effect.gen(function* () {
     Effect.succeed({
       name: "Alice",
       url: "ws://localhost:4001",
-      fundsWalletSK: {
-        type: "PaymentSigningKeyShelley_ed25519",
-        cborHex: "5820...",
-      },
       nodeWalletSK: {
         type: "PaymentSigningKeyShelley_ed25519",
         cborHex: "5820...",
@@ -109,7 +127,16 @@ const testImpl = Effect.gen(function* () {
         cborHex: "5820...",
       },
     });
-  return { projectConfig, getNodeConfigByName };
+  const getFaucetWalletByName = (walletName: string) =>
+    Effect.succeed({
+        name: "FaucetWallet",
+        sk: {
+          type: "PaymentSigningKeyShelley_ed25519",
+          cborHex: "5820...",
+        }
+      });
+
+  return { projectConfig, getNodeConfigByName, getFaucetWalletByName };
 });
 export const ProjectConfigTestLayer = Layer.effect(
   ProjectConfigService,
@@ -140,8 +167,7 @@ const validateConfig = (projectConfig: ProjectConfig) =>
 
     const nodes = config.nodes;
     const walletSKs = nodes
-      .map((node) => node.fundsWalletSK)
-      .concat(nodes.map((node) => node.nodeWalletSK));
+      .map((node) => node.nodeWalletSK)
     if (
       !walletSKs
         .map((sk) => sk.type)
