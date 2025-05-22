@@ -54,7 +54,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       },
     );
 
-    const findHydraNode = (nodeName: string) =>
+    const getHydraNode = (nodeName: string) =>
       Effect.gen(function* () {
         const node: HydraNode | undefined = hydraNodes.find(
           (node) => node.nodeName === nodeName,
@@ -68,7 +68,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
         }
       });
 
-    const mainNode = yield* findHydraNode(config.projectConfig.mainNodeName);
+    const mainNode = yield* getHydraNode(config.projectConfig.mainNodeName);
 
     const nodesL2 = (nodeName: String) =>
       Effect.gen(function* () {
@@ -113,6 +113,15 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
         });
       });
     };
+
+    const logNodeSnapshotUTxOs = (nodeName: string) =>
+      Effect.gen(function* () {
+        const node = yield* getHydraNode(nodeName)
+        const nodeSnapshotUTxOs = yield* node.snapshotUTxOs
+
+        yield* Effect.log(`${nodeName} snapshot UTxOs are:`);
+        yield* Effect.log(HydraMessage.utxosToString(nodeSnapshotUTxOs));
+      });
 
     const logNodesStatusesRepeatPolicy = Schedule.addDelay(
       Schedule.recurs(10),
@@ -273,7 +282,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
         yield* Effect.log(`Provided utxos are:`);
         yield* Effect.log(`${HydraMessage.utxosToString(utxos)}`);
 
-        const node = yield* findHydraNode(nodeName);
+        const node = yield* getHydraNode(nodeName);
         const unwitnessedTransaction = yield* node.commitHTTPHandle(utxos);
         const faucetWallet = yield* config.getFaucetWalletByName(faucetWalletName)
         const witnessedTransaction = yield* witnessTransaction(
@@ -290,6 +299,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       nodesL2,
       commit,
       logNodesStatuses,
+      logNodeSnapshotUTxOs,
       logNodeUTxOs,
       logAllNodesUTxOs,
       logNodeBalance,

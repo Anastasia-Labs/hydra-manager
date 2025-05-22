@@ -9,6 +9,7 @@ import {
   faucetWalletBalanceCommand,
   faucetWalletUtxosCommand,
   statusCommand,
+  nodeSnapshotUtxosCommand,
 } from "./Command.js";
 
 const command = Command.make("hydra-manager");
@@ -21,6 +22,7 @@ export const runCommands = Command.run(
       closeCommand,
       fanoutCommand,
       commitCommand,
+      nodeSnapshotUtxosCommand,
       nodeUtxosCommand,
       nodeBalanceCommand,
       faucetWalletUtxosCommand,

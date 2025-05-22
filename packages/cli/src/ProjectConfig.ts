@@ -1,6 +1,6 @@
 import { Path, FileSystem } from "@effect/platform";
 import { NodeContext } from "@effect/platform-node";
-import { Config, Context, Effect, Layer, pipe, Schema } from "effect";
+import { Context, Effect, Layer, pipe, Schema } from "effect";
 import * as NodeConfig from "./NodeConfig.js";
 
 const CardanoProviderSchema = Schema.Union(

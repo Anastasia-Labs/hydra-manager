@@ -58,10 +58,20 @@ const faucetNameOptional = Options.text("faucet-name-opt").pipe(
   Options.optional
 );
 
-
 const utxos = Options.text("utxos").pipe(
   Options.withDescription("Array of UTxOs you wish to interact with"),
 );
+
+export const nodeSnapshotUtxosCommand = Command.make("node-snapshot-utxos", { nodeName }).pipe(
+  Command.withHandler((options) => nodeSnapshotUtxosHead(options.nodeName)),
+);
+
+export const nodeSnapshotUtxosHead = (nodeName: string) =>
+  Effect.gen(function* () {
+    const hydraHead = yield* HydraHead;
+    yield* Effect.log(`Called nodeSnapshotUtxosHead`)
+    yield* hydraHead.logNodeSnapshotUTxOs(nodeName)
+  });
 
 export const nodeUtxosCommand = Command.make("node-utxos", { nodeNameOptional }).pipe(
   Command.withHandler((options) => nodeUtxosHead(options.nodeNameOptional)),
