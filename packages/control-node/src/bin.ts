@@ -8,7 +8,7 @@ import { serveCommand } from "./Serve.js";
 const command = Command.make(
   "hydra-manager-control-node",
   {},
-  () => Effect.void
+  () => Effect.void,
 );
 
 // Set up the CLI application

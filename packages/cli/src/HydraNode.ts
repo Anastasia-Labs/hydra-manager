@@ -1,27 +1,37 @@
-import { Effect, Either, pipe, PubSub, Option, Schema } from "effect";
+import {
+  Effect,
+  Either,
+  pipe,
+  PubSub,
+  Option,
+  Schema,
+  Layer,
+  Fiber,
+  Schedule,
+  Equal,
+} from "effect";
 import * as SocketClient from "./Socket.js";
 import * as HydraMessage from "./HydraMessage.js";
+import { Status } from "./HydraMessage.js";
 import { ParseError } from "effect/ParseResult";
 import { SocketError } from "@effect/platform/Socket";
 import * as NodeConfig from "./NodeConfig.js";
 import {
   FetchHttpClient,
   HttpClient,
+  HttpClientRequest,
   HttpClientResponse,
   Socket,
 } from "@effect/platform";
 import { Assets, ProtocolParameters, UTxO } from "@lucid-evolution/core-types";
 import { HttpClientError } from "@effect/platform/HttpClientError";
 import { Scope } from "effect/Scope";
-
-type Status =
-  | "DISCONNECTED"
-  | "CONNECTING"
-  | "INITIALIZING"
-  | "OPEN"
-  | "CLOSED"
-  | "FANOUT_POSSIBLE"
-  | "FINAL";
+import { WebSocketConstructor } from "@effect/platform/Socket";
+import { WebSocket } from "ws";
+import { Dequeue } from "effect/Queue";
+import { HttpBodyError } from "@effect/platform/HttpBody";
+import { filterStatusOk } from "@effect/platform/HttpClientResponse";
+import { CML } from "@lucid-evolution/lucid";
 
 export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
   effect: Effect.gen(function* () {
@@ -35,58 +45,200 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
     const httpClient = yield* HttpClient.HttpClient;
     const httpServerUrl = nodeConfig.url.replace("ws://", "http://");
 
-    //TODO: When constructing this service the status should be initialized by the server using the greetings websocket message.
-    // For now, we will set it to "DISCONNECTED" until we receive a valid initializing message.
+    const messageQueue: Dequeue<Uint8Array> = yield* PubSub.subscribe(
+      connection.messages,
+    );
+
+    const retryPolicy = Schedule.addDelay(
+      Schedule.recurs(10),
+      () => "100 millis",
+    );
+
     let status: Status = "DISCONNECTED";
 
+    const statusFiber = yield* Effect.fork(
+      Effect.gen(function* () {
+        let rawMessage: Uint8Array;
+        while ((rawMessage = yield* messageQueue.take)) {
+          const messageText: string = new TextDecoder().decode(rawMessage);
+          const maybeStatus: Option.Option<HydraMessage.Status> =
+            Option.firstSomeOf([
+              yield* Effect.option(
+                HydraMessage.decodeStatusMessage(messageText),
+              ).pipe(
+                Effect.map(Option.flatMap(HydraMessage.statusMessageToStatus)),
+              ),
+              yield* Effect.option(
+                HydraMessage.decodeHydraMessage(messageText),
+              ).pipe(
+                Effect.map(Option.flatMap(HydraMessage.hydraMessageToStatus)),
+              ),
+            ]);
+
+          if (Option.isSome(maybeStatus)) {
+            const statusRaw = yield* maybeStatus;
+            yield* Effect.log(
+              `Valid status received [${statusRaw}] from message: ${messageText}`,
+            );
+            status = statusRaw;
+          }
+        }
+      }),
+    );
+
     const initialize = Effect.gen(function* () {
-      const initializeMessage = yield* PubSub.subscribe(connection.messages);
-      // Send initialization message
+      const messageQueue: Dequeue<Uint8Array> = yield* PubSub.subscribe(
+        connection.messages,
+      );
+
+      yield* Effect.retry(
+        Effect.gen(function* () {
+          if (status == "IDLE") {
+            return Effect.succeedNone;
+          } else {
+            return Effect.fail(new Error(`Status is ${status}, espected IDLE`));
+          }
+        }),
+        retryPolicy,
+      );
+
       yield* connection.sendMessage(JSON.stringify({ tag: "Init" })).pipe(
         Effect.tap(() => Effect.log("Init message sent")),
         Effect.scoped,
       );
 
-      // Wait for a valid initializing message from the server
       while (status !== "INITIALIZING") {
-        // Take next message from subscription
-        const rawMessage: Uint8Array = yield* initializeMessage.take; // pause
+        const rawMessage: Uint8Array = yield* messageQueue.take;
         const messageText: string = new TextDecoder().decode(rawMessage);
 
         yield* Effect.log(
-          `Received raw message during initialization: ${messageText}`,
+          `Received raw message during initialization command: ${messageText}`,
         );
 
-        // Try to decode and validate the message
         const maybe: Option.Option<HydraMessage.InitializingMessage> =
           yield* Effect.option(
             HydraMessage.decodeInitializingMessage(messageText),
           );
 
         if (Option.isSome(maybe)) {
-          // Valid initializing message found
           const hydraMessage: HydraMessage.InitializingMessage = maybe.value;
           yield* Effect.log(
-            `Valid initializing message received: ${maybe.value.tag}`,
+            `Valid initializing message received: ${hydraMessage.tag}`,
           );
-          status = "INITIALIZING";
           break;
         } else {
-          // Log failure but continue waiting
           yield* Effect.log(
             `Received non-initializing message: ${messageText}`,
           );
         }
       }
 
-      yield* Effect.log("Initialization complete, status is now INITIALIZING");
-    }).pipe(Effect.timeout(1000));
+      yield* Effect.log(`Initialization complete, status is now ${status}`);
+    });
+
+    const close = Effect.gen(function* () {
+      const messageQueue: Dequeue<Uint8Array> = yield* PubSub.subscribe(
+        connection.messages,
+      );
+
+      yield* Effect.retry(
+        Effect.gen(function* () {
+          if (status == "OPEN") {
+            return Effect.succeedNone;
+          } else {
+            return Effect.fail(new Error(`Status is ${status}, espected OPEN`));
+          }
+        }),
+        retryPolicy,
+      );
+
+      yield* connection.sendMessage(JSON.stringify({ tag: "Close" })).pipe(
+        Effect.tap(() => Effect.log("Close message sent")),
+        Effect.scoped,
+      );
+
+      while (status !== "CLOSED") {
+        const rawMessage: Uint8Array = yield* messageQueue.take;
+        const messageText: string = new TextDecoder().decode(rawMessage);
+
+        yield* Effect.log(
+          `Received raw message during closing command: ${messageText}`,
+        );
+
+        const maybe: Option.Option<HydraMessage.ClosedMessage> =
+          yield* Effect.option(HydraMessage.decodeClosedMessage(messageText));
+
+        if (Option.isSome(maybe)) {
+          const hydraMessage: HydraMessage.ClosedMessage = maybe.value;
+          yield* Effect.log(
+            `Valid closeing message received: ${hydraMessage.tag}`,
+          );
+          break;
+        } else {
+          yield* Effect.log(`Received non-closing message: ${messageText}`);
+        }
+      }
+
+      yield* Effect.log(`Closing complete, status is now ${status}`);
+    });
+
+    const fanout = Effect.gen(function* () {
+      const messageQueue: Dequeue<Uint8Array> = yield* PubSub.subscribe(
+        connection.messages,
+      );
+
+      yield* Effect.retry(
+        Effect.gen(function* () {
+          if (status == "FANOUT_POSSIBLE") {
+            return Effect.succeedNone;
+          } else {
+            return Effect.fail(
+              new Error(`Status is ${status}, espected FANOUT_POSSIBLE`),
+            );
+          }
+        }),
+        retryPolicy,
+      );
+
+      yield* connection.sendMessage(JSON.stringify({ tag: "Fanout" })).pipe(
+        Effect.tap(() => Effect.log("Close message sent")),
+        Effect.scoped,
+      );
+
+      while (status !== "FINAL") {
+        const rawMessage: Uint8Array = yield* messageQueue.take;
+        const messageText: string = new TextDecoder().decode(rawMessage);
+
+        yield* Effect.log(
+          `Received raw message during initialization command: ${messageText}`,
+        );
+
+        const maybe: Option.Option<HydraMessage.FinalizedMessage> =
+          yield* Effect.option(
+            HydraMessage.decodeFinalizedMessage(messageText),
+          );
+
+        if (Option.isSome(maybe)) {
+          const hydraMessage: HydraMessage.FinalizedMessage = maybe.value;
+          yield* Effect.log(
+            `Valid finalized message received: ${hydraMessage.tag}`,
+          );
+          break;
+        } else {
+          yield* Effect.log(`Received non-finalized message: ${messageText}`);
+        }
+      }
+
+      yield* Effect.log(`Fanout complete, status is now ${status}`);
+    });
 
     const newTx = (
-      transaction: HydraMessage.TransactionRequestType,
+      transaction: HydraMessage.DraftCommitTxResponseType,
     ): Effect.Effect<string, SocketError | Error, Scope> =>
       Effect.gen(function* () {
-        const newTxMessage = yield* PubSub.subscribe(connection.messages);
+        const newTxMessage: Dequeue<Uint8Array> = yield* PubSub.subscribe(
+          connection.messages,
+        );
         yield* connection.sendMessage(
           JSON.stringify({ tag: "NewTx", transaction }),
         );
@@ -95,7 +247,6 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
           yield* newTxMessage.take,
         );
 
-        // Try to decode as a TxValidMessage
         const validMessage: Either.Either<
           HydraMessage.TxValidMessage,
           ParseError
@@ -193,76 +344,83 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
           HydraMessage.UTxOResponseSchema,
         )(response);
 
-      // Transform response data to UTxO array format
-      const utxos: Array<UTxO> = Object.entries(responseData).map(
-        ([utxoKey, utxoData]) => {
-          const [txHash, outputIndexStr] = utxoKey.split("#");
-          const outputIndex = Number(outputIndexStr);
-
-          // Convert value to assets type
-          const assets: Assets = {};
-
-          if (utxoData.value.lovelace) {
-            assets["lovelace"] = BigInt(utxoData.value.lovelace);
-          }
-          // Process other assets if they exist
-          // Iterate through all entries in value object except lovelace
-          Object.entries(utxoData.value).forEach(([key, value]) => {
-            if (key !== "lovelace") {
-              // Narrow down to assets
-              if (typeof value === "object") {
-                Object.entries(value).forEach(([assetName, amount]) => {
-                  const fullAssetId = key + assetName;
-                  assets[fullAssetId] = BigInt(amount);
-                });
-              }
-            }
-          });
-
-          // Create UTxO object with required fields
-          const utxo: UTxO = {
-            txHash,
-            outputIndex,
-            address: utxoData.address,
-            assets,
-          };
-
-          // Add optional fields if they exist
-          if (utxoData.datum !== undefined) {
-            utxo.datum = utxoData.datum;
-          }
-
-          if (utxoData.datumHash !== undefined) {
-            utxo.datumHash = utxoData.datumHash;
-          }
-
-          if (utxoData.inlineDatum !== undefined) {
-            //TODO: Decode inline datum
-            //NOTE: Double check the hydra api docs
-            const inline = utxoData.inlineDatum;
-          }
-
-          if (utxoData.referenceScript !== undefined) {
-            //TODO: Decode reference script
-            utxo.scriptRef = undefined;
-          }
-
-          return utxo;
-        },
-      );
-
-      return utxos;
+      return HydraMessage.utxoResponseToUTxOArray(responseData);
     });
+
+    const commitHTTPHandle = (
+      utxos: Array<UTxO>,
+    ): Effect.Effect<
+      HydraMessage.DraftCommitTxResponseType,
+      ParseError | HttpClientError | HttpBodyError
+    > =>
+      Effect.gen(function* () {
+        yield* Effect.log(`Running commitHTTPHandle`);
+        const response: HydraMessage.DraftCommitTxResponseType =
+          yield* HttpClientRequest.post(`${httpServerUrl}/commit`).pipe(
+            HttpClientRequest.bodyJson(
+              HydraMessage.utxoArrayToUTxOResponse(utxos),
+            ),
+            Effect.flatMap(httpClient.execute),
+            Effect.flatMap(
+              HttpClientResponse.schemaBodyJson(
+                HydraMessage.DraftCommitTxResponseSchema,
+              ),
+            ),
+            Effect.scoped,
+          );
+        yield* Effect.log(`Received expected response at commitHTTPHandle`);
+        return response;
+      });
+
+    const cardanoTransactionHTTPHandle = (
+      transaction: HydraMessage.DraftCommitTxResponseType,
+    ): Effect.Effect<
+      void,
+      Error | ParseError | HttpClientError | HttpBodyError
+    > =>
+      Effect.gen(function* () {
+        yield* Effect.log(`Running cardanoTransactionHTTPHandle`);
+        const response: HydraMessage.cardanoTransactionResponseType =
+          yield* HttpClientRequest.post(
+            `${httpServerUrl}/cardano-transaction`,
+          ).pipe(
+            HttpClientRequest.bodyJson(transaction),
+            Effect.flatMap(httpClient.execute),
+            Effect.flatMap(
+              HttpClientResponse.schemaBodyJson(
+                HydraMessage.cardanoTransactionResponseSchema,
+              ),
+            ),
+            Effect.scoped,
+          );
+        if (response.tag === "ScriptFailedInWallet") {
+          yield* Effect.fail(
+            new Error(`Failed to submit the transaction ${transaction}`),
+          );
+        }
+        yield* Effect.log(
+          `successfully commited utxos at cardanoTransactionHTTPHandle`,
+        );
+      });
 
     return {
       nodeName,
       initialize,
+      close,
+      fanout,
       newTx,
       protocolParameters,
       snapshotUTxO,
+      commitHTTPHandle,
+      cardanoTransactionHTTPHandle,
       getStatus: () => status,
     };
   }),
 
-  dependencies: [Socket.layerWebSocketConstructorGlobal, FetchHttpClient.layer],
+  dependencies: [
+    Layer.succeed(WebSocketConstructor, (url, options) => {
+      return new WebSocket(url, options) as unknown as globalThis.WebSocket;
+    }),
+    FetchHttpClient.layer,
+  ],
 }) {}

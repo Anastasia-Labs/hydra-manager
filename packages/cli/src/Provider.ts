@@ -2,8 +2,8 @@ import { Blockfrost, Koios, OutRef, Provider } from "@lucid-evolution/lucid";
 import { Effect, Layer } from "effect";
 import * as ProjectConfig from "./ProjectConfig.js";
 
-export class ProviderEffect extends Effect.Service<ProviderEffect>()(
-  "ProviderEffect",
+export class ProviderContext extends Effect.Service<ProviderContext>()(
+  "ProviderContext",
   {
     effect: Effect.gen(function* () {
       const config = yield* ProjectConfig.ProjectConfigService;

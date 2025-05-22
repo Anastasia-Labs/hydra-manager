@@ -1,9 +1,8 @@
 import { Path, FileSystem } from "@effect/platform";
-import { NodeContext } from "@effect/platform-node";
 import { Config, Context, Effect, Layer, pipe, Schema } from "effect";
 import * as NodeConfig from "./NodeConfig.js";
 
-const CardanoProvider = Schema.Union(
+const CardanoProviderSchema = Schema.Union(
   Schema.Struct({
     blockfrostProjectId: Schema.String,
   }),
@@ -12,15 +11,16 @@ const CardanoProvider = Schema.Union(
   }),
 );
 
-const ProjectConfig = Schema.Struct({
+const ProjectConfigSchema = Schema.Struct({
   network: Schema.Literal("Preprod", "Preview", "Mainnet", "Custom"),
-  providerId: CardanoProvider,
+  providerId: CardanoProviderSchema,
   contractsReferenceTxIds: Schema.String,
   mainNodeName: Schema.String,
-  nodes: Schema.Array(NodeConfig.NodeConfig),
+  faucetWallets: Schema.Array(NodeConfig.FaucetWalletSchema),
+  nodes: Schema.Array(NodeConfig.NodeConfigSchema),
 });
 
-export type ProjectConfig = typeof ProjectConfig.Type;
+export type ProjectConfig = typeof ProjectConfigSchema.Type;
 
 export class ProjectConfigService extends Context.Tag("ProjectConfigService")<
   ProjectConfigService,
@@ -29,6 +29,9 @@ export class ProjectConfigService extends Context.Tag("ProjectConfigService")<
     getNodeConfigByName: (
       nodeName: string,
     ) => Effect.Effect<NodeConfig.NodeConfig, Error>;
+    getFaucetWalletByName: (
+      faucetWalletName: string,
+    ) => Effect.Effect<NodeConfig.FaucetWallet, Error>;
   }
 >() {}
 
@@ -39,7 +42,7 @@ const fileSystemImpl = Effect.gen(function* () {
   const projectConfig: ProjectConfig = yield* pipe(
     fs.readFileString(path.join(path.resolve(), "config.json")),
     Effect.flatMap((configString) =>
-      Schema.decodeUnknown(Schema.parseJson(ProjectConfig))(configString),
+      Schema.decodeUnknown(Schema.parseJson(ProjectConfigSchema))(configString),
     ),
     Effect.flatMap((config) => validateConfig(config)),
   );
@@ -57,31 +60,48 @@ const fileSystemImpl = Effect.gen(function* () {
       return maybeNode;
     });
 
-  return { projectConfig, getNodeConfigByName };
-  // TODO: add environment configuration lookups
+  const getFaucetWalletByName = (walletName: string) =>
+    Effect.gen(function* () {
+      const maybeWallets = projectConfig.faucetWallets.find(
+        (node) => node.name === walletName,
+      );
+      if (maybeWallets === undefined) {
+        return yield* Effect.fail(
+          new Error(`Failed to find faucet wallet with a name ${walletName}`),
+        );
+      }
+      return maybeWallets;
+    });
+
+  return { projectConfig, getNodeConfigByName, getFaucetWalletByName };
 });
 
 export const ProjectConfigFSLayer = Layer.effect(
   ProjectConfigService,
   fileSystemImpl,
-).pipe(Layer.provide(NodeContext.layer));
+);
 
 const testImpl = Effect.gen(function* () {
   const projectConfig: ProjectConfig = {
     network: "Preprod",
     providerId: {
-      blockfrostProjectId: "validID",
+      blockfrostProjectId: "invalidID",
     },
     contractsReferenceTxIds: "",
     mainNodeName: "Alice",
+    faucetWallets: [
+      {
+        name: "FaucetWallet",
+        sk: {
+          type: "PaymentSigningKeyShelley_ed25519",
+          cborHex: "5820...",
+        }
+      },
+    ],
     nodes: [
       {
         name: "Alice",
         url: "ws://localhost:4001",
-        fundsWalletSK: {
-          type: "PaymentSigningKeyShelley_ed25519",
-          cborHex: "5820...",
-        },
         nodeWalletSK: {
           type: "PaymentSigningKeyShelley_ed25519",
           cborHex: "5820...",
@@ -97,23 +117,25 @@ const testImpl = Effect.gen(function* () {
     Effect.succeed({
       name: "Alice",
       url: "ws://localhost:4001",
-      fundsWalletSK: {
-        type: "PaymentSigningKeyShelley_ed25519",
-        description: "Payment Signing Key",
-        cborHex: "5820...",
-      },
       nodeWalletSK: {
         type: "PaymentSigningKeyShelley_ed25519",
-        description: "Payment Signing Key",
         cborHex: "5820...",
       },
       hydraSK: {
         type: "HydraSigningKey_ed25519",
-        description: "",
         cborHex: "5820...",
       },
     });
-  return { projectConfig, getNodeConfigByName };
+  const getFaucetWalletByName = (walletName: string) =>
+    Effect.succeed({
+        name: "FaucetWallet",
+        sk: {
+          type: "PaymentSigningKeyShelley_ed25519",
+          cborHex: "5820...",
+        }
+      });
+
+  return { projectConfig, getNodeConfigByName, getFaucetWalletByName };
 });
 export const ProjectConfigTestLayer = Layer.effect(
   ProjectConfigService,
@@ -144,8 +166,7 @@ const validateConfig = (projectConfig: ProjectConfig) =>
 
     const nodes = config.nodes;
     const walletSKs = nodes
-      .map((node) => node.fundsWalletSK)
-      .concat(nodes.map((node) => node.nodeWalletSK));
+      .map((node) => node.nodeWalletSK)
     if (
       !walletSKs
         .map((sk) => sk.type)
