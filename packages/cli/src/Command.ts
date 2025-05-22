@@ -4,6 +4,15 @@ import { Command, Options } from "@effect/cli";
 import { Effect, Option, Schedule, pipe, Schema } from "effect";
 import { UTxO } from "@lucid-evolution/lucid";
 
+export const statusCommand = Command.make("status", {}).pipe(
+  Command.withHandler(() => statusHead),
+);
+
+export const statusHead = Effect.gen(function* () {
+  const hydraHead = yield* HydraHead;
+  yield* hydraHead.logNodesStatuses;
+});
+
 export const initCommand = Command.make("init", {}).pipe(
   Command.withHandler(() => initHead),
 );

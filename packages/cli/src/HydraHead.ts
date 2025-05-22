@@ -114,6 +114,22 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       });
     };
 
+    const logNodesStatusesRepeatPolicy = Schedule.addDelay(
+      Schedule.recurs(10),
+      () => "500 millis",
+    );
+
+    const logNodesStatuses : Effect.Effect<void, Error> =
+      Effect.repeat(
+        Effect.gen(function* () {
+          yield* Effect.log("----------")
+          yield* Effect.forEach(hydraNodes, (hydraNode) => {
+            return Effect.log(`Status of the ${hydraNode.nodeName} node is ${hydraNode.getStatus()}`)
+        })
+          yield* Effect.log("----------")
+      }),
+      logNodesStatusesRepeatPolicy)
+
     const logNodeUTxOs = (nodeName: string) =>
       Effect.gen(function* () {
         const nodeUTxOs: Array<UTxO> = yield* getNodeUTxOs(nodeName);
@@ -273,6 +289,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       hydraNodes,
       nodesL2,
       commit,
+      logNodesStatuses,
       logNodeUTxOs,
       logAllNodesUTxOs,
       logNodeBalance,
