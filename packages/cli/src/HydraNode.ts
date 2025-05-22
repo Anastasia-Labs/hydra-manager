@@ -317,15 +317,11 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       yield* awaitStatus("OPEN")
 
       const response = yield* httpClient.get(`${httpServerUrl}/snapshot/utxo`);
-      Effect.log(`Received HTTP response: ${JSON.stringify(response)}`)
 
-      // Parse and validate response using schema
       const responseData: HydraMessage.UTxOResponseType =
         yield* HttpClientResponse.schemaBodyJson(
           HydraMessage.UTxOResponseSchema,
         )(response);
-
-      Effect.log(`Parsed data: ${JSON.stringify(responseData)}`)
 
       return HydraMessage.utxoResponseToUTxOArray(responseData);
     });
