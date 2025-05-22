@@ -13,6 +13,15 @@ export const statusHead = Effect.gen(function* () {
   yield* hydraHead.logNodesStatuses;
 });
 
+export const protocolParametersCommand = Command.make("protocol-parameters", {}).pipe(
+  Command.withHandler(() => protocolParameters),
+);
+
+export const protocolParameters = Effect.gen(function* () {
+  const hydraHead = yield* HydraHead;
+  yield* hydraHead.logProtocolParameters;
+});
+
 export const initCommand = Command.make("init", {}).pipe(
   Command.withHandler(() => initHead),
 );

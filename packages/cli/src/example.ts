@@ -1,22 +1,22 @@
 import { Effect, Layer } from "effect";
-import * as ProviderEffect from "./Provider.js";
+import { ProviderContext } from "./Provider.js";
 import * as ProjectConfig from "./ProjectConfig.js";
 import { NodeContext, NodeRuntime } from "@effect/platform-node";
 
 const program = Effect.gen(function* () {
-  const provider = yield* ProviderEffect.ProviderEffect;
+  const provider = yield* ProviderContext;
   const protocol = yield* provider.getProtocolParameters();
   yield* Effect.log(`coinsPerUtxoByte: ${protocol.coinsPerUtxoByte}`);
 });
 
 // Simulate a project config for testing purposes
 const testLayer = Layer.provide(
-  ProviderEffect.ProviderEffect.Default,
+  ProviderContext.Default,
   ProjectConfig.ProjectConfigTestLayer,
 );
 
 const mainLayer = Layer.provide(
-  ProviderEffect.ProviderEffect.Default,
+  ProviderContext.Default,
   ProjectConfig.ProjectConfigFSLayer,
 );
 

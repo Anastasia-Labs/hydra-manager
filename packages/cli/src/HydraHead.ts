@@ -139,6 +139,15 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       }),
       logNodesStatusesRepeatPolicy)
 
+    const logProtocolParameters : Effect.Effect<void, Error> =
+        Effect.forEach(hydraNodes, (hydraNode) =>
+          Effect.gen(function* () {
+            Effect.log(`Parameters of the ${hydraNode.nodeName} node are:}`)
+            const parameters = yield* hydraNode.protocolParameters
+            yield* Effect.log(`${JSON.stringify(parameters)}}`)
+          })
+        )
+
     const logNodeUTxOs = (nodeName: string) =>
       Effect.gen(function* () {
         const nodeUTxOs: Array<UTxO> = yield* getNodeUTxOs(nodeName);
@@ -299,6 +308,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       nodesL2,
       commit,
       logNodesStatuses,
+      logProtocolParameters,
       logNodeSnapshotUTxOs,
       logNodeUTxOs,
       logAllNodesUTxOs,
@@ -310,8 +320,6 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       logAllFaucetWalletsBalances,
     };
   }),
-}) {
-  logAllUTxOs: any;
-}
+}) {}
 
 
