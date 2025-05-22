@@ -4,16 +4,21 @@
   "private": true,
   "license": "MIT",
   "type": "module",
+  "scripts": {
+    "build": "tsc"
+  },
   "devDependencies": {
     "@effect/vitest": "^0.20.16",
+    "@hydra-manager/common": "workspace:*",
     "@hydra-manager/typescript-config": "workspace:*",
     "vitest": "^3.1.2",
     "vitest-websocket-mock": "^0.5.0"
   },
   "dependencies": {
+    "@effect/cli": "latest",
     "@effect/platform": "^0.80.14",
     "@effect/platform-node": "^0.77.2",
-    "@effect/cli": "latest",
+    "@lucid-evolution/lucid": "^0.4.27",
     "effect": "^3.14.14"
   }
 }

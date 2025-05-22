@@ -11,9 +11,13 @@ import {
 import { NodeHttpServer } from "@effect/platform-node";
 import { Effect, Layer, Schema } from "effect";
 import { createServer } from "node:https";
+import * as CreateService from "./service/Create.js";
+import * as StateService from "./service/State.js";
 
 const managementGroup = HttpApiGroup.make("Management").add(
-  HttpApiEndpoint.get("create", "/create").addSuccess(Schema.String),
+  HttpApiEndpoint.get("create", "/create")
+    .addSuccess(Schema.String)
+    .addError(CreateService.HeadCreationError, { status: 400 })
 );
 
 const Api = HttpApi.make("hydra-manager-control-node").add(managementGroup);
@@ -21,7 +25,7 @@ const Api = HttpApi.make("hydra-manager-control-node").add(managementGroup);
 const ManagementGroupLive = HttpApiBuilder.group(
   Api,
   "Management",
-  (handlers) => handlers.handle("create", () => Effect.succeed("Hello Create")),
+  (handlers) => handlers.handle("create", CreateService.handle)
 );
 // Set up the application server with logging
 
@@ -43,22 +47,23 @@ const ServerEffectfullLive = Layer.mergeAll(
     getFiles.pipe(
       Effect.flatMap(
         ({ key, cert }) =>
-          NodeHttpServer.make(() => createServer({ key, cert }), { port }),
+          NodeHttpServer.make(() => createServer({ key, cert }), { port })
         // NodeHttpServer.make(() => createServer(), { port })
-      ),
-    ),
+      )
+    )
   ),
-  NodeHttpServer.layerContext,
+  NodeHttpServer.layerContext
 );
 
 const ApiLive = HttpApiBuilder.api(Api).pipe(
-  Layer.provide(ManagementGroupLive),
+  Layer.provide(ManagementGroupLive)
 );
 
 const ServerLive = HttpApiBuilder.serve().pipe(
   Layer.provide(HttpApiSwagger.layer()),
   Layer.provide(ApiLive),
   Layer.provide(ServerEffectfullLive),
+  Layer.provide(StateService.State.Default)
 );
 
 /*
@@ -66,5 +71,5 @@ Output:
 timestamp=... level=INFO fiber=#0 message="Listening on https://localhost:3000"
 */
 export const serveCommand = Command.make("serve", {}, () =>
-  Layer.launch(ServerLive),
+  Layer.launch(ServerLive)
 );

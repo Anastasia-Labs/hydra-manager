@@ -2,7 +2,7 @@
 import { Command } from "@effect/cli";
 import { NodeContext, NodeRuntime } from "@effect/platform-node";
 import { Effect } from "effect";
-import { serveCommand } from "./serve.js";
+import { serveCommand } from "./Serve.js";
 
 // Define the top-level command
 const command = Command.make("hydra-manager-pod-node", {}, () => Effect.void);
