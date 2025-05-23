@@ -100,6 +100,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       const messageQueue: Dequeue<Uint8Array> = yield* PubSub.subscribe(
         connection.messages,
       );
+      yield* Effect.log(`Called initialize for ${nodeName} node`)
       yield* awaitStatus("IDLE")
 
       yield* connection.sendMessage(JSON.stringify({ tag: "Init" })).pipe(

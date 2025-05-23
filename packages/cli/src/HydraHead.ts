@@ -35,15 +35,16 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
     const nodeNames: Array<string> = config.projectConfig.nodes.map(
       (node) => node.name,
     );
-    const nodeConfigs = yield* Effect.forEach(nodeNames, (name) =>
+    const nodeConfigs : Array<NodeConfig.NodeConfig> = yield* Effect.forEach(nodeNames, (name) =>
       config.getNodeConfigByName(name),
     );
 
-    const nodeConfigLayers = nodeConfigs.map((conf) =>
-      Layer.succeed(NodeConfig.NodeConfigService, {
-        nodeConfig: conf,
-      }),
-    );
+    const nodeConfigLayers : Layer.Layer<NodeConfig.NodeConfigService, never, never>[] =
+      nodeConfigs.map((conf) =>
+        Layer.succeed(NodeConfig.NodeConfigService, {
+          nodeConfig: conf,
+        }),
+      );
 
     const hydraNodes: Array<HydraNode> = yield* Effect.forEach(
       nodeConfigLayers,
@@ -68,7 +69,11 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
         }
       });
 
-    const mainNode = yield* getHydraNode(config.projectConfig.mainNodeName);
+    const getRandomHydraNode =
+      Effect.gen(function* () {
+        const randomIndex = Math.floor(Math.random() * hydraNodes.length);
+        return hydraNodes[randomIndex]
+      });
 
     const nodesL2 = (nodeName: String) =>
       Effect.gen(function* () {
@@ -303,8 +308,9 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
 
     return {
       providerLucidL1,
-      mainNode,
       hydraNodes,
+      getHydraNode,
+      getRandomHydraNode,
       nodesL2,
       commit,
       logNodesStatuses,

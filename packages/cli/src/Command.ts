@@ -3,6 +3,7 @@ import { HydraHead } from "./HydraHead.js";
 import { Command, Options } from "@effect/cli";
 import { Effect, Option, Schedule, pipe, Schema } from "effect";
 import { UTxO } from "@lucid-evolution/lucid";
+import { HydraNode } from "./HydraNode.js";
 
 export const statusCommand = Command.make("status", {}).pipe(
   Command.withHandler(() => statusHead),
@@ -20,33 +21,6 @@ export const protocolParametersCommand = Command.make("protocol-parameters", {})
 export const protocolParameters = Effect.gen(function* () {
   const hydraHead = yield* HydraHead;
   yield* hydraHead.logProtocolParameters;
-});
-
-export const initCommand = Command.make("init", {}).pipe(
-  Command.withHandler(() => initHead),
-);
-
-export const initHead = Effect.gen(function* () {
-  const hydraHead = yield* HydraHead;
-  yield* hydraHead.mainNode.initialize;
-});
-
-export const closeCommand = Command.make("close", {}).pipe(
-  Command.withHandler(() => closeHead),
-);
-
-export const closeHead = Effect.gen(function* () {
-  const hydraHead = yield* HydraHead;
-  yield* hydraHead.mainNode.close;
-});
-
-export const fanoutCommand = Command.make("fanout", {}).pipe(
-  Command.withHandler(() => fanoutHead),
-);
-
-export const fanoutHead = Effect.gen(function* () {
-  const hydraHead = yield* HydraHead;
-  yield* hydraHead.mainNode.fanout;
 });
 
 const nodeName = Options.text("node-name").pipe(
@@ -70,6 +44,48 @@ const faucetNameOptional = Options.text("faucet-name-opt").pipe(
 const utxos = Options.text("utxos").pipe(
   Options.withDescription("Array of UTxOs you wish to interact with"),
 );
+
+export const initCommand = Command.make("init", { nodeNameOptional }).pipe(
+  Command.withHandler((options) => initHead(options.nodeNameOptional)),
+);
+
+export const initHead = (nodeNameOpt: Option.Option<string>) =>
+  Effect.gen(function* () {
+    const hydraHead = yield* HydraHead;
+    const hydraNode : HydraNode = yield* Option.match(nodeNameOpt, {
+      onNone: () => hydraHead.getRandomHydraNode,
+      onSome: (nodeName) => hydraHead.getHydraNode(nodeName),
+    });
+    yield* hydraNode.initialize;
+});
+
+export const closeCommand = Command.make("close", { nodeNameOptional }).pipe(
+  Command.withHandler((options) => closeHead(options.nodeNameOptional)),
+);
+
+export const closeHead = (nodeNameOpt: Option.Option<string>) =>
+  Effect.gen(function* () {
+    const hydraHead = yield* HydraHead;
+    const hydraNode : HydraNode = yield* Option.match(nodeNameOpt, {
+      onNone: () => hydraHead.getRandomHydraNode,
+      onSome: (nodeName) => hydraHead.getHydraNode(nodeName),
+    });
+    yield* hydraNode.close;
+});
+
+export const fanoutCommand = Command.make("fanout", { nodeNameOptional }).pipe(
+  Command.withHandler((options) => fanoutHead(options.nodeNameOptional)),
+);
+
+export const fanoutHead = (nodeNameOpt: Option.Option<string>) =>
+  Effect.gen(function* () {
+    const hydraHead = yield* HydraHead;
+    const hydraNode : HydraNode = yield* Option.match(nodeNameOpt, {
+      onNone: () => hydraHead.getRandomHydraNode,
+      onSome: (nodeName) => hydraHead.getHydraNode(nodeName),
+    });
+    yield* hydraNode.fanout;
+});
 
 export const nodeSnapshotUtxosCommand = Command.make("node-snapshot-utxos", { nodeName }).pipe(
   Command.withHandler((options) => nodeSnapshotUtxosHead(options.nodeName)),

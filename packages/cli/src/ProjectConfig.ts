@@ -16,7 +16,6 @@ const ProjectConfigSchema = Schema.Struct({
   network: Schema.Literal("Preprod", "Preview", "Mainnet", "Custom"),
   providerId: CardanoProviderSchema,
   contractsReferenceTxIds: Schema.String,
-  mainNodeName: Schema.String,
   faucetWallets: Schema.Array(NodeConfig.FaucetWalletSchema),
   nodes: Schema.Array(NodeConfig.NodeConfigSchema),
 });
@@ -89,7 +88,6 @@ const testImpl = Effect.gen(function* () {
       blockfrostProjectId: "invalidID",
     },
     contractsReferenceTxIds: "",
-    mainNodeName: "Alice",
     faucetWallets: [
       {
         name: "FaucetWallet",
