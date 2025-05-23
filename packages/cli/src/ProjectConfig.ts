@@ -79,7 +79,7 @@ const fileSystemImpl = Effect.gen(function* () {
 export const ProjectConfigFSLayer = Layer.effect(
   ProjectConfigService,
   fileSystemImpl,
-);
+).pipe(Layer.provide(NodeContext.layer));
 
 const testImpl = Effect.gen(function* () {
   const projectConfig: ProjectConfig = {
