@@ -1,4 +1,4 @@
-import { Assets, UTxO } from "@lucid-evolution/core-types";
+import { Assets, ProtocolParameters, UTxO } from "@lucid-evolution/core-types";
 import { CML, LucidEvolution } from "@lucid-evolution/lucid";
 import { Effect, Option, Record, Schema } from "effect";
 
@@ -200,19 +200,19 @@ export const ProtocolParametersResponseSchema = Schema.Struct({
   txFeeFixed: Schema.Number,
   maxTxSize: Schema.Number,
   maxValueSize: Schema.Number,
-  stakeAddressDeposit: Schema.String,
-  stakePoolDeposit: Schema.String,
-  dRepDeposit: Schema.String,
-  govActionDeposit: Schema.String,
+  stakeAddressDeposit: Schema.Number,
+  stakePoolDeposit: Schema.Number,
+  dRepDeposit: Schema.Number,
+  govActionDeposit: Schema.Number,
   executionUnitPrices: Schema.Struct({
     priceMemory: Schema.Number,
     priceSteps: Schema.Number,
   }),
   maxTxExecutionUnits: Schema.Struct({
-    memory: Schema.String,
-    steps: Schema.String,
+    memory: Schema.Number,
+    steps: Schema.Number,
   }),
-  utxoCostPerByte: Schema.String,
+  utxoCostPerByte: Schema.Number,
   collateralPercentage: Schema.Number,
   maxCollateralInputs: Schema.Number,
   minFeeRefScriptCostPerByte: Schema.Number,
@@ -354,6 +354,12 @@ export function utxoArrayToUTxOResponse(utxos: Array<UTxO>): UTxOResponseType {
 
 export function utxosToString(nodeUTxOs: Array<UTxO>): string {
   return JSON.stringify(nodeUTxOs, (_, v) =>
+    typeof v === "bigint" ? v.toString() : v,
+  );
+}
+
+export function withBigintToString(obj: any): string {
+  return JSON.stringify(obj, (_, v) =>
     typeof v === "bigint" ? v.toString() : v,
   );
 }

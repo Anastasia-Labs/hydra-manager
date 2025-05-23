@@ -149,7 +149,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
           Effect.gen(function* () {
             Effect.log(`Parameters of the ${hydraNode.nodeName} node are:}`)
             const parameters = yield* hydraNode.protocolParameters
-            yield* Effect.log(`${JSON.stringify(parameters)}}`)
+            yield* Effect.log(`${HydraMessage.withBigintToString(parameters)}}`)
           })
         )
 

@@ -81,11 +81,14 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       }),
     );
 
+
     const retryPolicy = Schedule.addDelay(
-      Schedule.recurs(10),
+      Schedule.compose(
+        Schedule.exponential(50),
+        Schedule.recurs(10),
+      ),
       () => "100 millis",
     );
-
     const awaitStatus = (targetStatus: Status) : Effect.Effect<void, Error, never> =>
       Effect.retry(
         Effect.gen(function* () {
@@ -266,9 +269,6 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       // Make HTTP GET request to protocol-parameters endpoint
       const response = yield* httpClient.get(
         `${httpServerUrl}/protocol-parameters`,
-      );
-      yield* Effect.log(
-        `Received response from protocol-parameters endpoint: ${response}`,
       );
 
       // Parse and validate response using schema
