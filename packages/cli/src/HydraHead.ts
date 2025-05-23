@@ -35,15 +35,16 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
     const nodeNames: Array<string> = config.projectConfig.nodes.map(
       (node) => node.name,
     );
-    const nodeConfigs = yield* Effect.forEach(nodeNames, (name) =>
+    const nodeConfigs : Array<NodeConfig.NodeConfig> = yield* Effect.forEach(nodeNames, (name) =>
       config.getNodeConfigByName(name),
     );
 
-    const nodeConfigLayers = nodeConfigs.map((conf) =>
-      Layer.succeed(NodeConfig.NodeConfigService, {
-        nodeConfig: conf,
-      }),
-    );
+    const nodeConfigLayers : Layer.Layer<NodeConfig.NodeConfigService, never, never>[] =
+      nodeConfigs.map((conf) =>
+        Layer.succeed(NodeConfig.NodeConfigService, {
+          nodeConfig: conf,
+        }),
+      );
 
     const hydraNodes: Array<HydraNode> = yield* Effect.forEach(
       nodeConfigLayers,
@@ -54,7 +55,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       },
     );
 
-    const findHydraNode = (nodeName: string) =>
+    const getHydraNode = (nodeName: string) =>
       Effect.gen(function* () {
         const node: HydraNode | undefined = hydraNodes.find(
           (node) => node.nodeName === nodeName,
@@ -68,7 +69,11 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
         }
       });
 
-    const mainNode = yield* findHydraNode(config.projectConfig.mainNodeName);
+    const getRandomHydraNode =
+      Effect.gen(function* () {
+        const randomIndex = Math.floor(Math.random() * hydraNodes.length);
+        return hydraNodes[randomIndex]
+      });
 
     const nodesL2 = (nodeName: String) =>
       Effect.gen(function* () {
@@ -113,6 +118,40 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
         });
       });
     };
+
+    const logNodeSnapshotUTxOs = (nodeName: string) =>
+      Effect.gen(function* () {
+        const node = yield* getHydraNode(nodeName)
+        const nodeSnapshotUTxOs = yield* node.snapshotUTxOs
+
+        yield* Effect.log(`${nodeName} snapshot UTxOs are:`);
+        yield* Effect.log(HydraMessage.utxosToString(nodeSnapshotUTxOs));
+      });
+
+    const logNodesStatusesRepeatPolicy = Schedule.addDelay(
+      Schedule.recurs(10),
+      () => "500 millis",
+    );
+
+    const logNodesStatuses : Effect.Effect<void, Error> =
+      Effect.repeat(
+        Effect.gen(function* () {
+          yield* Effect.log("----------")
+          yield* Effect.forEach(hydraNodes, (hydraNode) => {
+            return Effect.log(`Status of the ${hydraNode.nodeName} node is ${hydraNode.getStatus()}`)
+        })
+          yield* Effect.log("----------")
+      }),
+      logNodesStatusesRepeatPolicy)
+
+    const logProtocolParameters : Effect.Effect<void, Error> =
+        Effect.forEach(hydraNodes, (hydraNode) =>
+          Effect.gen(function* () {
+            Effect.log(`Parameters of the ${hydraNode.nodeName} node are:}`)
+            const parameters = yield* hydraNode.protocolParameters
+            yield* Effect.log(`${HydraMessage.withBigintToString(parameters)}}`)
+          })
+        )
 
     const logNodeUTxOs = (nodeName: string) =>
       Effect.gen(function* () {
@@ -257,7 +296,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
         yield* Effect.log(`Provided utxos are:`);
         yield* Effect.log(`${HydraMessage.utxosToString(utxos)}`);
 
-        const node = yield* findHydraNode(nodeName);
+        const node = yield* getHydraNode(nodeName);
         const unwitnessedTransaction = yield* node.commitHTTPHandle(utxos);
         const faucetWallet = yield* config.getFaucetWalletByName(faucetWalletName)
         const witnessedTransaction = yield* witnessTransaction(
@@ -269,10 +308,14 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
 
     return {
       providerLucidL1,
-      mainNode,
       hydraNodes,
+      getHydraNode,
+      getRandomHydraNode,
       nodesL2,
       commit,
+      logNodesStatuses,
+      logProtocolParameters,
+      logNodeSnapshotUTxOs,
       logNodeUTxOs,
       logAllNodesUTxOs,
       logNodeBalance,
@@ -283,8 +326,6 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       logAllFaucetWalletsBalances,
     };
   }),
-}) {
-  logAllUTxOs: any;
-}
+}) {}
 
 

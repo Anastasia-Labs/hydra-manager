@@ -18,7 +18,6 @@ const HydraHeadLayer = Layer.provide(
 );
 const AppLayer = Layer.merge(HydraHeadLayer, NodeContext.layer);
 
-// pnpx tsx packages/cli/src/bin.ts init
 runCommands(process.argv).pipe(
   Effect.provide(AppLayer),
   Effect.scoped,

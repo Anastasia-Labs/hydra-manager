@@ -1,5 +1,6 @@
 import { Path, FileSystem } from "@effect/platform";
-import { Config, Context, Effect, Layer, pipe, Schema } from "effect";
+import { NodeContext } from "@effect/platform-node";
+import { Context, Effect, Layer, pipe, Schema } from "effect";
 import * as NodeConfig from "./NodeConfig.js";
 
 const CardanoProviderSchema = Schema.Union(
@@ -15,7 +16,6 @@ const ProjectConfigSchema = Schema.Struct({
   network: Schema.Literal("Preprod", "Preview", "Mainnet", "Custom"),
   providerId: CardanoProviderSchema,
   contractsReferenceTxIds: Schema.String,
-  mainNodeName: Schema.String,
   faucetWallets: Schema.Array(NodeConfig.FaucetWalletSchema),
   nodes: Schema.Array(NodeConfig.NodeConfigSchema),
 });
@@ -79,7 +79,7 @@ const fileSystemImpl = Effect.gen(function* () {
 export const ProjectConfigFSLayer = Layer.effect(
   ProjectConfigService,
   fileSystemImpl,
-);
+).pipe(Layer.provide(NodeContext.layer));
 
 const testImpl = Effect.gen(function* () {
   const projectConfig: ProjectConfig = {
@@ -88,7 +88,6 @@ const testImpl = Effect.gen(function* () {
       blockfrostProjectId: "invalidID",
     },
     contractsReferenceTxIds: "",
-    mainNodeName: "Alice",
     faucetWallets: [
       {
         name: "FaucetWallet",
