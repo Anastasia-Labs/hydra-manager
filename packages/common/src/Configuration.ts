@@ -22,7 +22,7 @@ export const NodeConfigSchema = Schema.Struct({
   name: Schema.String,
   url: Schema.String,
   hydraUrl: Schema.Option(Schema.String),
-  nodeWalleVSK: PublicKeyEnvelope,
+  nodeWalleVK: PublicKeyEnvelope,
   hydraVK: PublicKeyEnvelope,
 });
 
