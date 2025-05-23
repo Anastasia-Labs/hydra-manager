@@ -7,9 +7,16 @@ const TARGETS = [
 ];
 
 // List of packages that need to be external
+// Keep only the packages that are actually in package.json dependencies
 const EXTERNAL_PACKAGES = [
-  "@lucid-evolution/uplc",
-  "@emurgo/cardano-message-signing-nodejs",
+  "@effect/platform",
+  "@effect/platform-node",
+  "@lucid-evolution/core-types",
+  "@lucid-evolution/lucid",
+  "@lucid-evolution/utils",
+  "@effect/cli",
+  "effect",
+  "ws",
 ];
 
 for (const target of TARGETS) {
