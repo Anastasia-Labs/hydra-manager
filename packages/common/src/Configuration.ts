@@ -10,8 +10,8 @@ export type FaucetWallet = typeof FaucetWalletSchema.Type;
 
 export const PrivateNodeConfigSchema = Schema.Struct({
   name: Schema.String,
-  url: Schema.String,
-  hydraUrl: Schema.Option(Schema.String),
+  url: Schema.Array(Schema.String),
+  hydraUrl: Schema.Option(Schema.Array(Schema.String)),
   nodeWalletSK: PrivateKeyEnvelope,
   hydraSK: PrivateKeyEnvelope,
 });
@@ -20,8 +20,8 @@ export type PrivateNodeConfig = typeof PrivateNodeConfigSchema.Type;
 
 export const NodeConfigSchema = Schema.Struct({
   name: Schema.String,
-  url: Schema.String,
-  hydraUrl: Schema.Option(Schema.String),
+  url: Schema.Array(Schema.String),
+  hydraUrl: Schema.Option(Schema.Array(Schema.String)),
   nodeWalleVK: PublicKeyEnvelope,
   hydraVK: PublicKeyEnvelope,
 });
