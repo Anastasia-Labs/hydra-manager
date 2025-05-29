@@ -4,23 +4,32 @@
   "private": true,
   "license": "MIT",
   "type": "module",
+  "bin": {
+    "hydra-manager": "./dist/bin.cjs"
+  },
   "scripts": {
-    "build": "bun build.ts"
+    "bundle": "rm -rf ./out && tsup",
+    "build": "pnpm bundle && pnpm build:all",
+    "build:all": "pkg ./dist/bin.cjs --targets node20-macos-arm64,node20-macos-x64,node20-linux-arm64,node20-linux-x64,node20-win-x64 --output ./out/hydra-manager --compress Brotli"
   },
   "devDependencies": {
     "@effect/vitest": "^0.20.16",
     "@hydra-manager/typescript-config": "workspace:*",
     "@types/ws": "^8.18.1",
+    "@yao-pkg/pkg": "^5.15.0",
+    "esbuild": "^0.25.5",
+    "tsup": "^8.5.0",
+    "tsx": "^4.19.4",
     "vitest": "^3.1.2",
     "vitest-websocket-mock": "^0.5.0"
   },
   "dependencies": {
+    "@effect/cli": "latest",
     "@effect/platform": "^0.80.14",
     "@effect/platform-node": "^0.77.2",
     "@lucid-evolution/core-types": "^0.1.22",
     "@lucid-evolution/lucid": "^0.4.27",
     "@lucid-evolution/utils": "^0.1.65",
-    "@effect/cli": "latest",
     "effect": "^3.14.14",
     "ws": "^8.18.1"
   }
