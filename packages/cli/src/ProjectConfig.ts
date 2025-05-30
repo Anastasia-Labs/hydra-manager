@@ -126,13 +126,17 @@ const testImpl = Effect.gen(function* () {
       return maybeNode;
     });
   const getFaucetWalletByName = (walletName: string) =>
-    Effect.succeed({
-        name: "FaucetWallet",
-        sk: {
-          type: "PaymentSigningKeyShelley_ed25519",
-          cborHex: "5820...",
-        }
-      });
+    Effect.gen(function* () {
+      const maybeWallets = projectConfig.faucetWallets.find(
+        (node) => node.name === walletName,
+      );
+      if (maybeWallets === undefined) {
+        return yield* Effect.fail(
+          new Error(`Failed to find faucet wallet with a name ${walletName}`),
+        );
+      }
+      return maybeWallets;
+    });
 
   return { projectConfig, getNodeConfigByName, getFaucetWalletByName };
 });
