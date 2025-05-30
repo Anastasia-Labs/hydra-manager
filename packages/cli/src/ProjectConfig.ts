@@ -10,10 +10,10 @@ export class ProjectConfigService extends Context.Tag("ProjectConfigService")<
     projectConfig: Common.HeadConfig;
     getNodeConfigByName: (
       nodeName: string,
-    ) => Effect.Effect<NodeConfig.NodeConfig, Error>;
+    ) => Effect.Effect<Common.NodeConfig, Error>;
     getFaucetWalletByName: (
       faucetWalletName: string,
-    ) => Effect.Effect<NodeConfig.FaucetWallet, Error>;
+    ) => Effect.Effect<Common.FaucetWallet, Error>;
   }
 >() {}
 

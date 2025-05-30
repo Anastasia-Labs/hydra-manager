@@ -36,13 +36,13 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
     const nodeNames: Array<string> = config.projectConfig.nodes.map(
       (node) => node.name,
     );
-    const nodeConfigs : Array<NodeConfig.NodeConfig> = yield* Effect.forEach(nodeNames, (name) =>
+    const nodeConfigs : Array<Common.NodeConfig> = yield* Effect.forEach(nodeNames, (name) =>
       config.getNodeConfigByName(name),
     );
 
-    const nodeConfigLayers : Layer.Layer<NodeConfig.NodeConfigService, never, never>[] =
+    const nodeConfigLayers : Layer.Layer<Common.NodeConfigService, never, never>[] =
       nodeConfigs.map((conf) =>
-        Layer.succeed(NodeConfig.NodeConfigService, {
+        Layer.succeed(Common.NodeConfigService, {
           nodeConfig: conf,
         }),
       );
@@ -82,7 +82,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
           (node) => node.name === nodeName,
         );
         if (mbNode !== undefined) {
-          const nodeConf: NodeConfig.NodeConfig = mbNode;
+          const nodeConf: Common.NodeConfig = mbNode;
           const hydra = new HydraWrapper(
             nodeConf.url,
             config.projectConfig.network,
@@ -235,7 +235,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
 
     const witnessTransaction = (
       unwitnessedTransaction: HydraMessage.DraftCommitTxResponseType,
-      commiterSK: NodeConfig.SK,
+      commiterSK: Common.PrivateKeyEnvelope,
     ) =>
       Effect.gen(function* () {
         yield* Effect.log(`Witnessing transaction`);

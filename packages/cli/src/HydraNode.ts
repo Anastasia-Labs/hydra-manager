@@ -32,11 +32,13 @@ import { Dequeue } from "effect/Queue";
 import { HttpBodyError } from "@effect/platform/HttpBody";
 import { filterStatusOk } from "@effect/platform/HttpClientResponse";
 import { CML } from "@lucid-evolution/lucid";
+import * as Common from "@hydra-manager/common";
+
 
 export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
   effect: Effect.gen(function* () {
     yield* Effect.log("HydraNode was created");
-    const { nodeConfig } = yield* NodeConfig.NodeConfigService;
+    const { nodeConfig } = yield* Common.NodeConfigService;
     const nodeName = nodeConfig.name;
 
     const connection = yield* SocketClient.createWebSocketConnection(

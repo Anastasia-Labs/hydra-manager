@@ -1,4 +1,4 @@
-import { Schema } from "effect";
+import { Context, Schema } from "effect";
 import { PrivateKeyEnvelope, PublicKeyEnvelope } from "./Keys.js";
 
 export const FaucetWalletSchema = Schema.Struct({
@@ -27,6 +27,11 @@ export const NodeConfigSchema = Schema.Struct({
 });
 
 export type NodeConfig = typeof NodeConfigSchema.Type;
+
+export class NodeConfigService extends Context.Tag("NodeConfig")<
+  NodeConfigService,
+  { readonly nodeConfig: NodeConfig }
+>() {}
 
 export const CardanoProviderSchema = Schema.Union(
   Schema.Struct({
