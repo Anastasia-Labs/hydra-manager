@@ -8,6 +8,7 @@ import { HydraWrapper } from "./lucid/HydraWrapper.js";
 import * as NodeConfig from "./NodeConfig.js";
 import { Option } from "effect";
 import * as HydraMessage from "./HydraMessage.js";
+import * as Common from "@hydra-manager/common"
 
 export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
   effect: Effect.gen(function* () {
@@ -98,7 +99,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
     ): Effect.Effect<Array<UTxO>, Error> => {
       return Effect.gen(function* () {
         const nodeConfig = yield* config.getNodeConfigByName(nodeName);
-        const address = yield* NodeConfig.skToAddress(nodeConfig.nodeWalletSK);
+        const address = yield* NodeConfig.vkToAddress(nodeConfig.nodeWalletVK);
         return yield* Effect.tryPromise({
           try: () => providerLucidL1.utxosAt(address),
           catch: (e) => new Error(`Failed to get UTxOs at ${address}: ${e}`),
@@ -158,8 +159,8 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
         const nodeUTxOs: Array<UTxO> = yield* getNodeUTxOs(nodeName);
 
         const nodeConfig = yield* config.getNodeConfigByName(nodeName);
-        const nodeAddress = yield* NodeConfig.skToAddress(
-          nodeConfig.nodeWalletSK,
+        const nodeAddress = yield* NodeConfig.vkToAddress(
+          nodeConfig.nodeWalletVK,
         );
 
         yield* Effect.log(`${nodeName} UTxOs at ${nodeAddress} address:`);
@@ -180,8 +181,8 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
           ) / 1000000n;
 
         const nodeConfig = yield* config.getNodeConfigByName(nodeName);
-        const nodeAddress = yield* NodeConfig.skToAddress(
-          nodeConfig.nodeWalletSK,
+        const nodeAddress = yield* NodeConfig.vkToAddress(
+          nodeConfig.nodeWalletVK,
         );
 
         yield* Effect.log(

@@ -1,5 +1,6 @@
 import { CML } from "@lucid-evolution/lucid";
 import { Context, Effect, Schema } from "effect";
+import * as Common from "@hydra-manager/common"
 
 export const SKSchema = Schema.Struct({
   type: Schema.String,
@@ -18,8 +19,8 @@ export type FaucetWallet = typeof FaucetWalletSchema.Type;
 export const NodeConfigSchema = Schema.Struct({
   name: Schema.String,
   url: Schema.String,
-  nodeWalletSK: SKSchema,
-  hydraSK: SKSchema,
+  nodeWalletVK: Common.PublicKeyEnvelope,
+  hydraVK: Common.PublicKeyEnvelope,
 });
 
 export type NodeConfig = typeof NodeConfigSchema.Type;
@@ -41,6 +42,21 @@ export function skToAddress(nodeSK: SK): Effect.Effect<string, Error> {
     return Effect.succeed(address);
   } else {
     return Effect.fail(new Error(`Wrong SK format provided for: ${nodeSK}`));
+  }
+}
+
+export function vkToAddress(vk: Common.PublicKeyEnvelope): Effect.Effect<string, Error> {
+  if (vk.cborHex.startsWith("5820")) {
+    const publicKey = CML.PublicKey.from_bytes(
+      Buffer.from(vk.cborHex.substring(4), "hex"),
+    );
+    const pkHash = CML.Credential.new_pub_key(publicKey.hash());
+    const address = CML.EnterpriseAddress.new(0, pkHash)
+      .to_address()
+      .to_bech32();
+    return Effect.succeed(address);
+  } else {
+    return Effect.fail(new Error(`Wrong VK format provided for: ${vk}`));
   }
 }
 

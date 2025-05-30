@@ -22,13 +22,13 @@ export const NodeConfigSchema = Schema.Struct({
   name: Schema.String,
   url: Schema.String,
   hydraUrl: Schema.Option(Schema.String),
-  nodeWalleVK: PublicKeyEnvelope,
+  nodeWalletVK: PublicKeyEnvelope,
   hydraVK: PublicKeyEnvelope,
 });
 
 export type NodeConfig = typeof NodeConfigSchema.Type;
 
-const CardanoProviderSchema = Schema.Union(
+export const CardanoProviderSchema = Schema.Union(
   Schema.Struct({
     blockfrostProjectId: Schema.String,
   }),
@@ -37,7 +37,7 @@ const CardanoProviderSchema = Schema.Union(
   })
 );
 
-const HeadConfigSchema = Schema.Struct({
+export const HeadConfigSchema = Schema.Struct({
   network: Schema.Literal("Preprod", "Preview", "Mainnet", "Custom"),
   providerId: CardanoProviderSchema,
   contractsReferenceTxIds: Schema.String,

@@ -2,6 +2,7 @@ import { Path, FileSystem } from "@effect/platform";
 import { NodeContext } from "@effect/platform-node";
 import { Context, Effect, Layer, pipe, Schema } from "effect";
 import * as NodeConfig from "./NodeConfig.js";
+import * as Common from "@hydra-manager/common"
 
 const CardanoProviderSchema = Schema.Union(
   Schema.Struct({
@@ -101,29 +102,30 @@ const testImpl = Effect.gen(function* () {
       {
         name: "Alice",
         url: "ws://localhost:4001",
-        nodeWalletSK: {
-          type: "PaymentSigningKeyShelley_ed25519",
+        nodeWalletVK: {
+          type: "PaymentVerificationKeyShelley_ed25519",
           cborHex: "5820...",
+          description: "",
         },
-        hydraSK: {
-          type: "HydraSigningKey_ed25519",
+        hydraVK: {
+          type: "HydraVerificationKey_ed25519",
           cborHex: "5820...",
+          description: ""
         },
       },
     ],
   };
   const getNodeConfigByName = (nodeName: string) =>
-    Effect.succeed({
-      name: "Alice",
-      url: "ws://localhost:4001",
-      nodeWalletSK: {
-        type: "PaymentSigningKeyShelley_ed25519",
-        cborHex: "5820...",
-      },
-      hydraSK: {
-        type: "HydraSigningKey_ed25519",
-        cborHex: "5820...",
-      },
+    Effect.gen(function* () {
+      const maybeNode = projectConfig.nodes.find(
+        (node) => node.name === nodeName,
+      );
+      if (maybeNode === undefined) {
+        return yield* Effect.fail(
+          new Error(`Failed to find node with a name ${nodeName}`),
+        );
+      }
+      return maybeNode;
     });
   const getFaucetWalletByName = (walletName: string) =>
     Effect.succeed({
@@ -164,12 +166,12 @@ const validateConfig = (projectConfig: ProjectConfig) =>
     // TODO: The same for Koios?
 
     const nodes = config.nodes;
-    const walletSKs = nodes
-      .map((node) => node.nodeWalletSK)
+    const walletVKs = nodes
+      .map((node) => node.nodeWalletVK)
     if (
-      !walletSKs
+      !walletVKs
         .map((sk) => sk.type)
-        .every((type) => type === "PaymentSigningKeyShelley_ed25519")
+        .every((type) => type === "PaymentVerificationKeyShelley_ed25519")
     ) {
       yield* Effect.fail(
         new Error(
@@ -178,27 +180,27 @@ const validateConfig = (projectConfig: ProjectConfig) =>
       );
     }
     if (
-      !walletSKs.map((sk) => sk.cborHex).every((hex) => hex.startsWith("5820"))
+      !walletVKs.map((sk) => sk.cborHex).every((hex) => hex.startsWith("5820"))
     ) {
       yield* Effect.fail(
         new Error("One wallet secret key or more starts not with 5820"),
       );
     }
 
-    const hydraSKs = nodes.map((node) => node.hydraSK);
+    const hydraVKs = nodes.map((node) => node.hydraVK);
     if (
-      !hydraSKs
+      !hydraVKs
         .map((sk) => sk.type)
-        .every((type) => type == "HydraSigningKey_ed25519")
+        .every((type) => type == "HydraVerificationKey_ed25519")
     ) {
       yield* Effect.fail(
         new Error(
-          "One hydra secret key or more have non HydraSigningKey_ed25519 type field",
+          "One hydra secret key or more have non HydraVerificationKey_ed25519 type field",
         ),
       );
     }
     if (
-      !hydraSKs.map((sk) => sk.cborHex).every((hex) => hex.startsWith("5820"))
+      !hydraVKs.map((sk) => sk.cborHex).every((hex) => hex.startsWith("5820"))
     ) {
       yield* Effect.fail(
         new Error("One hydra secret key or more starts not with 5820"),
