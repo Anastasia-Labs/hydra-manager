@@ -1,7 +1,6 @@
 import { Path, FileSystem } from "@effect/platform";
 import { NodeContext } from "@effect/platform-node";
 import { Context, Effect, Layer, pipe, Schema, Option } from "effect";
-import * as NodeConfig from "./NodeConfig.js";
 import * as Common from "@hydra-manager/common"
 
 export class ProjectConfigService extends Context.Tag("ProjectConfigService")<

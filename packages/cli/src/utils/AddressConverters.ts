@@ -1,34 +1,6 @@
 import { CML } from "@lucid-evolution/lucid";
-import { Context, Effect, Schema } from "effect";
+import { Effect } from "effect";
 import * as Common from "@hydra-manager/common"
-
-// export const SKSchema = Schema.Struct({
-//   type: Schema.String,
-//   cborHex: Schema.String,
-// });
-
-// export type SK = typeof SKSchema.Type;
-
-// export const FaucetWalletSchema = Schema.Struct({
-//   name: Schema.String,
-//   sk: SKSchema,
-// })
-
-// export type FaucetWallet = typeof FaucetWalletSchema.Type;
-
-// export const NodeConfigSchema = Schema.Struct({
-//   name: Schema.String,
-//   url: Schema.String,
-//   nodeWalletVK: Common.PublicKeyEnvelope,
-//   hydraVK: Common.PublicKeyEnvelope,
-// });
-
-// export type NodeConfig = typeof NodeConfigSchema.Type;
-
-// export class NodeConfigService extends Context.Tag("NodeConfig")<
-//   NodeConfigService,
-//   { readonly nodeConfig: NodeConfig }
-// >() {}
 
 export function skToAddress(nodeSK: Common.PrivateKeyEnvelope): Effect.Effect<string, Error> {
   if (nodeSK.cborHex.startsWith("5820")) {

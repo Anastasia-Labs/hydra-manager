@@ -15,7 +15,7 @@ import * as HydraMessage from "./HydraMessage.js";
 import { Status } from "./HydraMessage.js";
 import { ParseError } from "effect/ParseResult";
 import { SocketError } from "@effect/platform/Socket";
-import * as NodeConfig from "./NodeConfig.js";
+import * as NodeConfig from "./utils/AddressConverters.js";
 import {
   FetchHttpClient,
   HttpClient,
