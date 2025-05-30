@@ -4,30 +4,10 @@ import { Context, Effect, Layer, pipe, Schema, Option } from "effect";
 import * as NodeConfig from "./NodeConfig.js";
 import * as Common from "@hydra-manager/common"
 
-const CardanoProviderSchema = Schema.Union(
-  Schema.Struct({
-    blockfrostProjectId: Schema.String,
-  }),
-  Schema.Struct({
-    koiosProjectId: Schema.String,
-  }),
-);
-
-const ProjectConfigSchema = Schema.Struct({
-  network: Schema.Literal("Preprod", "Preview", "Mainnet", "Custom"),
-  providerId: CardanoProviderSchema,
-  contractsReferenceTxIds: Schema.String,
-  faucetWallets: Schema.Array(NodeConfig.FaucetWalletSchema),
-  nodes: Schema.Array(Common.NodeConfigSchema),
-  privateNodes: Schema.Array(Common.PrivateNodeConfigSchema),
-});
-
-export type ProjectConfig = typeof ProjectConfigSchema.Type;
-
 export class ProjectConfigService extends Context.Tag("ProjectConfigService")<
   ProjectConfigService,
   {
-    projectConfig: ProjectConfig;
+    projectConfig: Common.HeadConfig;
     getNodeConfigByName: (
       nodeName: string,
     ) => Effect.Effect<NodeConfig.NodeConfig, Error>;
@@ -41,10 +21,10 @@ const fileSystemImpl = Effect.gen(function* () {
   const path = yield* Path.Path;
   const fs = yield* FileSystem.FileSystem;
 
-  const projectConfig: ProjectConfig = yield* pipe(
+  const projectConfig: Common.HeadConfig = yield* pipe(
     fs.readFileString(path.join(path.resolve(), "config.json")),
     Effect.flatMap((configString) =>
-      Schema.decodeUnknown(Schema.parseJson(ProjectConfigSchema))(configString),
+      Schema.decodeUnknown(Schema.parseJson(Common.HeadConfigSchema))(configString),
     ),
     Effect.flatMap((config) => validateConfig(config)),
   );
@@ -84,7 +64,7 @@ export const ProjectConfigFSLayer = Layer.effect(
 ).pipe(Layer.provide(NodeContext.layer));
 
 const testImpl = Effect.gen(function* () {
-  const projectConfig: ProjectConfig = {
+  const projectConfig: Common.HeadConfig = {
     network: "Preprod",
     providerId: {
       blockfrostProjectId: "invalidID",
@@ -96,6 +76,7 @@ const testImpl = Effect.gen(function* () {
         sk: {
           type: "PaymentSigningKeyShelley_ed25519",
           cborHex: "5820...",
+          "description": ""
         }
       },
     ],
@@ -160,7 +141,7 @@ export const ProjectConfigTestLayer = Layer.effect(
   testImpl,
 );
 
-const validateConfig = (projectConfig: ProjectConfig) =>
+const validateConfig = (projectConfig: Common.HeadConfig) =>
   Effect.gen(function* () {
     const config = projectConfig;
 
