@@ -1,6 +1,6 @@
 import { Path, FileSystem } from "@effect/platform";
 import { NodeContext } from "@effect/platform-node";
-import { Context, Effect, Layer, pipe, Schema } from "effect";
+import { Context, Effect, Layer, pipe, Schema, Option } from "effect";
 import * as NodeConfig from "./NodeConfig.js";
 import * as Common from "@hydra-manager/common"
 
@@ -18,7 +18,8 @@ const ProjectConfigSchema = Schema.Struct({
   providerId: CardanoProviderSchema,
   contractsReferenceTxIds: Schema.String,
   faucetWallets: Schema.Array(NodeConfig.FaucetWalletSchema),
-  nodes: Schema.Array(NodeConfig.NodeConfigSchema),
+  nodes: Schema.Array(Common.NodeConfigSchema),
+  privateNodes: Schema.Array(Common.PrivateNodeConfigSchema),
 });
 
 export type ProjectConfig = typeof ProjectConfigSchema.Type;
@@ -114,6 +115,22 @@ const testImpl = Effect.gen(function* () {
         },
       },
     ],
+    privateNodes: [
+      {
+      "name": "Alice",
+      "url": "ws://localhost:4001",
+      "nodeWalletSK": {
+        "type": "PaymentSigningKeyShelley_ed25519",
+        "cborHex": "58206d92b3dc42bba5840aeeb8dd3d3c7a3ce71721935483c238ecb2f3e1b5f2b5d0",
+        "description": ""
+      },
+      "hydraSK": {
+        "type": "HydraSigningKey_ed25519",
+        "cborHex": "5820fb5816d4efa1fe4d853396cd84a80df4b7f78ccd7314a27ebe93483d06d31091",
+        "description": ""
+      }
+    }
+    ]
   };
   const getNodeConfigByName = (nodeName: string) =>
     Effect.gen(function* () {
