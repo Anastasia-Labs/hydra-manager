@@ -31,6 +31,7 @@
     "@lucid-evolution/lucid": "^0.4.27",
     "@lucid-evolution/utils": "^0.1.65",
     "effect": "^3.14.14",
-    "ws": "^8.18.1"
+    "ws": "^8.18.1",
+    "@hydra-manager/common": "workspace:*"
   }
 }

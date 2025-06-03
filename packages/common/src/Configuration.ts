@@ -1,4 +1,4 @@
-import { Schema } from "effect";
+import { Context, Schema } from "effect";
 import { PrivateKeyEnvelope, PublicKeyEnvelope } from "./Keys.js";
 
 export const FaucetWalletSchema = Schema.Struct({
@@ -10,8 +10,8 @@ export type FaucetWallet = typeof FaucetWalletSchema.Type;
 
 export const PrivateNodeConfigSchema = Schema.Struct({
   name: Schema.String,
-  url: Schema.Array(Schema.String),
-  hydraUrl: Schema.Option(Schema.Array(Schema.String)),
+  url: Schema.String,
+  hydraUrl: Schema.optionalWith(Schema.String, { exact: true }),
   nodeWalletSK: PrivateKeyEnvelope,
   hydraSK: PrivateKeyEnvelope,
 });
@@ -20,15 +20,20 @@ export type PrivateNodeConfig = typeof PrivateNodeConfigSchema.Type;
 
 export const NodeConfigSchema = Schema.Struct({
   name: Schema.String,
-  url: Schema.Array(Schema.String),
-  hydraUrl: Schema.Option(Schema.Array(Schema.String)),
-  nodeWalleVK: PublicKeyEnvelope,
+  url: Schema.String,
+  hydraUrl: Schema.optionalWith(Schema.String, { exact: true }),
+  nodeWalletVK: PublicKeyEnvelope,
   hydraVK: PublicKeyEnvelope,
 });
 
 export type NodeConfig = typeof NodeConfigSchema.Type;
 
-const CardanoProviderSchema = Schema.Union(
+export class NodeConfigService extends Context.Tag("NodeConfig")<
+  NodeConfigService,
+  { readonly nodeConfig: NodeConfig }
+>() {}
+
+export const CardanoProviderSchema = Schema.Union(
   Schema.Struct({
     blockfrostProjectId: Schema.String,
   }),
@@ -37,7 +42,7 @@ const CardanoProviderSchema = Schema.Union(
   })
 );
 
-const HeadConfigSchema = Schema.Struct({
+export const HeadConfigSchema = Schema.Struct({
   network: Schema.Literal("Preprod", "Preview", "Mainnet", "Custom"),
   providerId: CardanoProviderSchema,
   contractsReferenceTxIds: Schema.String,

@@ -1,13 +1,14 @@
-import type { LucidEvolution, Provider, UTxO } from "@lucid-evolution/lucid";
-import { CML, Lucid, Network } from "@lucid-evolution/lucid";
-import { Console, Context, Effect, Layer, Schedule } from "effect";
+import type { LucidEvolution, UTxO } from "@lucid-evolution/lucid";
+import { CML, Lucid } from "@lucid-evolution/lucid";
+import { Effect, Layer, Schedule } from "effect";
 import * as ProjectConfig from "./ProjectConfig.js";
 import { ProviderContext } from "./Provider.js";
 import { HydraNode } from "./HydraNode.js";
 import { HydraWrapper } from "./lucid/HydraWrapper.js";
-import * as NodeConfig from "./NodeConfig.js";
+import * as AddressConverters from "./utils/AddressConverters.js";
 import { Option } from "effect";
 import * as HydraMessage from "./HydraMessage.js";
+import * as Common from "@hydra-manager/common"
 
 export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
   effect: Effect.gen(function* () {
@@ -35,13 +36,13 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
     const nodeNames: Array<string> = config.projectConfig.nodes.map(
       (node) => node.name,
     );
-    const nodeConfigs : Array<NodeConfig.NodeConfig> = yield* Effect.forEach(nodeNames, (name) =>
+    const nodeConfigs : Array<Common.NodeConfig> = yield* Effect.forEach(nodeNames, (name) =>
       config.getNodeConfigByName(name),
     );
 
-    const nodeConfigLayers : Layer.Layer<NodeConfig.NodeConfigService, never, never>[] =
+    const nodeConfigLayers : Layer.Layer<Common.NodeConfigService, never, never>[] =
       nodeConfigs.map((conf) =>
-        Layer.succeed(NodeConfig.NodeConfigService, {
+        Layer.succeed(Common.NodeConfigService, {
           nodeConfig: conf,
         }),
       );
@@ -81,7 +82,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
           (node) => node.name === nodeName,
         );
         if (mbNode !== undefined) {
-          const nodeConf: NodeConfig.NodeConfig = mbNode;
+          const nodeConf: Common.NodeConfig = mbNode;
           const hydra = new HydraWrapper(
             nodeConf.url,
             config.projectConfig.network,
@@ -98,7 +99,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
     ): Effect.Effect<Array<UTxO>, Error> => {
       return Effect.gen(function* () {
         const nodeConfig = yield* config.getNodeConfigByName(nodeName);
-        const address = yield* NodeConfig.skToAddress(nodeConfig.nodeWalletSK);
+        const address = yield* AddressConverters.vkToAddress(nodeConfig.nodeWalletVK);
         return yield* Effect.tryPromise({
           try: () => providerLucidL1.utxosAt(address),
           catch: (e) => new Error(`Failed to get UTxOs at ${address}: ${e}`),
@@ -111,7 +112,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
     ): Effect.Effect<Array<UTxO>, Error> => {
       return Effect.gen(function* () {
         const faucetWallet = yield* config.getFaucetWalletByName(faucetWalletName);
-        const address = yield* NodeConfig.skToAddress(faucetWallet.sk);
+        const address = yield* AddressConverters.skToAddress(faucetWallet.sk);
         return yield* Effect.tryPromise({
           try: () => providerLucidL1.utxosAt(address),
           catch: (e) => new Error(`Failed to get UTxOs at ${address}: ${e}`),
@@ -158,8 +159,8 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
         const nodeUTxOs: Array<UTxO> = yield* getNodeUTxOs(nodeName);
 
         const nodeConfig = yield* config.getNodeConfigByName(nodeName);
-        const nodeAddress = yield* NodeConfig.skToAddress(
-          nodeConfig.nodeWalletSK,
+        const nodeAddress = yield* AddressConverters.vkToAddress(
+          nodeConfig.nodeWalletVK,
         );
 
         yield* Effect.log(`${nodeName} UTxOs at ${nodeAddress} address:`);
@@ -180,8 +181,8 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
           ) / 1000000n;
 
         const nodeConfig = yield* config.getNodeConfigByName(nodeName);
-        const nodeAddress = yield* NodeConfig.skToAddress(
-          nodeConfig.nodeWalletSK,
+        const nodeAddress = yield* AddressConverters.vkToAddress(
+          nodeConfig.nodeWalletVK,
         );
 
         yield* Effect.log(
@@ -198,7 +199,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
         const faucetWalletUTxOs: Array<UTxO> = yield* getFaucetWalletUTxOs(faucetWalletName);
 
         const faucetWallet = yield* config.getFaucetWalletByName(faucetWalletName);
-        const faucetWalletAddress = yield* NodeConfig.skToAddress(
+        const faucetWalletAddress = yield* AddressConverters.skToAddress(
           faucetWallet.sk,
         );
 
@@ -220,7 +221,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
           ) / 1000000n;
 
         const faucetWallet = yield* config.getFaucetWalletByName(faucetWalletName);
-        const faucetWalletAddress = yield* NodeConfig.skToAddress(
+        const faucetWalletAddress = yield* AddressConverters.skToAddress(
           faucetWallet.sk,
         );
         yield* Effect.log(
@@ -234,7 +235,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
 
     const witnessTransaction = (
       unwitnessedTransaction: HydraMessage.DraftCommitTxResponseType,
-      commiterSK: NodeConfig.SK,
+      commiterSK: Common.PrivateKeyEnvelope,
     ) =>
       Effect.gen(function* () {
         yield* Effect.log(`Witnessing transaction`);
@@ -242,7 +243,7 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
           unwitnessedTransaction.cborHex,
         );
         const witnessSet = unsignedTx.witness_set();
-        const privateKey = NodeConfig.cborHexToPrivateKey(
+        const privateKey = AddressConverters.cborHexToPrivateKey(
           commiterSK.cborHex,
         );
         providerLucidL1.selectWallet.fromPrivateKey(privateKey);

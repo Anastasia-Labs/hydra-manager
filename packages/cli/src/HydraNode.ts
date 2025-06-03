@@ -15,7 +15,7 @@ import * as HydraMessage from "./HydraMessage.js";
 import { Status } from "./HydraMessage.js";
 import { ParseError } from "effect/ParseResult";
 import { SocketError } from "@effect/platform/Socket";
-import * as NodeConfig from "./NodeConfig.js";
+import * as NodeConfig from "./utils/AddressConverters.js";
 import {
   FetchHttpClient,
   HttpClient,
@@ -32,11 +32,13 @@ import { Dequeue } from "effect/Queue";
 import { HttpBodyError } from "@effect/platform/HttpBody";
 import { filterStatusOk } from "@effect/platform/HttpClientResponse";
 import { CML } from "@lucid-evolution/lucid";
+import * as Common from "@hydra-manager/common";
+
 
 export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
   effect: Effect.gen(function* () {
     yield* Effect.log("HydraNode was created");
-    const { nodeConfig } = yield* NodeConfig.NodeConfigService;
+    const { nodeConfig } = yield* Common.NodeConfigService;
     const nodeName = nodeConfig.name;
 
     const connection = yield* SocketClient.createWebSocketConnection(
