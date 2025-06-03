@@ -2,11 +2,17 @@ import { Command } from "@effect/platform"
 import { NodeContext, NodeRuntime } from "@effect/platform-node"
 import { Effect } from "effect"
 
-const command = Command.make("ls", "-al")
+const command = Command.make("whoami")
 
-export const program = Effect.gen(function* () {
-  const output = yield* Command.string(command)
-  return output
+export const commandProgram = Effect.gen(function* () {
+  yield* Effect.log("Called start command")
+  return yield* Command.string(command)
 })
 
-NodeRuntime.runMain(program.pipe(Effect.provide(NodeContext.layer)))
+export const startApiHandler =
+  commandProgram.pipe(Effect.provide(NodeContext.layer),
+  Effect.catchAll((error) => {
+    return Effect.fail(new Error(JSON.stringify(error)))
+  })
+)
+

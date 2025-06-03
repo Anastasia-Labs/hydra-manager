@@ -11,21 +11,15 @@ import {
 } from "@effect/platform";
 import { NodeContext, NodeHttpServer } from "@effect/platform-node";
 import { Effect, Layer, Schema, pipe } from "effect";
-import { createServer } from "node:https";
-import { program } from "./InitCommand.js";
+import * as HTTPS from "node:https";
+import * as HTTP from "node:http";
+import { startApiHandler } from "./InitCommand.js";
 
 const managementGroup = HttpApiGroup.make("Management").add(
-  HttpApiEndpoint.get("start")`/`.addSuccess(Schema.String).addError(Schema.Any),
+  HttpApiEndpoint.get("start", "/start").addSuccess(Schema.String).addError(Schema.Any),
 );
 
 const Api = HttpApi.make("hydra-manager-pod-node").add(managementGroup);
-
-const myApiHandler =
-  program.pipe(Effect.provide(NodeContext.layer),
-  Effect.catchAll((error) => {
-    return Effect.fail(new Error(JSON.stringify(error)))
-  })
-)
 
 const ManagementGroupLive = HttpApiBuilder.group(
   Api,
@@ -33,12 +27,7 @@ const ManagementGroupLive = HttpApiBuilder.group(
   (handlers) =>
     Effect.gen(function*() {
       return handlers
-        .handle("start", () => Effect.gen(function* () {
-            yield* Effect.log("Here")
-            // return yield* myApiHandler
-            return "Here"
-          })
-        )
+        .handle("start", () =>  startApiHandler)
     })
 )
 // Set up the application server with logging
@@ -61,7 +50,7 @@ const ServerEffectfullLive = Layer.mergeAll(
     getFiles.pipe(
       Effect.flatMap(
         ({ key, cert }) =>
-          NodeHttpServer.make(() => createServer({ key, cert }), { port }),
+          NodeHttpServer.make(() => HTTPS.createServer({ key, cert }), { port }),
         // NodeHttpServer.make(() => createServer(), { port })
       ),
     ),
@@ -76,7 +65,7 @@ const ApiLive = HttpApiBuilder.api(Api).pipe(
 const ServerLive = HttpApiBuilder.serve().pipe(
   Layer.provide(HttpApiSwagger.layer()),
   Layer.provide(ApiLive),
-  Layer.provide(NodeHttpServer.layer(createServer, { port: 3001 })),
+  Layer.provide(NodeHttpServer.layer(HTTP.createServer, { port: 3001 })),
 );
 
 /*
