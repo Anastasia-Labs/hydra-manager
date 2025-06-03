@@ -4,25 +4,43 @@ import {
   HttpApi,
   HttpApiBuilder,
   HttpApiEndpoint,
+  HttpApiError,
   HttpApiGroup,
   HttpApiSwagger,
   HttpServer,
 } from "@effect/platform";
-import { NodeHttpServer } from "@effect/platform-node";
-import { Effect, Layer, Schema } from "effect";
+import { NodeContext, NodeHttpServer } from "@effect/platform-node";
+import { Effect, Layer, Schema, pipe } from "effect";
 import { createServer } from "node:https";
+import { program } from "./InitCommand.js";
 
 const managementGroup = HttpApiGroup.make("Management").add(
-  HttpApiEndpoint.get("start", "/start").addSuccess(Schema.String),
+  HttpApiEndpoint.get("start")`/`.addSuccess(Schema.String).addError(Schema.Any),
 );
 
 const Api = HttpApi.make("hydra-manager-pod-node").add(managementGroup);
 
+const myApiHandler =
+  program.pipe(Effect.provide(NodeContext.layer),
+  Effect.catchAll((error) => {
+    return Effect.fail(new Error(JSON.stringify(error)))
+  })
+)
+
 const ManagementGroupLive = HttpApiBuilder.group(
   Api,
   "Management",
-  (handlers) => handlers.handle("start", () => Effect.succeed("Hello Start")),
-);
+  (handlers) =>
+    Effect.gen(function*() {
+      return handlers
+        .handle("start", () => Effect.gen(function* () {
+            yield* Effect.log("Here")
+            // return yield* myApiHandler
+            return "Here"
+          })
+        )
+    })
+)
 // Set up the application server with logging
 
 // Specify the port
@@ -58,7 +76,7 @@ const ApiLive = HttpApiBuilder.api(Api).pipe(
 const ServerLive = HttpApiBuilder.serve().pipe(
   Layer.provide(HttpApiSwagger.layer()),
   Layer.provide(ApiLive),
-  Layer.provide(ServerEffectfullLive),
+  Layer.provide(NodeHttpServer.layer(createServer, { port: 3001 })),
 );
 
 /*
