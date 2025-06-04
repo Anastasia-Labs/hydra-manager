@@ -10,7 +10,8 @@ import {
 } from "@effect/platform";
 import { NodeHttpServer } from "@effect/platform-node";
 import { Effect, Layer, Schema } from "effect";
-import { createServer } from "node:https";
+import * as HTTPS from "node:https";
+import * as HTTP from "node:http";
 import * as CreateService from "./service/Create.js";
 import * as StateService from "./service/State.js";
 
@@ -47,7 +48,7 @@ const ServerEffectfullLive = Layer.mergeAll(
     getFiles.pipe(
       Effect.flatMap(
         ({ key, cert }) =>
-          NodeHttpServer.make(() => createServer({ key, cert }), { port })
+          NodeHttpServer.make(() => HTTPS.createServer({ key, cert }), { port })
         // NodeHttpServer.make(() => createServer(), { port })
       )
     )
@@ -62,7 +63,9 @@ const ApiLive = HttpApiBuilder.api(Api).pipe(
 const ServerLive = HttpApiBuilder.serve().pipe(
   Layer.provide(HttpApiSwagger.layer()),
   Layer.provide(ApiLive),
-  Layer.provide(ServerEffectfullLive),
+  // Layer.provide(ServerEffectfullLive),
+  Layer.provide(NodeHttpServer.layer(HTTP.createServer, { port: 3001 })),
+
   Layer.provide(StateService.State.Default)
 );
 

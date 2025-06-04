@@ -16,8 +16,14 @@ import * as HTTP from "node:http";
 import { startApiHandler, stopApiHandler } from "./Command.js";
 
 const managementGroup = HttpApiGroup.make("Management")
-  .add(HttpApiEndpoint.get("start", "/start").addSuccess(Schema.String).addError(Schema.Any))
-  .add(HttpApiEndpoint.get("stop", "/stop").addSuccess(Schema.String).addError(Schema.Any))
+  .add(HttpApiEndpoint.get("start", "/start")
+    .addSuccess(Schema.String, { status: 200 })
+    .addError(Schema.String, { status: 400 })
+  )
+  .add(HttpApiEndpoint.get("stop", "/stop")
+    .addSuccess(Schema.String, { status: 200 })
+    .addError(Schema.String, { status: 400 })
+  )
 
 const Api = HttpApi.make("hydra-manager-pod-node").add(managementGroup);
 
