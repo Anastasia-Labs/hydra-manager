@@ -5,7 +5,7 @@ export class HeadCreationError extends Schema.TaggedError<HeadCreationError>()(
   "HeadCreationError",
   {
     message: Schema.String,
-  }
+  },
 ) {}
 
 export const handle = () =>

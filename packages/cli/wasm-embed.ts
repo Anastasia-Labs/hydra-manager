@@ -86,7 +86,7 @@ function discoverWasmFiles(options: WasmEmbedOptions): Record<string, string> {
 
       // Skip excluded packages
       const shouldExclude = excludePackages.some((excluded) =>
-        wasmPath.includes(excluded)
+        wasmPath.includes(excluded),
       );
 
       if (!shouldExclude) {
@@ -133,27 +133,27 @@ function discoverWasmFiles(options: WasmEmbedOptions): Record<string, string> {
 function findWorkspaceRoot(): string {
   const workspaceIndicators = [
     "pnpm-workspace.yaml",
-    "pnpm-lock.yaml", 
+    "pnpm-lock.yaml",
     "package-lock.json",
     "yarn.lock",
     "lerna.json",
     "turbo.json",
-    ".git"
+    ".git",
   ];
 
   let currentDir = process.cwd();
-  
+
   while (currentDir !== path.dirname(currentDir)) {
-    const hasIndicator = workspaceIndicators.some(indicator => 
-      fs.existsSync(path.join(currentDir, indicator))
+    const hasIndicator = workspaceIndicators.some((indicator) =>
+      fs.existsSync(path.join(currentDir, indicator)),
     );
-    
+
     if (hasIndicator) {
       return currentDir;
     }
     currentDir = path.dirname(currentDir);
   }
-  
+
   return process.cwd();
 }
 
@@ -162,29 +162,29 @@ function getWasmAsBase64(
   wasmPath: string,
   rootDir: string = process.cwd(),
   debug: boolean = false,
-  compress: boolean = false
+  compress: boolean = false,
 ): string {
   const fullPath = path.resolve(rootDir, wasmPath);
 
   try {
     if (debug) console.log(`🔍 Reading WASM file: ${wasmPath} -> ${fullPath}`);
     let wasmBuffer = fs.readFileSync(fullPath);
-    
+
     if (compress) {
       const originalSize = wasmBuffer.length;
       wasmBuffer = Buffer.from(gzipSync(wasmBuffer));
       if (debug) {
         console.log(
-          `🗜️ Compressed WASM: ${(originalSize / 1024).toFixed(1)}KB → ${(wasmBuffer.length / 1024).toFixed(1)}KB (${((1 - wasmBuffer.length / originalSize) * 100).toFixed(1)}% reduction)`
+          `🗜️ Compressed WASM: ${(originalSize / 1024).toFixed(1)}KB → ${(wasmBuffer.length / 1024).toFixed(1)}KB (${((1 - wasmBuffer.length / originalSize) * 100).toFixed(1)}% reduction)`,
         );
       }
     }
-    
+
     const base64 = wasmBuffer.toString("base64");
-    
+
     if (debug) {
       console.log(
-        `✅ Successfully read WASM file: ${fullPath} (${wasmBuffer.length} bytes${compress ? ', compressed' : ''})`
+        `✅ Successfully read WASM file: ${fullPath} (${wasmBuffer.length} bytes${compress ? ", compressed" : ""})`,
       );
     }
     return base64;
@@ -193,7 +193,7 @@ function getWasmAsBase64(
     if (debug) {
       console.warn(
         `❌ Warning: Could not read WASM file at ${wasmPath} (resolved to ${fullPath}):`,
-        errorMessage
+        errorMessage,
       );
     }
     return "";
@@ -207,7 +207,7 @@ function generateWasmPatchingCode(
   wasmFiles: Record<string, string>,
   rootDir: string,
   debug: boolean = false,
-  compress: boolean = false
+  compress: boolean = false,
 ): string {
   const wasmEntries = Object.entries(wasmFiles)
     .map(([fileName, filePath]) => {
@@ -253,7 +253,7 @@ require('fs').readFileSync = function(filePath, options) {
  * Creates a WASM embed plugin for esbuild
  */
 export function createWasmEmbedPlugin(
-  options: WasmEmbedOptions = {}
+  options: WasmEmbedOptions = {},
 ): esbuild.Plugin {
   return {
     name: "wasm-embed",
@@ -279,11 +279,18 @@ export function createWasmEmbedPlugin(
             return sum;
           }
         }, 0);
-        console.log(`📊 Total WASM size: ${(totalSize / 1024 / 1024).toFixed(2)} MB`);
+        console.log(
+          `📊 Total WASM size: ${(totalSize / 1024 / 1024).toFixed(2)} MB`,
+        );
       }
 
       // Generate WASM patching code once
-      const wasmPatchingCode = generateWasmPatchingCode(wasmFiles, rootDir, debug, compress);
+      const wasmPatchingCode = generateWasmPatchingCode(
+        wasmFiles,
+        rootDir,
+        debug,
+        compress,
+      );
 
       // Add banner to inject WASM patching at the top of the bundle
       build.initialOptions.banner = {
