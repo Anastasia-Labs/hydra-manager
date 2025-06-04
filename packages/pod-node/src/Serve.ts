@@ -13,11 +13,11 @@ import { NodeContext, NodeHttpServer } from "@effect/platform-node";
 import { Effect, Layer, Schema, pipe } from "effect";
 import * as HTTPS from "node:https";
 import * as HTTP from "node:http";
-import { startApiHandler } from "./InitCommand.js";
+import { startApiHandler, stopApiHandler } from "./Command.js";
 
-const managementGroup = HttpApiGroup.make("Management").add(
-  HttpApiEndpoint.get("start", "/start").addSuccess(Schema.String).addError(Schema.Any),
-);
+const managementGroup = HttpApiGroup.make("Management")
+  .add(HttpApiEndpoint.get("start", "/start").addSuccess(Schema.String).addError(Schema.Any))
+  .add(HttpApiEndpoint.get("stop", "/stop").addSuccess(Schema.String).addError(Schema.Any))
 
 const Api = HttpApi.make("hydra-manager-pod-node").add(managementGroup);
 
@@ -27,8 +27,9 @@ const ManagementGroupLive = HttpApiBuilder.group(
   (handlers) =>
     Effect.gen(function*() {
       return handlers
-        .handle("start", () =>  startApiHandler)
-    })
+        .handle("start", () => startApiHandler)
+        .handle("stop", () => stopApiHandler)
+      })
 )
 // Set up the application server with logging
 
