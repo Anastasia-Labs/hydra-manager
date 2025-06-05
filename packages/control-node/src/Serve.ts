@@ -13,10 +13,7 @@ import { Effect, Layer, Schema } from "effect";
 import * as HTTPS from "node:https";
 import * as HTTP from "node:http";
 import { startAllApiHandler, stopAllApiHandler } from "./Command.js";
-import {
-  FetchHttpClient,
-} from "@effect/platform";
-
+import { FetchHttpClient } from "@effect/platform";
 
 const managementGroup = HttpApiGroup.make("Management")
   .add(
@@ -26,8 +23,8 @@ const managementGroup = HttpApiGroup.make("Management")
   )
   .add(
     HttpApiEndpoint.get("stopAll", "/stopAll")
-    .addSuccess(Schema.String, { status: 200 })
-    .addError(Schema.String, { status: 400 }),
+      .addSuccess(Schema.String, { status: 200 })
+      .addError(Schema.String, { status: 400 }),
   );
 
 const Api = HttpApi.make("hydra-manager-control-node").add(managementGroup);

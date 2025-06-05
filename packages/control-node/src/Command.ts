@@ -1,9 +1,7 @@
 import { Command, HttpClientRequest } from "@effect/platform";
 import { NodeContext, NodeRuntime } from "@effect/platform-node";
 import { Effect } from "effect";
-import {
-  HttpClient,
-} from "@effect/platform";
+import { HttpClient } from "@effect/platform";
 
 const podNodeUrls = ["http://localhost:3001"];
 
@@ -12,14 +10,16 @@ const startAllCommandProgram = Effect.gen(function* () {
 
   const httpClient = yield* HttpClient.HttpClient;
   const httpClientOk = httpClient.pipe(
-    HttpClient.mapRequest(HttpClientRequest.updateUrl(url => url + "/start")),
+    HttpClient.mapRequest(HttpClientRequest.updateUrl((url) => url + "/start")),
     HttpClient.filterStatusOk,
-  )
+  );
 
-  const responses = yield* Effect.forEach(podNodeUrls, (url) => httpClientOk.get(url))
-  yield* Effect.logDebug(`Responses from pods: ${JSON.stringify(responses)}`)
+  const responses = yield* Effect.forEach(podNodeUrls, (url) =>
+    httpClientOk.get(url),
+  );
+  yield* Effect.logDebug(`Responses from pods: ${JSON.stringify(responses)}`);
 
-  return "Started All Node Pods"
+  return "Started All Node Pods";
 });
 
 export const startAllApiHandler = startAllCommandProgram.pipe(
@@ -34,14 +34,16 @@ const stopAllCommandProgram = Effect.gen(function* () {
 
   const httpClient = yield* HttpClient.HttpClient;
   const httpClientOk = httpClient.pipe(
-    HttpClient.mapRequest(HttpClientRequest.updateUrl(url => url + "/stop")),
+    HttpClient.mapRequest(HttpClientRequest.updateUrl((url) => url + "/stop")),
     HttpClient.filterStatusOk,
-  )
+  );
 
-  const responses = yield* Effect.forEach(podNodeUrls, (url) => httpClientOk.get(url))
-  yield* Effect.logDebug(`Responses from pods: ${JSON.stringify(responses)}`)
+  const responses = yield* Effect.forEach(podNodeUrls, (url) =>
+    httpClientOk.get(url),
+  );
+  yield* Effect.logDebug(`Responses from pods: ${JSON.stringify(responses)}`);
 
-  return "Stopped All Node Pods"
+  return "Stopped All Node Pods";
 });
 
 export const stopAllApiHandler = stopAllCommandProgram.pipe(
