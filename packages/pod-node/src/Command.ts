@@ -16,7 +16,13 @@ const startCommandProgram = Effect.gen(function* () {
   }
 
   yield* Effect.log(`Starting the hydra-node`);
-  return yield* Command.string(startHydraNode);
+
+  const exitCode = yield* Command.exitCode(startHydraNode);
+  if (exitCode !== 0) {
+    yield* Effect.fail(`Exit code is ${exitCode} instead of 0`)
+  }
+
+  return "OK"
 });
 
 const stopCommandProgram = Effect.gen(function* () {
@@ -28,8 +34,14 @@ const stopCommandProgram = Effect.gen(function* () {
     yield* Effect.fail(`hydra-node is already stopped`);
   }
 
-  yield* Effect.log(`Stoping the hydra-node`);
-  return yield* Command.string(stopHydraNode);
+  yield* Effect.log(`Stopping the hydra-node`);
+
+  const exitCode = yield* Command.exitCode(stopHydraNode);
+  if (exitCode !== 0) {
+    yield* Effect.fail(`Exit code is ${exitCode} instead of 0`)
+  }
+
+  return "OK"
 });
 
 export const startApiHandler = startCommandProgram.pipe(
