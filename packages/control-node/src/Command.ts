@@ -11,16 +11,29 @@ import {
 
 const podNodeUrls = ["http://localhost:3001"];
 
-const startCommandProgram = Effect.gen(function* () {
+const startAllCommandProgram = Effect.gen(function* () {
   yield* Effect.log("Called start command");
+  yield* Effect.log("Hi");
+
   const httpClient = yield* HttpClient.HttpClient;
+  const httpClientOk = httpClient.pipe(
+      HttpClient.filterStatusOk,
+  )
 
-  const responses = yield* httpClient.get(`http://localhost:3001/start`);
+  yield* Effect.log("Hi2");
 
 
+  yield* Effect.log("Called 3001");
+  const res = httpClient.get("http://localhost:3001")
+  yield* Effect.log(`Got: ${JSON.stringify(res)}`);
+
+
+  const responses = yield* Effect.forEach(podNodeUrls, (url) => httpClient.get(url))
+  Effect.log(`Responses: ${JSON.stringify(responses)}`)
+  return "Hello"
 });
 
-export const startApiHandler = startCommandProgram.pipe(
+export const startAllApiHandler = startAllCommandProgram.pipe(
   Effect.provide(NodeContext.layer),
   Effect.catchAll((error) => {
     return Effect.fail(`Failed with error: ${JSON.stringify(error)}`);
