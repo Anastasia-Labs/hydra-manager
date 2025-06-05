@@ -1,39 +1,50 @@
-import { Command } from "@effect/platform";
+import { Command, HttpClientRequest } from "@effect/platform";
 import { NodeContext, NodeRuntime } from "@effect/platform-node";
 import { Effect } from "effect";
 import {
-  FetchHttpClient,
   HttpClient,
-  HttpClientRequest,
-  HttpClientResponse,
-  Socket,
 } from "@effect/platform";
 
 const podNodeUrls = ["http://localhost:3001"];
 
 const startAllCommandProgram = Effect.gen(function* () {
   yield* Effect.log("Called start command");
-  yield* Effect.log("Hi");
 
   const httpClient = yield* HttpClient.HttpClient;
   const httpClientOk = httpClient.pipe(
-      HttpClient.filterStatusOk,
+    HttpClient.mapRequest(HttpClientRequest.updateUrl(url => url + "/start")),
+    HttpClient.filterStatusOk,
   )
 
-  yield* Effect.log("Hi2");
+  const responses = yield* Effect.forEach(podNodeUrls, (url) => httpClientOk.get(url))
+  yield* Effect.logDebug(`Responses from pods: ${JSON.stringify(responses)}`)
 
-
-  yield* Effect.log("Called 3001");
-  const res = httpClient.get("http://localhost:3001")
-  yield* Effect.log(`Got: ${JSON.stringify(res)}`);
-
-
-  const responses = yield* Effect.forEach(podNodeUrls, (url) => httpClient.get(url))
-  Effect.log(`Responses: ${JSON.stringify(responses)}`)
-  return "Hello"
+  return "Started All Node Pods"
 });
 
 export const startAllApiHandler = startAllCommandProgram.pipe(
+  Effect.provide(NodeContext.layer),
+  Effect.catchAll((error) => {
+    return Effect.fail(`Failed with error: ${JSON.stringify(error)}`);
+  }),
+);
+
+const stopAllCommandProgram = Effect.gen(function* () {
+  yield* Effect.log("Called stop command");
+
+  const httpClient = yield* HttpClient.HttpClient;
+  const httpClientOk = httpClient.pipe(
+    HttpClient.mapRequest(HttpClientRequest.updateUrl(url => url + "/stop")),
+    HttpClient.filterStatusOk,
+  )
+
+  const responses = yield* Effect.forEach(podNodeUrls, (url) => httpClientOk.get(url))
+  yield* Effect.logDebug(`Responses from pods: ${JSON.stringify(responses)}`)
+
+  return "Stopped All Node Pods"
+});
+
+export const stopAllApiHandler = stopAllCommandProgram.pipe(
   Effect.provide(NodeContext.layer),
   Effect.catchAll((error) => {
     return Effect.fail(`Failed with error: ${JSON.stringify(error)}`);

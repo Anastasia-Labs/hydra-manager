@@ -12,15 +12,23 @@ import { NodeHttpServer } from "@effect/platform-node";
 import { Effect, Layer, Schema } from "effect";
 import * as HTTPS from "node:https";
 import * as HTTP from "node:http";
-import * as CreateService from "./service/Create.js";
-import * as StateService from "./service/State.js";
-import { startAllApiHandler } from "./Command.js";
+import { startAllApiHandler, stopAllApiHandler } from "./Command.js";
+import {
+  FetchHttpClient,
+} from "@effect/platform";
 
-const managementGroup = HttpApiGroup.make("Management").add(
-  HttpApiEndpoint.get("startAll", "/startAll")
-    .addSuccess(Schema.String)
-    .addError(Schema.Any, { status: 400 }),
-);
+
+const managementGroup = HttpApiGroup.make("Management")
+  .add(
+    HttpApiEndpoint.get("startAll", "/startAll")
+      .addSuccess(Schema.String, { status: 200 })
+      .addError(Schema.String, { status: 400 }),
+  )
+  .add(
+    HttpApiEndpoint.get("stopAll", "/stopAll")
+    .addSuccess(Schema.String, { status: 200 })
+    .addError(Schema.String, { status: 400 }),
+  );
 
 const Api = HttpApi.make("hydra-manager-control-node").add(managementGroup);
 
@@ -31,7 +39,7 @@ const ManagementGroupLive = HttpApiBuilder.group(
     Effect.gen(function* () {
       return handlers
         .handle("startAll", () => startAllApiHandler)
-        // .handle("stop", () => stopApiHandler);
+        .handle("stopAll", () => stopAllApiHandler);
     }),
 );
 // Set up the application server with logging
@@ -73,6 +81,7 @@ const ServerLive = HttpApiBuilder.serve().pipe(
   Layer.provide(ApiLive),
   // Layer.provide(ServerEffectfullLive),
   Layer.provide(NodeHttpServer.layer(HTTP.createServer, { port: 3011 })),
+  Layer.provide(FetchHttpClient.layer),
 );
 
 /*
