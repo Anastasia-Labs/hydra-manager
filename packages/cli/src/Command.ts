@@ -180,6 +180,5 @@ export const commitHead = (
   Effect.gen(function* () {
     const hydraHead = yield* HydraHead;
     const utxos: Array<UTxO> = JSON.parse(utxosString);
-    yield* Effect.log(`utxos type is: ${typeof utxos}`);
     yield* hydraHead.commit(nodeName, utxos, faucetWalletName);
   });

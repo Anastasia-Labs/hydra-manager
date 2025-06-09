@@ -74,9 +74,12 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
 
           if (Option.isSome(maybeStatus)) {
             const statusRaw = yield* maybeStatus;
-            yield* Effect.log(
+            yield* Effect.logDebug(
               `Valid status received [${statusRaw}] from message: ${messageText}`,
             );
+            if (statusRaw !== status) {
+              yield* Effect.log(`${nodeName} changes status to ${statusRaw}`)
+            }
             status = statusRaw;
           }
         }
