@@ -294,8 +294,8 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
         yield* Effect.log(
           `Called commit action for ${nodeName}, faucetWalletName is ${faucetWalletName}`,
         );
-        yield* Effect.log(`Provided utxos are:`);
-        yield* Effect.log(`${HydraMessage.utxosToString(utxos)}`);
+        yield* Effect.logDebug(`Provided utxos are:`);
+        yield* Effect.logDebug(`${HydraMessage.utxosToString(utxos)}`);
 
         const node = yield* getHydraNode(nodeName);
         const unwitnessedTransaction = yield* node.commitHTTPHandle(utxos);

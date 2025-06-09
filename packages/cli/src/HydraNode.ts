@@ -117,7 +117,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
         const rawMessage: Uint8Array = yield* messageQueue.take;
         const messageText: string = new TextDecoder().decode(rawMessage);
 
-        yield* Effect.log(
+        yield* Effect.logDebug(
           `Received raw message during initialization command: ${messageText}`,
         );
 
@@ -128,12 +128,12 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
 
         if (Option.isSome(maybe)) {
           const hydraMessage: HydraMessage.InitializingMessage = maybe.value;
-          yield* Effect.log(
+          yield* Effect.logDebug(
             `Valid initializing message received: ${hydraMessage.tag}`,
           );
           break;
         } else {
-          yield* Effect.log(
+          yield* Effect.logDebug(
             `Received non-initializing message: ${messageText}`,
           );
         }
@@ -158,7 +158,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
         const rawMessage: Uint8Array = yield* messageQueue.take;
         const messageText: string = new TextDecoder().decode(rawMessage);
 
-        yield* Effect.log(
+        yield* Effect.logDebug(
           `Received raw message during closing command: ${messageText}`,
         );
 
@@ -167,12 +167,12 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
 
         if (Option.isSome(maybe)) {
           const hydraMessage: HydraMessage.ClosedMessage = maybe.value;
-          yield* Effect.log(
+          yield* Effect.logDebug(
             `Valid closeing message received: ${hydraMessage.tag}`,
           );
           break;
         } else {
-          yield* Effect.log(`Received non-closing message: ${messageText}`);
+          yield* Effect.logDebug(`Received non-closing message: ${messageText}`);
         }
       }
 
@@ -194,7 +194,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
         const rawMessage: Uint8Array = yield* messageQueue.take;
         const messageText: string = new TextDecoder().decode(rawMessage);
 
-        yield* Effect.log(
+        yield* Effect.logDebug(
           `Received raw message during initialization command: ${messageText}`,
         );
 
@@ -205,12 +205,12 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
 
         if (Option.isSome(maybe)) {
           const hydraMessage: HydraMessage.FinalizedMessage = maybe.value;
-          yield* Effect.log(
+          yield* Effect.logDebug(
             `Valid finalized message received: ${hydraMessage.tag}`,
           );
           break;
         } else {
-          yield* Effect.log(`Received non-finalized message: ${messageText}`);
+          yield* Effect.logDebug(`Received non-finalized message: ${messageText}`);
         }
       }
 
@@ -350,7 +350,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
             ),
             Effect.scoped,
           );
-        yield* Effect.log(`Received expected response at commitHTTPHandle`);
+        yield* Effect.logDebug(`Received expected response at commitHTTPHandle`);
         return response;
       });
 
