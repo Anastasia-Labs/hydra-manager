@@ -5,15 +5,35 @@ import {
   HttpApiBuilder,
   HttpApiEndpoint,
   HttpApiGroup,
+  HttpApiMiddleware,
+  HttpApiSchema,
+  HttpApiSecurity,
   HttpApiSwagger,
   HttpServer,
 } from "@effect/platform";
 import { NodeHttpServer } from "@effect/platform-node";
-import { Effect, Layer, Schema } from "effect";
+import { Context, Effect, Layer, Redacted, Schema } from "effect";
 import * as HTTPS from "node:https";
 import * as HTTP from "node:http";
 import { startAllApiHandler, stopAllApiHandler } from "./Command.js";
 import { FetchHttpClient } from "@effect/platform";
+
+class Unauthorized extends Schema.TaggedError<Unauthorized>()(
+  "Unauthorized",
+  {},
+  // Specify the HTTP status code for unauthorized errors
+  HttpApiSchema.annotations({ status: 401 })
+) {}
+
+class Authorization extends HttpApiMiddleware.Tag<Authorization>()(
+  "Authorization",
+  {
+    failure: Unauthorized,
+    security: {
+      myBearer: HttpApiSecurity.bearer
+    }
+  }
+) {}
 
 const managementGroup = HttpApiGroup.make("Management")
   .add(
@@ -25,7 +45,7 @@ const managementGroup = HttpApiGroup.make("Management")
     HttpApiEndpoint.get("stopAll", "/stopAll")
       .addSuccess(Schema.String, { status: 200 })
       .addError(Schema.String, { status: 400 }),
-  );
+  ).middleware(Authorization);
 
 const Api = HttpApi.make("hydra-manager-control-node").add(managementGroup);
 
@@ -68,6 +88,25 @@ const ServerEffectfullLive = Layer.mergeAll(
   ),
   NodeHttpServer.layerContext,
 );
+
+const AuthorizationLive = Layer.effect(
+  Authorization,
+  Effect.gen(function* () {
+    return {
+      // Define the handler for the Bearer token
+      // The Bearer token is redacted for security
+      myBearer: (bearerToken) =>
+        Effect.gen(function* () {
+          yield* Effect.log(
+            "checking bearer token",
+            Redacted.value(bearerToken)
+          )
+          // Return a mock User object as the CurrentUser
+          return ""
+        })
+    }
+  })
+)
 
 const ApiLive = HttpApiBuilder.api(Api).pipe(
   Layer.provide(ManagementGroupLive),
