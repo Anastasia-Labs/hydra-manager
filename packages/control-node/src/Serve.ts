@@ -17,6 +17,8 @@ import * as HTTPS from "node:https";
 import * as HTTP from "node:http";
 import { startAllApiHandler, stopAllApiHandler } from "./Command.js";
 import { FetchHttpClient } from "@effect/platform";
+import { Empty } from "effect/ConfigProviderPathPatch";
+import { empty } from "effect/Order";
 
 class Unauthorized extends Schema.TaggedError<Unauthorized>()(
   "Unauthorized",
@@ -25,9 +27,16 @@ class Unauthorized extends Schema.TaggedError<Unauthorized>()(
   HttpApiSchema.annotations({ status: 401 })
 ) {}
 
+class Authorized extends Schema.Class<Authorized>("Authorized")(
+  {},
+) {}
+
+class CurrentAuthorized extends Context.Tag("CurrentAuthorized")<CurrentAuthorized, Authorized>() {}
+
 class Authorization extends HttpApiMiddleware.Tag<Authorization>()(
   "Authorization",
   {
+    provides: CurrentAuthorized,
     failure: Unauthorized,
     security: {
       myBearer: HttpApiSecurity.bearer
@@ -39,13 +48,16 @@ const managementGroup = HttpApiGroup.make("Management")
   .add(
     HttpApiEndpoint.get("startAll", "/startAll")
       .addSuccess(Schema.String, { status: 200 })
-      .addError(Schema.String, { status: 400 }),
+      .middleware(Authorization)
+      // .addError(Unauthorized, { status: 401 })
+      .addError(Schema.String, { status: 400 })
   )
   .add(
     HttpApiEndpoint.get("stopAll", "/stopAll")
       .addSuccess(Schema.String, { status: 200 })
-      .addError(Schema.String, { status: 400 }),
-  ).middleware(Authorization);
+      .addError(Unauthorized, { status: 401 })
+      .addError(Schema.String, { status: 400 })
+  ).middleware(Authorization)
 
 const Api = HttpApi.make("hydra-manager-control-node").add(managementGroup);
 
@@ -97,12 +109,11 @@ const AuthorizationLive = Layer.effect(
       // The Bearer token is redacted for security
       myBearer: (bearerToken) =>
         Effect.gen(function* () {
-          yield* Effect.log(
-            "checking bearer token",
-            Redacted.value(bearerToken)
-          )
-          // Return a mock User object as the CurrentUser
-          return ""
+          if (Redacted.value(bearerToken) == "Hello") {
+            return Authorized
+          } else {
+            return Unauthorized
+          }
         })
     }
   })
@@ -118,6 +129,7 @@ const ServerLive = HttpApiBuilder.serve().pipe(
   // Layer.provide(ServerEffectfullLive),
   Layer.provide(NodeHttpServer.layer(HTTP.createServer, { port: 3011 })),
   Layer.provide(FetchHttpClient.layer),
+  Layer.provide(AuthorizationLive),
 );
 
 /*
