@@ -5,11 +5,9 @@ import {
   HttpApiBuilder,
   HttpApiEndpoint,
   HttpApiGroup,
-  HttpApiMiddleware,
-  HttpApiSchema,
-  HttpApiSecurity,
   HttpApiSwagger,
   HttpServer,
+  HttpServerRequest,
 } from "@effect/platform";
 import { NodeHttpServer } from "@effect/platform-node";
 import { Context, Effect, Layer, Redacted, Schema } from "effect";
@@ -17,47 +15,18 @@ import * as HTTPS from "node:https";
 import * as HTTP from "node:http";
 import { startAllApiHandler, stopAllApiHandler } from "./Command.js";
 import { FetchHttpClient } from "@effect/platform";
-import { Empty } from "effect/ConfigProviderPathPatch";
-import { empty } from "effect/Order";
-
-class Unauthorized extends Schema.TaggedError<Unauthorized>()(
-  "Unauthorized",
-  {},
-  // Specify the HTTP status code for unauthorized errors
-  HttpApiSchema.annotations({ status: 401 })
-) {}
-
-class Authorized extends Schema.Class<Authorized>("Authorized")(
-  {},
-) {}
-
-class CurrentAuthorized extends Context.Tag("CurrentAuthorized")<CurrentAuthorized, Authorized>() {}
-
-class Authorization extends HttpApiMiddleware.Tag<Authorization>()(
-  "Authorization",
-  {
-    provides: CurrentAuthorized,
-    failure: Unauthorized,
-    security: {
-      myBearer: HttpApiSecurity.bearer
-    }
-  }
-) {}
 
 const managementGroup = HttpApiGroup.make("Management")
   .add(
     HttpApiEndpoint.get("startAll", "/startAll")
       .addSuccess(Schema.String, { status: 200 })
-      .middleware(Authorization)
-      // .addError(Unauthorized, { status: 401 })
       .addError(Schema.String, { status: 400 })
   )
   .add(
     HttpApiEndpoint.get("stopAll", "/stopAll")
       .addSuccess(Schema.String, { status: 200 })
-      .addError(Unauthorized, { status: 401 })
       .addError(Schema.String, { status: 400 })
-  ).middleware(Authorization)
+  )
 
 const Api = HttpApi.make("hydra-manager-control-node").add(managementGroup);
 
@@ -67,18 +36,21 @@ const ManagementGroupLive = HttpApiBuilder.group(
   (handlers) =>
     Effect.gen(function* () {
       return handlers
-        .handle("startAll", () => startAllApiHandler)
-        .handle("stopAll", () => stopAllApiHandler);
+        .handle("startAll", () => Effect.gen(function* () {
+          const req = yield* HttpServerRequest.HttpServerRequest
+          return yield* startAllApiHandler(req.headers)
+        }))
+        .handle("stopAll", () => Effect.gen(function* () {
+          const req = yield* HttpServerRequest.HttpServerRequest
+          return yield* stopAllApiHandler(req.headers)
+        }));
     }),
 );
-// Set up the application server with logging
 
-// Specify the port
-const port = 3000;
+const port = 3011;
 
 const getFiles = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
-
   return {
     key: yield* fs.readFileString("certificates/private-key.pem"),
     cert: yield* fs.readFileString("certificates/certificate.pem"),
@@ -101,24 +73,6 @@ const ServerEffectfullLive = Layer.mergeAll(
   NodeHttpServer.layerContext,
 );
 
-const AuthorizationLive = Layer.effect(
-  Authorization,
-  Effect.gen(function* () {
-    return {
-      // Define the handler for the Bearer token
-      // The Bearer token is redacted for security
-      myBearer: (bearerToken) =>
-        Effect.gen(function* () {
-          if (Redacted.value(bearerToken) == "Hello") {
-            return Authorized
-          } else {
-            return Unauthorized
-          }
-        })
-    }
-  })
-)
-
 const ApiLive = HttpApiBuilder.api(Api).pipe(
   Layer.provide(ManagementGroupLive),
 );
@@ -129,7 +83,6 @@ const ServerLive = HttpApiBuilder.serve().pipe(
   // Layer.provide(ServerEffectfullLive),
   Layer.provide(NodeHttpServer.layer(HTTP.createServer, { port: 3011 })),
   Layer.provide(FetchHttpClient.layer),
-  Layer.provide(AuthorizationLive),
 );
 
 /*
