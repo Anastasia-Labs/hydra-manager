@@ -34,7 +34,6 @@ import { filterStatusOk } from "@effect/platform/HttpClientResponse";
 import { CML } from "@lucid-evolution/lucid";
 import * as Common from "@hydra-manager/common";
 
-
 export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
   effect: Effect.gen(function* () {
     yield* Effect.log("HydraNode was created");
@@ -83,19 +82,19 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       }),
     );
 
-
     const retryPolicy = Schedule.addDelay(
-      Schedule.compose(
-        Schedule.exponential(50),
-        Schedule.recurs(10),
-      ),
+      Schedule.compose(Schedule.exponential(50), Schedule.recurs(10)),
       () => "100 millis",
     );
-    const awaitStatus = (targetStatus: Status) : Effect.Effect<void, Error, never> =>
+    const awaitStatus = (
+      targetStatus: Status,
+    ): Effect.Effect<void, Error, never> =>
       Effect.retry(
         Effect.gen(function* () {
           if (status != targetStatus) {
-            yield* Effect.fail(new Error(`Status is ${status}, espected ${targetStatus}`))
+            yield* Effect.fail(
+              new Error(`Status is ${status}, espected ${targetStatus}`),
+            );
           }
         }),
         retryPolicy,
@@ -105,8 +104,8 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       const messageQueue: Dequeue<Uint8Array> = yield* PubSub.subscribe(
         connection.messages,
       );
-      yield* Effect.log(`Called initialize for ${nodeName} node`)
-      yield* awaitStatus("IDLE")
+      yield* Effect.log(`Called initialize for ${nodeName} node`);
+      yield* awaitStatus("IDLE");
 
       yield* connection.sendMessage(JSON.stringify({ tag: "Init" })).pipe(
         Effect.tap(() => Effect.log("Init message sent")),
@@ -147,7 +146,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
         connection.messages,
       );
 
-      yield* awaitStatus("OPEN")
+      yield* awaitStatus("OPEN");
 
       yield* connection.sendMessage(JSON.stringify({ tag: "Close" })).pipe(
         Effect.tap(() => Effect.log("Close message sent")),
@@ -183,7 +182,7 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       const messageQueue: Dequeue<Uint8Array> = yield* PubSub.subscribe(
         connection.messages,
       );
-      yield* awaitStatus("FANOUT_POSSIBLE")
+      yield* awaitStatus("FANOUT_POSSIBLE");
 
       yield* connection.sendMessage(JSON.stringify({ tag: "Fanout" })).pipe(
         Effect.tap(() => Effect.log("Close message sent")),
@@ -313,11 +312,14 @@ export class HydraNode extends Effect.Service<HydraNode>()("HydraNode", {
       return parameters;
     });
 
-    const snapshotUTxOs : Effect.Effect<UTxO[], HttpClientError | Error | ParseError, never> =
-    Effect.gen(function* () {
-      Effect.log(`Called snapshotUTxOs for ${nodeName}`)
+    const snapshotUTxOs: Effect.Effect<
+      UTxO[],
+      HttpClientError | Error | ParseError,
+      never
+    > = Effect.gen(function* () {
+      Effect.log(`Called snapshotUTxOs for ${nodeName}`);
 
-      yield* awaitStatus("OPEN")
+      yield* awaitStatus("OPEN");
 
       const response = yield* httpClient.get(`${httpServerUrl}/snapshot/utxo`);
 

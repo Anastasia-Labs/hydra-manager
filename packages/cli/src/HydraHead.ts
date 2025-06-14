@@ -8,7 +8,7 @@ import { HydraWrapper } from "./lucid/HydraWrapper.js";
 import * as AddressConverters from "./utils/AddressConverters.js";
 import { Option } from "effect";
 import * as HydraMessage from "./HydraMessage.js";
-import * as Common from "@hydra-manager/common"
+import * as Common from "@hydra-manager/common";
 
 export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
   effect: Effect.gen(function* () {
@@ -23,29 +23,35 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
     );
     const providerLucidL1: LucidEvolution = yield* Effect.retry(
       Effect.tryPromise({
-        try: () => Lucid(providerContext.provider, config.projectConfig.network),
+        try: () =>
+          Lucid(providerContext.provider, config.projectConfig.network),
         catch: (e) => new Error(`Failed to get LucidEvolution object: ${e}`),
       }),
       providerLucidRetryPolicy,
     );
 
-    const faucetWalletNames: Array<string> = config.projectConfig.faucetWallets.map(
-      (faucetWallet) => faucetWallet.name,
-    );
+    const faucetWalletNames: Array<string> =
+      config.projectConfig.faucetWallets.map(
+        (faucetWallet) => faucetWallet.name,
+      );
 
     const nodeNames: Array<string> = config.projectConfig.nodes.map(
       (node) => node.name,
     );
-    const nodeConfigs : Array<Common.NodeConfig> = yield* Effect.forEach(nodeNames, (name) =>
-      config.getNodeConfigByName(name),
+    const nodeConfigs: Array<Common.NodeConfig> = yield* Effect.forEach(
+      nodeNames,
+      (name) => config.getNodeConfigByName(name),
     );
 
-    const nodeConfigLayers : Layer.Layer<Common.NodeConfigService, never, never>[] =
-      nodeConfigs.map((conf) =>
-        Layer.succeed(Common.NodeConfigService, {
-          nodeConfig: conf,
-        }),
-      );
+    const nodeConfigLayers: Layer.Layer<
+      Common.NodeConfigService,
+      never,
+      never
+    >[] = nodeConfigs.map((conf) =>
+      Layer.succeed(Common.NodeConfigService, {
+        nodeConfig: conf,
+      }),
+    );
 
     const hydraNodes: Array<HydraNode> = yield* Effect.forEach(
       nodeConfigLayers,
@@ -70,11 +76,10 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
         }
       });
 
-    const getRandomHydraNode =
-      Effect.gen(function* () {
-        const randomIndex = Math.floor(Math.random() * hydraNodes.length);
-        return hydraNodes[randomIndex]
-      });
+    const getRandomHydraNode = Effect.gen(function* () {
+      const randomIndex = Math.floor(Math.random() * hydraNodes.length);
+      return hydraNodes[randomIndex];
+    });
 
     const nodesL2 = (nodeName: String) =>
       Effect.gen(function* () {
@@ -99,7 +104,9 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
     ): Effect.Effect<Array<UTxO>, Error> => {
       return Effect.gen(function* () {
         const nodeConfig = yield* config.getNodeConfigByName(nodeName);
-        const address = yield* AddressConverters.vkToAddress(nodeConfig.nodeWalletVK);
+        const address = yield* AddressConverters.vkToAddress(
+          nodeConfig.nodeWalletVK,
+        );
         return yield* Effect.tryPromise({
           try: () => providerLucidL1.utxosAt(address),
           catch: (e) => new Error(`Failed to get UTxOs at ${address}: ${e}`),
@@ -111,7 +118,8 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       faucetWalletName: string,
     ): Effect.Effect<Array<UTxO>, Error> => {
       return Effect.gen(function* () {
-        const faucetWallet = yield* config.getFaucetWalletByName(faucetWalletName);
+        const faucetWallet =
+          yield* config.getFaucetWalletByName(faucetWalletName);
         const address = yield* AddressConverters.skToAddress(faucetWallet.sk);
         return yield* Effect.tryPromise({
           try: () => providerLucidL1.utxosAt(address),
@@ -122,8 +130,8 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
 
     const logNodeSnapshotUTxOs = (nodeName: string) =>
       Effect.gen(function* () {
-        const node = yield* getHydraNode(nodeName)
-        const nodeSnapshotUTxOs = yield* node.snapshotUTxOs
+        const node = yield* getHydraNode(nodeName);
+        const nodeSnapshotUTxOs = yield* node.snapshotUTxOs;
 
         yield* Effect.log(`${nodeName} snapshot UTxOs are:`);
         yield* Effect.log(HydraMessage.utxosToString(nodeSnapshotUTxOs));
@@ -134,25 +142,28 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       () => "500 millis",
     );
 
-    const logNodesStatuses : Effect.Effect<void, Error> =
-      Effect.repeat(
-        Effect.gen(function* () {
-          yield* Effect.log("----------")
-          yield* Effect.forEach(hydraNodes, (hydraNode) => {
-            return Effect.log(`Status of the ${hydraNode.nodeName} node is ${hydraNode.getStatus()}`)
-        })
-          yield* Effect.log("----------")
+    const logNodesStatuses: Effect.Effect<void, Error> = Effect.repeat(
+      Effect.gen(function* () {
+        yield* Effect.log("----------");
+        yield* Effect.forEach(hydraNodes, (hydraNode) => {
+          return Effect.log(
+            `Status of the ${hydraNode.nodeName} node is ${hydraNode.getStatus()}`,
+          );
+        });
+        yield* Effect.log("----------");
       }),
-      logNodesStatusesRepeatPolicy)
+      logNodesStatusesRepeatPolicy,
+    );
 
-    const logProtocolParameters : Effect.Effect<void, Error> =
-        Effect.forEach(hydraNodes, (hydraNode) =>
-          Effect.gen(function* () {
-            Effect.log(`Parameters of the ${hydraNode.nodeName} node are:}`)
-            const parameters = yield* hydraNode.protocolParameters
-            yield* Effect.log(`${HydraMessage.withBigintToString(parameters)}}`)
-          })
-        )
+    const logProtocolParameters: Effect.Effect<void, Error> = Effect.forEach(
+      hydraNodes,
+      (hydraNode) =>
+        Effect.gen(function* () {
+          Effect.log(`Parameters of the ${hydraNode.nodeName} node are:}`);
+          const parameters = yield* hydraNode.protocolParameters;
+          yield* Effect.log(`${HydraMessage.withBigintToString(parameters)}}`);
+        }),
+    );
 
     const logNodeUTxOs = (nodeName: string) =>
       Effect.gen(function* () {
@@ -196,31 +207,38 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
 
     const logFaucetWalletUTxOs = (faucetWalletName: string) =>
       Effect.gen(function* () {
-        const faucetWalletUTxOs: Array<UTxO> = yield* getFaucetWalletUTxOs(faucetWalletName);
+        const faucetWalletUTxOs: Array<UTxO> =
+          yield* getFaucetWalletUTxOs(faucetWalletName);
 
-        const faucetWallet = yield* config.getFaucetWalletByName(faucetWalletName);
+        const faucetWallet =
+          yield* config.getFaucetWalletByName(faucetWalletName);
         const faucetWalletAddress = yield* AddressConverters.skToAddress(
           faucetWallet.sk,
         );
 
-        yield* Effect.log(`${faucetWalletName} UTxOs at ${faucetWalletAddress} address:`);
+        yield* Effect.log(
+          `${faucetWalletName} UTxOs at ${faucetWalletAddress} address:`,
+        );
         yield* Effect.log(HydraMessage.utxosToString(faucetWalletUTxOs));
       });
 
-    const logAllFaucetWalletsUTxOs = Effect.forEach(faucetWalletNames, (faucetWalletName) =>
-      logFaucetWalletUTxOs(faucetWalletName),
+    const logAllFaucetWalletsUTxOs = Effect.forEach(
+      faucetWalletNames,
+      (faucetWalletName) => logFaucetWalletUTxOs(faucetWalletName),
     );
 
     const logFaucetWalletBalance = (faucetWalletName: string) =>
       Effect.gen(function* () {
-        const faucetWalletUTxOs: Array<UTxO> = yield* getFaucetWalletUTxOs(faucetWalletName);
-        const  faucetWalletBalance: bigint =
+        const faucetWalletUTxOs: Array<UTxO> =
+          yield* getFaucetWalletUTxOs(faucetWalletName);
+        const faucetWalletBalance: bigint =
           faucetWalletUTxOs.reduce(
             (acc, utxo) => acc + utxo.assets["lovelace"].valueOf(),
             0n,
           ) / 1000000n;
 
-        const faucetWallet = yield* config.getFaucetWalletByName(faucetWalletName);
+        const faucetWallet =
+          yield* config.getFaucetWalletByName(faucetWalletName);
         const faucetWalletAddress = yield* AddressConverters.skToAddress(
           faucetWallet.sk,
         );
@@ -229,8 +247,9 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
         );
       });
 
-    const logAllFaucetWalletsBalances = Effect.forEach(faucetWalletNames, (faucetWalletName) =>
-      logFaucetWalletBalance(faucetWalletName),
+    const logAllFaucetWalletsBalances = Effect.forEach(
+      faucetWalletNames,
+      (faucetWalletName) => logFaucetWalletBalance(faucetWalletName),
     );
 
     const witnessTransaction = (
@@ -273,17 +292,19 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
       nodeName: string,
       utxos: Array<UTxO>,
       commiterName: Option.Option<string>,
-    ) => Effect.gen(function* () {
-      // TODO
-    });
+    ) =>
+      Effect.gen(function* () {
+        // TODO
+      });
 
     const signAndCommitTransaction = (
       nodeName: string,
       utxos: Array<UTxO>,
       commiterName: Option.Option<string>,
-    ) => Effect.gen(function* () {
-      // TODO
-    });
+    ) =>
+      Effect.gen(function* () {
+        // TODO
+      });
 
     const commit = (
       nodeName: string,
@@ -299,7 +320,8 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
 
         const node = yield* getHydraNode(nodeName);
         const unwitnessedTransaction = yield* node.commitHTTPHandle(utxos);
-        const faucetWallet = yield* config.getFaucetWalletByName(faucetWalletName)
+        const faucetWallet =
+          yield* config.getFaucetWalletByName(faucetWalletName);
         const witnessedTransaction = yield* witnessTransaction(
           unwitnessedTransaction,
           faucetWallet.sk,
@@ -328,5 +350,3 @@ export class HydraHead extends Effect.Service<HydraHead>()("HydraHead", {
     };
   }),
 }) {}
-
-

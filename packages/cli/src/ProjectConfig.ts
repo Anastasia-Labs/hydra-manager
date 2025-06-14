@@ -1,7 +1,7 @@
 import { Path, FileSystem } from "@effect/platform";
 import { NodeContext } from "@effect/platform-node";
-import { Context, Effect, Layer, pipe, Schema, Option } from "effect";
-import * as Common from "@hydra-manager/common"
+import { Context, Effect, Layer, pipe, Schema } from "effect";
+import * as Common from "@hydra-manager/common";
 
 export class ProjectConfigService extends Context.Tag("ProjectConfigService")<
   ProjectConfigService,
@@ -23,7 +23,9 @@ const fileSystemImpl = Effect.gen(function* () {
   const projectConfig: Common.HeadConfig = yield* pipe(
     fs.readFileString(path.join(path.resolve(), "config.json")),
     Effect.flatMap((configString) =>
-      Schema.decodeUnknown(Schema.parseJson(Common.HeadConfigSchema))(configString),
+      Schema.decodeUnknown(Schema.parseJson(Common.HeadConfigSchema))(
+        configString,
+      ),
     ),
     Effect.flatMap((config) => validateConfig(config)),
   );
@@ -75,8 +77,8 @@ const testImpl = Effect.gen(function* () {
         sk: {
           type: "PaymentSigningKeyShelley_ed25519",
           cborHex: "5820...",
-          "description": ""
-        }
+          description: "",
+        },
       },
     ],
     nodes: [
@@ -91,26 +93,28 @@ const testImpl = Effect.gen(function* () {
         hydraVK: {
           type: "HydraVerificationKey_ed25519",
           cborHex: "5820...",
-          description: ""
+          description: "",
         },
       },
     ],
     privateNodes: [
       {
-      "name": "Alice",
-      "url": "ws://localhost:4001",
-      "nodeWalletSK": {
-        "type": "PaymentSigningKeyShelley_ed25519",
-        "cborHex": "58206d92b3dc42bba5840aeeb8dd3d3c7a3ce71721935483c238ecb2f3e1b5f2b5d0",
-        "description": ""
+        name: "Alice",
+        url: "ws://localhost:4001",
+        nodeWalletSK: {
+          type: "PaymentSigningKeyShelley_ed25519",
+          cborHex:
+            "58206d92b3dc42bba5840aeeb8dd3d3c7a3ce71721935483c238ecb2f3e1b5f2b5d0",
+          description: "",
+        },
+        hydraSK: {
+          type: "HydraSigningKey_ed25519",
+          cborHex:
+            "5820fb5816d4efa1fe4d853396cd84a80df4b7f78ccd7314a27ebe93483d06d31091",
+          description: "",
+        },
       },
-      "hydraSK": {
-        "type": "HydraSigningKey_ed25519",
-        "cborHex": "5820fb5816d4efa1fe4d853396cd84a80df4b7f78ccd7314a27ebe93483d06d31091",
-        "description": ""
-      }
-    }
-    ]
+    ],
   };
   const getNodeConfigByName = (nodeName: string) =>
     Effect.gen(function* () {
@@ -167,8 +171,7 @@ const validateConfig = (projectConfig: Common.HeadConfig) =>
     // TODO: The same for Koios?
 
     const nodes = config.nodes;
-    const walletVKs = nodes
-      .map((node) => node.nodeWalletVK)
+    const walletVKs = nodes.map((node) => node.nodeWalletVK);
     if (
       !walletVKs
         .map((sk) => sk.type)

@@ -1,0 +1,59 @@
+import { Command } from "@effect/platform";
+import { NodeContext, NodeRuntime } from "@effect/platform-node";
+import { Effect } from "effect";
+
+const isActive = Command.make("systemctl", "is-active", "hydra-node");
+const startHydraNode = Command.make("systemctl", "start", "hydra-node");
+const stopHydraNode = Command.make("systemctl", "stop", "hydra-node");
+
+const startCommandProgram = Effect.gen(function* () {
+  yield* Effect.log("Called start command");
+  const isNodeActive = yield* Command.string(isActive);
+
+  yield* Effect.log(`hydra-node is ${isNodeActive}`);
+  if (isNodeActive === "active") {
+    yield* Effect.fail(`hydra-node is already running`);
+  }
+
+  yield* Effect.log(`Starting the hydra-node`);
+
+  const exitCode = yield* Command.exitCode(startHydraNode);
+  if (exitCode !== 0) {
+    yield* Effect.fail(`Exit code is ${exitCode} instead of 0`)
+  }
+
+  return "OK"
+});
+
+const stopCommandProgram = Effect.gen(function* () {
+  yield* Effect.log("Called stop command");
+  const isNodeActive = yield* Command.string(isActive);
+
+  yield* Effect.log(`hydra-node is ${isNodeActive}`);
+  if (isNodeActive === "inactive") {
+    yield* Effect.fail(`hydra-node is already stopped`);
+  }
+
+  yield* Effect.log(`Stopping the hydra-node`);
+
+  const exitCode = yield* Command.exitCode(stopHydraNode);
+  if (exitCode !== 0) {
+    yield* Effect.fail(`Exit code is ${exitCode} instead of 0`)
+  }
+
+  return "OK"
+});
+
+export const startApiHandler = startCommandProgram.pipe(
+  Effect.provide(NodeContext.layer),
+  Effect.catchAll((error) => {
+    return Effect.fail(`Failed with error: ${JSON.stringify(error)}`);
+  }),
+);
+
+export const stopApiHandler = stopCommandProgram.pipe(
+  Effect.provide(NodeContext.layer),
+  Effect.catchAll((error) => {
+    return Effect.fail(`Failed with error: ${JSON.stringify(error)}`);
+  }),
+);

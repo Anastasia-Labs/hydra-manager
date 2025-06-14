@@ -39,7 +39,7 @@ export const CardanoProviderSchema = Schema.Union(
   }),
   Schema.Struct({
     koiosProjectId: Schema.String,
-  })
+  }),
 );
 
 export const HeadConfigSchema = Schema.Struct({

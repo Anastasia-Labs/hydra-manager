@@ -1,8 +1,10 @@
 import { CML } from "@lucid-evolution/lucid";
 import { Effect } from "effect";
-import * as Common from "@hydra-manager/common"
+import * as Common from "@hydra-manager/common";
 
-export function skToAddress(nodeSK: Common.PrivateKeyEnvelope): Effect.Effect<string, Error> {
+export function skToAddress(
+  nodeSK: Common.PrivateKeyEnvelope,
+): Effect.Effect<string, Error> {
   if (nodeSK.cborHex.startsWith("5820")) {
     const privateKey = CML.PrivateKey.from_normal_bytes(
       Buffer.from(nodeSK.cborHex.substring(4), "hex"),
@@ -17,7 +19,9 @@ export function skToAddress(nodeSK: Common.PrivateKeyEnvelope): Effect.Effect<st
   }
 }
 
-export function vkToAddress(vk: Common.PublicKeyEnvelope): Effect.Effect<string, Error> {
+export function vkToAddress(
+  vk: Common.PublicKeyEnvelope,
+): Effect.Effect<string, Error> {
   if (vk.cborHex.startsWith("5820")) {
     const publicKey = CML.PublicKey.from_bytes(
       Buffer.from(vk.cborHex.substring(4), "hex"),

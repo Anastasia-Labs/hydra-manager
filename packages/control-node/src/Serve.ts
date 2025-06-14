@@ -7,34 +7,50 @@ import {
   HttpApiGroup,
   HttpApiSwagger,
   HttpServer,
+  HttpServerRequest,
 } from "@effect/platform";
 import { NodeHttpServer } from "@effect/platform-node";
-import { Effect, Layer, Schema } from "effect";
-import { createServer } from "node:https";
-import * as CreateService from "./service/Create.js";
-import * as StateService from "./service/State.js";
+import { Context, Effect, Layer, Redacted, Schema } from "effect";
+import * as HTTPS from "node:https";
+import * as HTTP from "node:http";
+import { startAllApiHandler, stopAllApiHandler } from "./Command.js";
+import { FetchHttpClient } from "@effect/platform";
 
-const managementGroup = HttpApiGroup.make("Management").add(
-  HttpApiEndpoint.get("create", "/create")
-    .addSuccess(Schema.String)
-    .addError(CreateService.HeadCreationError, { status: 400 })
-);
+const managementGroup = HttpApiGroup.make("Management")
+  .add(
+    HttpApiEndpoint.get("startAll", "/startAll")
+      .addSuccess(Schema.String, { status: 200 })
+      .addError(Schema.String, { status: 400 })
+  )
+  .add(
+    HttpApiEndpoint.get("stopAll", "/stopAll")
+      .addSuccess(Schema.String, { status: 200 })
+      .addError(Schema.String, { status: 400 })
+  )
 
 const Api = HttpApi.make("hydra-manager-control-node").add(managementGroup);
 
 const ManagementGroupLive = HttpApiBuilder.group(
   Api,
   "Management",
-  (handlers) => handlers.handle("create", CreateService.handle)
+  (handlers) =>
+    Effect.gen(function* () {
+      return handlers
+        .handle("startAll", () => Effect.gen(function* () {
+          const req = yield* HttpServerRequest.HttpServerRequest
+          return yield* startAllApiHandler(req.headers)
+        }))
+        .handle("stopAll", () => Effect.gen(function* () {
+          const req = yield* HttpServerRequest.HttpServerRequest
+          return yield* stopAllApiHandler(req.headers)
+        }));
+    }),
 );
-// Set up the application server with logging
 
-// Specify the port
-const port = 3000;
+const port = 3011;
 
 const getFiles = Effect.gen(function* () {
   const fs = yield* FileSystem.FileSystem;
-
   return {
     key: yield* fs.readFileString("certificates/private-key.pem"),
     cert: yield* fs.readFileString("certificates/certificate.pem"),
@@ -47,23 +63,26 @@ const ServerEffectfullLive = Layer.mergeAll(
     getFiles.pipe(
       Effect.flatMap(
         ({ key, cert }) =>
-          NodeHttpServer.make(() => createServer({ key, cert }), { port })
+          NodeHttpServer.make(() => HTTPS.createServer({ key, cert }), {
+            port,
+          }),
         // NodeHttpServer.make(() => createServer(), { port })
-      )
-    )
+      ),
+    ),
   ),
-  NodeHttpServer.layerContext
+  NodeHttpServer.layerContext,
 );
 
 const ApiLive = HttpApiBuilder.api(Api).pipe(
-  Layer.provide(ManagementGroupLive)
+  Layer.provide(ManagementGroupLive),
 );
 
 const ServerLive = HttpApiBuilder.serve().pipe(
   Layer.provide(HttpApiSwagger.layer()),
   Layer.provide(ApiLive),
-  Layer.provide(ServerEffectfullLive),
-  Layer.provide(StateService.State.Default)
+  // Layer.provide(ServerEffectfullLive),
+  Layer.provide(NodeHttpServer.layer(HTTP.createServer, { port: 3011 })),
+  Layer.provide(FetchHttpClient.layer),
 );
 
 /*
@@ -71,5 +90,5 @@ Output:
 timestamp=... level=INFO fiber=#0 message="Listening on https://localhost:3000"
 */
 export const serveCommand = Command.make("serve", {}, () =>
-  Layer.launch(ServerLive)
+  Layer.launch(ServerLive),
 );
